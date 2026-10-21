@@ -6,7 +6,7 @@ import { AutoDjApiService } from './autodj-api';
 import { MixerService } from './mixer';
 import { SessionsApiService } from './sessions-api';
 import { TrackApiService } from './tracks';
-import { DjSession, NextTracksResponse, QueueItem, TransitionPlan } from '../models/autodj';
+import { DjSession, NextTracksResponse, QueueItem, TransitionPlan, WeightsInfo } from '../models/autodj';
 import { Track } from '../models/track';
 import { FakeAudioBuffer, FakeAudioContext, provideFakeAudio } from '../testing/fake-audio';
 
@@ -33,6 +33,10 @@ const sugerencias = (...ids: number[]): NextTracksResponse => ({
   })),
 });
 
+const pesos = (samples: number, learned: boolean, harmonic = 0.4): WeightsInfo => ({
+  weights: { tempo: 0.45, harmonic, energy: 0.15 }, learned, samples,
+});
+
 const error404 = () => new HttpErrorResponse({ status: 404, statusText: 'Not Found', error: { error: 'La cola esta vacia.' } });
 const elemento = (trackId: number): QueueItem => ({ id: 1, sessionId: 5, trackId, addedAt: 'x' });
 
@@ -41,7 +45,12 @@ describe('AutoDjService', () => {
   let mixer: MixerService;
   let ctx: FakeAudioContext;
 
-  let autodjApi: { transition: ReturnType<typeof vi.fn>; nextTracks: ReturnType<typeof vi.fn> };
+  let autodjApi: {
+    transition: ReturnType<typeof vi.fn>;
+    nextTracks: ReturnType<typeof vi.fn>;
+    sendFeedback: ReturnType<typeof vi.fn>;
+    weights: ReturnType<typeof vi.fn>;
+  };
   let sessionsApi: { active: ReturnType<typeof vi.fn>; start: ReturnType<typeof vi.fn>; pollNext: ReturnType<typeof vi.fn> };
   let tracksApi: { get: ReturnType<typeof vi.fn>; getAudio: ReturnType<typeof vi.fn> };
 
@@ -49,9 +58,15 @@ describe('AutoDjService', () => {
 
   function configurar(contexto: FakeAudioContext | null = new FakeAudioContext()) {
     ctx = contexto as FakeAudioContext;
+    // Las pistas cargadas con loadTrack se decodifican con esta duracion: debe superar el punto de salida (100 s).
+    if (ctx) {
+      ctx.decodedSeconds = 200;
+    }
     autodjApi = {
       transition: vi.fn((desde: number, hasta: number): Observable<TransitionPlan> => of(corte(desde, hasta))),
       nextTracks: vi.fn(() => of(sugerencias())),
+      sendFeedback: vi.fn((): Observable<WeightsInfo> => of(pesos(1, false))),
+      weights: vi.fn((): Observable<WeightsInfo> => of(pesos(0, false))),
     };
     sessionsApi = {
       active: vi.fn(() => of(sesion())),
@@ -430,6 +445,140 @@ describe('AutoDjService', () => {
       await service.start();
 
       expect(service.enabled()).toBe(true);
+    });
+  });
+
+  describe('valorar las transiciones', () => {
+    /** Prepara y hace una transicion A -> B (corte instantaneo) para tener algo que valorar. */
+    async function conTransicionHecha() {
+      configurar();
+      sonandoEnA();
+      await service.start();
+      sessionsApi.pollNext.mockReturnValueOnce(of(elemento(7)));
+      await service.tick();
+      ctx.currentTime = 100;
+      await service.tick();
+    }
+
+    it('antes de cualquier transicion no hay nada que valorar', async () => {
+      configurar();
+      sonandoEnA();
+      await service.start();
+
+      expect(service.lastTransition()).toBeNull();
+    });
+
+    it('al terminar una transicion queda disponible para valorarla, con las dos pistas', async () => {
+      await conTransicionHecha();
+
+      expect(service.lastTransition()?.from.id).toBe(1);
+      expect(service.lastTransition()?.to.id).toBe(7);
+      expect(service.rating()).toBeNull();
+    });
+
+    it('valorar que gusto envia la valoracion al motor y guarda los pesos devueltos', async () => {
+      await conTransicionHecha();
+      autodjApi.sendFeedback.mockReturnValue(of(pesos(12, true, 0.6)));
+
+      await service.rate(true);
+
+      expect(autodjApi.sendFeedback).toHaveBeenCalledWith(1, 7, true);
+      expect(service.rating()).toBe('liked');
+      expect(service.weights()?.learned).toBe(true);
+      expect(service.weights()?.weights.harmonic).toBe(0.6);
+    });
+
+    it('valorar que no gusto envia false', async () => {
+      await conTransicionHecha();
+
+      await service.rate(false);
+
+      expect(autodjApi.sendFeedback).toHaveBeenCalledWith(1, 7, false);
+      expect(service.rating()).toBe('disliked');
+    });
+
+    it('no se puede valorar dos veces la misma transicion', async () => {
+      await conTransicionHecha();
+
+      await service.rate(true);
+      await service.rate(false);
+
+      expect(autodjApi.sendFeedback).toHaveBeenCalledTimes(1);
+      expect(service.rating()).toBe('liked');
+    });
+
+    it('sin transicion no se envia nada', async () => {
+      configurar();
+
+      await service.rate(true);
+
+      expect(autodjApi.sendFeedback).not.toHaveBeenCalled();
+    });
+
+    it('si falla el envio muestra el error y permite volver a intentarlo', async () => {
+      await conTransicionHecha();
+      autodjApi.sendFeedback.mockReturnValueOnce(throwError(() => new HttpErrorResponse({
+        status: 502, statusText: 'x', error: { error: 'El motor de IA no esta disponible' },
+      })));
+
+      await service.rate(true);
+
+      expect(service.feedbackError()).toBe('El motor de IA no esta disponible');
+      expect(service.rating()).toBeNull();
+
+      await service.rate(true);
+      expect(service.rating()).toBe('liked');
+      expect(service.feedbackError()).toBeNull();
+    });
+
+    it('dos valoraciones simultaneas no duplican el envio', async () => {
+      await conTransicionHecha();
+
+      await Promise.all([service.rate(true), service.rate(true)]);
+
+      expect(autodjApi.sendFeedback).toHaveBeenCalledTimes(1);
+    });
+
+    it('una transicion nueva se puede valorar aunque la anterior ya se valorara', async () => {
+      await conTransicionHecha();
+      await service.rate(true);
+      sessionsApi.pollNext.mockReturnValueOnce(of(elemento(8)));
+      await service.tick(); // prepara la 8 a partir de la 7
+      ctx.currentTime = 200;
+      await service.tick(); // transicion 7 -> 8
+
+      expect(service.lastTransition()?.to.id).toBe(8);
+      expect(service.rating()).toBeNull();
+      await service.rate(false);
+      expect(autodjApi.sendFeedback).toHaveBeenLastCalledWith(7, 8, false);
+    });
+
+    it('desactivar el Auto-DJ no impide valorar la ultima transicion', async () => {
+      await conTransicionHecha();
+
+      service.stop();
+      await service.rate(true);
+
+      expect(autodjApi.sendFeedback).toHaveBeenCalledWith(1, 7, true);
+    });
+
+    it('loadWeights consulta los pesos vigentes del motor', async () => {
+      configurar();
+      autodjApi.weights.mockReturnValue(of(pesos(30, true, 0.55)));
+
+      await service.loadWeights();
+
+      expect(service.weights()?.samples).toBe(30);
+      expect(service.weights()?.weights.harmonic).toBe(0.55);
+    });
+
+    it('si loadWeights falla no molesta: los pesos quedan sin conocer', async () => {
+      configurar();
+      autodjApi.weights.mockReturnValue(throwError(() => new Error('sin red')));
+
+      await service.loadWeights();
+
+      expect(service.weights()).toBeNull();
     });
   });
 });

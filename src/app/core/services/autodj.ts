@@ -3,7 +3,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { Deck, DeckId } from '../audio/deck';
 import { httpErrorMessage } from '../http-error-message';
-import { TransitionPlan } from '../models/autodj';
+import { TransitionPlan, WeightsInfo } from '../models/autodj';
 import { Track } from '../models/track';
 import { AutoDjApiService } from './autodj-api';
 import { MixerService } from './mixer';
@@ -45,6 +45,15 @@ export class AutoDjService {
   /** Aviso o error para mostrar al usuario. */
   readonly message = signal<string | null>(null);
   readonly sessionId = signal<number | null>(null);
+
+  /** La ultima transicion completada, para que el DJ pueda valorarla. */
+  readonly lastTransition = signal<{ from: Track; to: Track } | null>(null);
+  /** Valoracion dada a `lastTransition`; null si aun no se valoro. */
+  readonly rating = signal<'liked' | 'disliked' | null>(null);
+  readonly feedbackError = signal<string | null>(null);
+  /** Pesos de la puntuacion que usa el motor (aprendidos de las valoraciones, o los de por defecto). */
+  readonly weights = signal<WeightsInfo | null>(null);
+  private sending = false;
 
   private timer: ReturnType<typeof setInterval> | null = null;
   private busy = false;
@@ -99,6 +108,34 @@ export class AutoDjService {
     this.message.set(null);
     this.played.clear();
     this.retryAt = 0;
+  }
+
+  /** El DJ valora la ultima transicion; el motor reajusta sus pesos y devuelve los vigentes. */
+  async rate(liked: boolean): Promise<void> {
+    const transition = this.lastTransition();
+    if (!transition || this.rating() !== null || this.sending) {
+      return;
+    }
+    this.sending = true;
+    this.feedbackError.set(null);
+    try {
+      const info = await firstValueFrom(this.autodj.sendFeedback(transition.from.id, transition.to.id, liked));
+      this.weights.set(info);
+      this.rating.set(liked ? 'liked' : 'disliked');
+    } catch (error) {
+      this.feedbackError.set(httpErrorMessage(error, 'No se pudo enviar la valoracion.'));
+    } finally {
+      this.sending = false;
+    }
+  }
+
+  /** Consulta los pesos vigentes del motor. Si falla no se avisa: es informacion complementaria. */
+  async loadWeights(): Promise<void> {
+    try {
+      this.weights.set(await firstValueFrom(this.autodj.weights()));
+    } catch {
+      // Sin los pesos el panel simplemente no muestra lo aprendido.
+    }
   }
 
   /** Un paso del Auto-DJ: prepara la siguiente pista o dispara la transicion. Publico para poder probarlo. */
@@ -188,9 +225,15 @@ export class AutoDjService {
     this.busy = true;
     this.status.set('mezclando');
     try {
+      const outgoing = current.track();
       const result = await this.runner.run(prepared.plan, this.deckId(current), prepared.deck);
       if (result === 'completed') {
         this.played.add(prepared.track.id);
+        if (outgoing) {
+          this.lastTransition.set({ from: outgoing, to: prepared.track });
+          this.rating.set(null);
+          this.feedbackError.set(null);
+        }
         this.next.set(null);
         this.status.set(this.enabled() ? 'esperando' : 'off');
       }

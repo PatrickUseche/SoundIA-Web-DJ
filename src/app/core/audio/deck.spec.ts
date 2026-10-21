@@ -1,4 +1,4 @@
-import { Deck } from './deck';
+import { Deck, WAVEFORM_PEAKS } from './deck';
 import { Track } from '../models/track';
 import { EQ_KILL_DB } from './eq';
 import { FakeAudioBuffer, FakeAudioContext, FakeAudioNode, FakeBiquadFilterNode } from '../testing/fake-audio';
@@ -103,6 +103,37 @@ describe('Deck', () => {
       expect(deck.loaded).toBe(false);
       expect(deck.playing()).toBe(false);
       expect(deck.track()).toBeNull();
+    });
+  });
+
+  describe('forma de onda', () => {
+    it('sin pista no hay picos', () => {
+      expect(deck.peaks()).toBeNull();
+    });
+
+    it('al cargar una pista calcula los picos normalizados', () => {
+      const audio = new FakeAudioBuffer(2);
+      audio.getChannelData(0).fill(0.25);
+      deck.load(audio as unknown as AudioBuffer, pista());
+
+      const picos = deck.peaks();
+
+      expect(picos?.length).toBe(WAVEFORM_PEAKS);
+      expect(Math.max(...(picos ?? []))).toBe(1);
+    });
+
+    it('un audio en silencio da picos en cero', () => {
+      cargar();
+
+      expect(Math.max(...(deck.peaks() ?? [1]))).toBe(0);
+    });
+
+    it('expulsar la pista borra los picos', () => {
+      cargar();
+
+      deck.eject();
+
+      expect(deck.peaks()).toBeNull();
     });
   });
 

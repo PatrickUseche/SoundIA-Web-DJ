@@ -2,6 +2,7 @@ import { signal } from '@angular/core';
 import { Track } from '../models/track';
 import { clampPitch } from './beatmatch';
 import { EqBand, eqValueToDb } from './eq';
+import { computePeaks, normalizePeaks } from './waveform';
 
 // Frecuencias de corte de cada banda (Hz), las habituales de un mixer de DJ.
 const EQ_FREQUENCY: Record<EqBand, number> = { low: 320, mid: 1000, high: 3200 };
@@ -12,6 +13,9 @@ const EQ_FILTER_TYPE: Record<EqBand, BiquadFilterType> = {
 };
 
 export type DeckId = 'A' | 'B';
+
+/** Cuantos picos se calculan de la forma de onda de la pista cargada. */
+export const WAVEFORM_PEAKS = 800;
 
 /**
  * Un deck: carga una pista y la reproduce a traves de un EQ de tres bandas, un fader de volumen y un
@@ -29,6 +33,8 @@ export class Deck {
   readonly volume = signal(1);
   readonly eq = signal<Record<EqBand, number>>({ low: 0.5, mid: 0.5, high: 0.5 });
   readonly cuePoint = signal(0);
+  /** Picos normalizados (0-1) de la pista cargada, para dibujar su forma de onda; null si no hay pista. */
+  readonly peaks = signal<Float32Array | null>(null);
 
   private buffer: AudioBuffer | null = null;
   private source: AudioBufferSourceNode | null = null;
@@ -80,6 +86,7 @@ export class Deck {
     this.playing.set(false);
     this.track.set(track);
     this.cuePoint.set(track?.cuePoints[0] ?? 0);
+    this.peaks.set(normalizePeaks(computePeaks(buffer.getChannelData(0), WAVEFORM_PEAKS)));
   }
 
   /** Vacia el deck. */
@@ -90,6 +97,7 @@ export class Deck {
     this.playing.set(false);
     this.track.set(null);
     this.cuePoint.set(0);
+    this.peaks.set(null);
   }
 
   /** Posicion actual de reproduccion en segundos. */

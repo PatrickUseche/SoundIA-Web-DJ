@@ -38,4 +38,12 @@ export class TelemetryService{
     predictMix(event: MidiEvent) : Observable<AiDecision> {
         return this.http.post<AiDecision>(`${this.baseUrl}/ai/predict`, event);
     }
+
+    /**
+     * Envia un movimiento del controlador. El API responde al instante (texto plano) y procesa la IA
+     * en segundo plano; el resultado llega despues por el stream en vivo.
+     */
+    sendEvent(event: MidiEvent) : Observable<string> {
+        return this.http.post(`${this.baseUrl}/event`, event, { responseType: 'text' });
+    }
 }

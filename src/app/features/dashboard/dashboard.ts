@@ -1,12 +1,12 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { AsyncPipe } from '@angular/common';
 import { TelemetryService, AiDecision, DjSessionLog, MidiEvent } from '../../core/services/telemetry';
 import { Observable } from 'rxjs';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule],
+  imports: [AsyncPipe],
   templateUrl: './dashboard.html'
 })
 

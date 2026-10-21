@@ -1,6 +1,6 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { TelemetryService, AiDecision, MidiEvent } from '../../core/services/telemetry';
+import { TelemetryService, AiDecision, DjSessionLog, MidiEvent } from '../../core/services/telemetry';
 import { Observable } from 'rxjs';
 
 @Component({
@@ -15,7 +15,7 @@ export class DashboardComponent implements OnInit{
   private telemetryService = inject(TelemetryService);
 
   // El sufijo $ indica que es uin flujo reactivo (Observable).
-  logs$!: Observable<any[]>;
+  logs$!: Observable<DjSessionLog[]>;
   ultimaDecision: AiDecision | null = null;
 
   ngOnInit(): void {

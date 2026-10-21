@@ -13,6 +13,14 @@ export interface AiDecision{
     action: string;
 }
 
+// Registro devuelto por GET /logs; refleja la entidad DjSessionLog de Spring Boot.
+export interface DjSessionLog {
+    id: number;
+    controlId: number;
+    value: number;
+    createdIn: string;
+}
+
 @Injectable({ providedIn: 'root'})
 export class TelemetryService{
     // Conexion exclusiva al API Gateway (Spring Boot), nunca a Django directamente.
@@ -20,8 +28,8 @@ export class TelemetryService{
 
     constructor(private http: HttpClient){}
 
-    getLogs() : Observable<any[]> {
-        return this.http.get<any[]>(`${this.baseUrl}/logs`);
+    getLogs() : Observable<DjSessionLog[]> {
+        return this.http.get<DjSessionLog[]>(`${this.baseUrl}/logs`);
     }
 
     predictMix(event: MidiEvent) : Observable<AiDecision> {

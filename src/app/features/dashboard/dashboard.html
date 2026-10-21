@@ -17,7 +17,7 @@
          <li *ngFor="let log of logs$ | async">
             <strong>Control:</strong> {{ log.controlId }} |
             <strong>Valor:</strong> {{ log.value }} |
-            <strong>Fecha:</strong> {{ log.createdIn || log.createdAt }}
+            <strong>Fecha:</strong> {{ log.createdIn }}
          </li>
      </ul>
 </div>

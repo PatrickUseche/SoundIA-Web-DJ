@@ -13,6 +13,10 @@ describe('DjConsoleComponent', () => {
   const el = () => fixture.nativeElement as HTMLElement;
   const slider = (etiqueta: string) => el().querySelector(`input[aria-label="${etiqueta}"]`) as HTMLInputElement;
 
+  // jsdom no implementa canvas: se evita el aviso en consola.
+  beforeEach(() => vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null));
+  afterEach(() => vi.restoreAllMocks());
+
   function crear(contexto: FakeAudioContext | null) {
     ctx = contexto;
     TestBed.configureTestingModule({

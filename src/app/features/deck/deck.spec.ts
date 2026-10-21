@@ -45,9 +45,14 @@ describe('DeckComponent', () => {
 
   beforeEach(() => {
     ctx = new FakeAudioContext();
+    // jsdom no implementa canvas: se evita el aviso en consola.
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null);
   });
 
-  afterEach(() => vi.useRealTimers());
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
 
   describe('deck vacio', () => {
     it('invita a cargar una pista y deshabilita los controles', () => {

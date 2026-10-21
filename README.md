@@ -39,6 +39,23 @@ src/app/
 └── features/dashboard/                # panel principal
 ```
 
+## MIDI
+
+`MidiService` usa la Web MIDI API (Chrome y Edge; en Firefox/Safari el panel avisa que no hay soporte) para
+listar los controladores conectados, detectar si se enchufan o desenchufan con la página abierta y emitir sus
+movimientos como `{controlId, value}`. `parseMidiMessage` define la conversión:
+
+| Mensaje MIDI | controlId | value |
+|---|---|---|
+| Control Change (faders, perillas) | número de CC | 0-127 |
+| Note On (botones, pads) | 128 + número de nota | velocidad |
+| Note Off, reloj, pitch bend, incompletos | se ignoran | — |
+
+`MidiBridgeService` reenvía esos eventos a `POST /api/v1/midi/event` con un *throttle* por control (50 ms,
+conserva siempre el último valor) y envío secuencial por control. El envío **empieza apagado**: se activa con el
+botón del panel MIDI. Limitación conocida: el canal MIDI se ignora, así que dos decks que usen el mismo CC en
+canales distintos llegan como el mismo control.
+
 ## Tiempo real
 
 `TelemetryStreamService` abre `GET /api/v1/midi/stream` (Server-Sent Events) mientras haya un suscriptor y

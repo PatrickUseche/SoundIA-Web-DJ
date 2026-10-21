@@ -24,9 +24,9 @@ Al terminarla se marca `[x]` en ese mismo commit.
 
 ## Fase 3 — MIDI real
 
-- [ ] feat(midi): servicio con Web MIDI API para detectar controladores [3.1]
-- [ ] feat(midi): enviar los eventos del controlador a /api/v1/midi/event [3.2]
-- [ ] feat(midi): indicador de conexión y selector de dispositivo [3.3]
+- [x] feat(midi): servicio con Web MIDI API para detectar controladores [3.1]
+- [x] feat(midi): enviar los eventos del controlador a /api/v1/midi/event [3.2]
+- [x] feat(midi): indicador de conexión y selector de dispositivo [3.3]
 
 ## Fase 4 — Interfaz de DJ
 

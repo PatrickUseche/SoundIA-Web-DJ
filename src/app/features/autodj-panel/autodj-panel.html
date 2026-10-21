@@ -1,0 +1,51 @@
+<section aria-labelledby="titulo-autodj" style="margin: 20px 0; padding: 15px; border: 1px solid #999;">
+    <h3 id="titulo-autodj">Auto-DJ</h3>
+
+    <button type="button" (click)="alternar()" [attr.aria-pressed]="autodj.enabled()">
+        {{ autodj.enabled() ? 'Desactivar Auto-DJ' : 'Activar Auto-DJ' }}
+    </button>
+
+    <p role="status" class="estado" [attr.data-estado]="autodj.status()">{{ textoEstado() }}</p>
+
+    @if (autodj.status() === 'mezclando') {
+        <progress max="100" [value]="porcentajeMezcla()" aria-label="Avance de la transicion">{{ porcentajeMezcla() }} %</progress>
+    }
+
+    @if (autodj.message(); as mensaje) {
+        <p role="alert" class="aviso" style="color: #c62828;">{{ mensaje }}</p>
+    }
+
+    @if (resumenSiguiente(); as siguiente) {
+        <div class="siguiente">
+            <h4>Siguiente</h4>
+            <p>
+                <strong>{{ siguiente.titulo }}</strong> en el deck {{ siguiente.deck }}
+                ({{ formatBpm(siguiente.bpm) }} BPM, {{ siguiente.camelot }})
+            </p>
+            <p>{{ siguiente.estilo }}, compatibilidad {{ siguiente.compatibilidad }}%</p>
+        </div>
+    }
+
+    <h4>Cola de la sesion</h4>
+    @if (queue.error(); as mensaje) {
+        <p role="alert" class="cola-error" style="color: #c62828;">{{ mensaje }}</p>
+    }
+    @if (queue.items().length === 0) {
+        <p class="cola-vacia">
+            La cola esta vacia: el Auto-DJ elegira las pistas que recomiende la IA. Agrega pistas desde la biblioteca
+            para decidir tu el orden.
+        </p>
+    } @else {
+        <ol class="cola">
+            @for (item of queue.items(); track item.id) {
+                <li>
+                    {{ titulo(item) }}
+                    <button type="button" (click)="quitar(item)" [attr.aria-label]="'Quitar ' + titulo(item) + ' de la cola'">
+                        Quitar
+                    </button>
+                </li>
+            }
+        </ol>
+    }
+    <button type="button" (click)="queue.refresh()" [disabled]="queue.loading()">Actualizar cola</button>
+</section>

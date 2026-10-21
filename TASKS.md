@@ -9,7 +9,7 @@ Al terminarla se marca `[x]` en ese mismo commit.
 - [x] fix(dashboard): mostrar el estado de la decisión (status) en la plantilla [1.2]
 - [x] fix(dashboard): corregir el nombre DashboradComponent a DashboardComponent [1.3]
 - [x] test(dashboard): corregir dashboard.spec.ts para que compile y pase [1.4]
-- [ ] test(app): corregir app.spec.ts, que espera un h1 inexistente [1.5]
+- [x] test(app): corregir app.spec.ts, que espera un h1 inexistente [1.5]
 - [ ] refactor(telemetry): quitar import sin uso y tipar los logs con una interfaz DjSessionLog [1.6]
 - [ ] refactor(dashboard): migrar *ngIf y *ngFor a @if y @for, y usar signals [1.7]
 - [ ] refactor(config): mover la URL del API a environment [1.8]

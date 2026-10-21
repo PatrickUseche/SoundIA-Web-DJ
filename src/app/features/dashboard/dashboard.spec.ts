@@ -50,8 +50,6 @@ describe('DashboardComponent', () => {
     const req = http.expectOne(`${BASE_URL}/ai/predict`);
     expect(req.request.body).toEqual({ controlId: 14, value: 127 });
     req.flush({ status: 'success', action: 'Corte de EQ en deck 14' });
-    // El historial es un Observable frio: la peticion sale al suscribirse el pipe async.
-    fixture.detectChanges();
     http.expectOne(`${BASE_URL}/logs`).flush([]);
     await fixture.whenStable();
     fixture.detectChanges();
@@ -60,5 +58,20 @@ describe('DashboardComponent', () => {
     expect(texto).toContain('success');
     expect(texto).toContain('Corte de EQ en deck 14');
     expect(texto).not.toContain('[object Object]');
+  });
+
+  it('refresca el historial despues de disparar el evento', async () => {
+    fixture.detectChanges();
+    http.expectOne(`${BASE_URL}/logs`).flush([]);
+
+    fixture.componentInstance.simularMezclaAutomatica();
+    http.expectOne(`${BASE_URL}/ai/predict`).flush({ status: 'success', action: 'Corte de EQ' });
+    http.expectOne(`${BASE_URL}/logs`).flush([
+      { id: 7, controlId: 14, value: 127, createdIn: '2026-10-21T10:05:00' },
+    ]);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect((fixture.nativeElement as HTMLElement).querySelectorAll('li').length).toBe(1);
   });
 });

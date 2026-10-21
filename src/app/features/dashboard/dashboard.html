@@ -5,18 +5,17 @@
     </button>
 
     <!-- Bloque condicional: Solo se renderiza si Django responde -->
-    @if (ultimaDecision) {
+    @if (ultimaDecision(); as decision) {
         <div style="margin-top: 20px; padding: 15px; border: 2px solid #4caf50;">
             <h3>Decision del Motor IA (Django)</h3>
-            <p><strong>Estado:</strong> {{ultimaDecision.status}}</p>
-            <p><strong>Accion Ejecutada:</strong> {{ultimaDecision.action}}</p>
+            <p><strong>Estado:</strong> {{decision.status}}</p>
+            <p><strong>Accion Ejecutada:</strong> {{decision.action}}</p>
         </div>
     }
 
     <h3>Historial en PostgreSQL (Via Spring Boot)</h3>
     <ul>
-        <!-- El pipe 'async' se suscribe y destruye automaticamente la conexion. -->
-        @for (log of logs$ | async; track log.id) {
+        @for (log of logs(); track log.id) {
             <li>
                 <strong>Control:</strong> {{ log.controlId }} |
                 <strong>Valor:</strong> {{ log.value }} |

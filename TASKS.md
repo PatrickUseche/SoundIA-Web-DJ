@@ -13,7 +13,7 @@ Al terminarla se marca `[x]` en ese mismo commit.
 - [x] refactor(telemetry): quitar import sin uso y tipar los logs con una interfaz DjSessionLog [1.6]
 - [x] refactor(dashboard): migrar *ngIf y *ngFor a @if y @for, y usar signals [1.7]
 - [x] refactor(config): mover la URL del API a environment [1.8]
-- [ ] fix(ssr): desactivar el prerender del dashboard, que depende de datos en vivo [1.9]
+- [x] fix(ssr): desactivar el prerender del dashboard, que depende de datos en vivo [1.9]
 - [ ] feat(dashboard): estados de carga y error al llamar al API [1.10]
 - [x] test(telemetry): corregir telemetry.spec.ts y probar TelemetryService con HttpTestingController [1.11]
 

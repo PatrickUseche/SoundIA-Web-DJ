@@ -1,0 +1,65 @@
+<section [attr.aria-label]="'Deck ' + deckId()" style="padding: 12px; border: 1px solid #999; margin: 8px 0;">
+    <h3>Deck {{ deckId() }}</h3>
+
+    @if (deck().track(); as pista) {
+        <p class="titulo"><strong>{{ pista.title }}</strong></p>
+        <p class="datos">
+            {{ formatBpm(pista.bpm) }} BPM
+            @if (deck().pitch() !== 1) {
+                (suena a {{ formatBpm(deck().effectiveBpm ?? pista.bpm) }})
+            }
+            | {{ pista.key }} | <span class="camelot">{{ pista.camelot }}</span>
+        </p>
+    } @else if (deck().loaded) {
+        <p class="titulo">Archivo local (sin analizar)</p>
+    } @else {
+        <p class="titulo">Deck vacio. Carga una pista desde la biblioteca.</p>
+    }
+
+    <app-waveform
+        [peaks]="deck().peaks()"
+        [progress]="progreso()"
+        [cues]="marcasCue()"
+        [etiqueta]="'Forma de onda del deck ' + deckId()"
+        (seek)="alBuscar($event)" />
+
+    <p class="reloj" aria-live="off">{{ formatTime(position()) }} / {{ formatTime(deck().duration) }}</p>
+
+    <div class="transporte">
+        <button type="button" (click)="alternarReproduccion()" [disabled]="!deck().loaded"
+            [attr.aria-pressed]="deck().playing()">
+            {{ deck().playing() ? 'Pausa' : 'Play' }}
+        </button>
+        <button type="button" (click)="ponerCue()" [disabled]="!deck().loaded">Marcar cue</button>
+        <button type="button" (click)="irAlCue()" [disabled]="!deck().loaded">Ir al cue</button>
+        <button type="button" (click)="sincronizar()" [disabled]="!deck().track()">Sync</button>
+        <button type="button" (click)="expulsar()" [disabled]="!deck().loaded">Expulsar</button>
+    </div>
+
+    @if (mensajeSync(); as mensaje) {
+        <p role="status" class="mensaje-sync">{{ mensaje }}</p>
+    }
+
+    <label>
+        Pitch {{ formatPitch(deck().pitch()) }}
+        <input type="range" min="0.92" max="1.08" step="0.001" [value]="deck().pitch()"
+            (input)="alMoverPitch($event)" aria-label="Pitch" />
+    </label>
+
+    <label>
+        Volumen
+        <input type="range" min="0" max="1" step="0.01" [value]="deck().volume()"
+            (input)="alMoverVolumen($event)" aria-label="Volumen del deck" />
+    </label>
+
+    <fieldset>
+        <legend>Ecualizador</legend>
+        @for (banda of bandas; track banda) {
+            <label>
+                {{ nombreBanda[banda] }}
+                <input type="range" min="0" max="1" step="0.01" [value]="deck().eq()[banda]"
+                    (input)="alMoverEq(banda, $event)" [attr.aria-label]="nombreBanda[banda]" />
+            </label>
+        }
+    </fieldset>
+</section>

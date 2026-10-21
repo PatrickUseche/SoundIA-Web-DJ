@@ -33,7 +33,7 @@ La URL del API está en `src/environments/environment.ts` (`apiBaseUrl`).
 src/app/
 ├── core/
 │   ├── audio/                         # Deck, EQ, crossfader, beatmatching, forma de onda, Camelot (Web Audio)
-│   ├── midi/                          # parser de mensajes MIDI
+│   ├── midi/                          # parser de mensajes MIDI y controles asignables del mezclador
 │   ├── models/                        # tipos: Track, mensajes SSE, Auto-DJ
 │   ├── services/                      # HTTP (pistas, sesiones, Auto-DJ), mixer, MIDI, Auto-DJ, transiciones
 │   └── testing/                       # dobles para pruebas (EventSource, MIDI y Web Audio falsos)
@@ -44,6 +44,7 @@ src/app/
     ├── library/                       # biblioteca de pistas y subida de archivos
     ├── autodj-panel/                  # Auto-DJ y cola de la sesión
     ├── midi-panel/                    # controlador MIDI
+    ├── midi-mapping/                  # asignar controles del aparato al mezclador
     └── dashboard/                     # telemetría en vivo (/dashboard)
 ```
 
@@ -93,6 +94,16 @@ movimientos como `{controlId, value}`. `parseMidiMessage` define la conversión:
 conserva siempre el último valor) y envío secuencial por control. El envío **empieza apagado**: se activa con el
 botón del panel MIDI. Limitación conocida: el canal MIDI se ignora, así que dos decks que usen el mismo CC en
 canales distintos llegan como el mismo control.
+
+### Controlar el mezclador con el aparato
+
+`MidiMapperService` hace que el aparato maneje la pantalla: en la pantalla **DJ**, el panel «Asignar controles MIDI»
+lista los 18 controles (crossfader, volumen maestro y, por deck, volumen, pitch, EQ de 3 bandas, play, cue y sync).
+Se pulsa **Asignar** en uno y se mueve el fader, la perilla o el botón del aparato: queda asignado y se guarda en
+`localStorage` (clave `soundia.midi-mapping`). Faders y perillas usan el valor 0-127; el pitch recorre ±8 % con el
+centro exacto en 1; los botones actúan al pulsarse, no al soltarse. Un control del aparato solo controla una cosa.
+Limitaciones: igual que el envío al API, el canal MIDI se ignora; y **solo se probó con un controlador simulado**
+(no con un aparato real), así que los CC/notas de cada marca no están verificados.
 
 ## Tiempo real
 

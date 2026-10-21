@@ -2,8 +2,9 @@ import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { AiDecision, MidiEvent, TelemetryService } from './telemetry';
+import { environment } from '../../../environments/environment';
 
-const BASE_URL = 'http://localhost:8080/api/v1/midi';
+const BASE_URL = environment.apiBaseUrl;
 
 describe('TelemetryService', () => {
   let service: TelemetryService;

@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 // DTOs estrictos en TypeScript
 export interface MidiEvent {
@@ -24,7 +25,7 @@ export interface DjSessionLog {
 @Injectable({ providedIn: 'root'})
 export class TelemetryService{
     // Conexion exclusiva al API Gateway (Spring Boot), nunca a Django directamente.
-    private readonly baseUrl = 'http://localhost:8080/api/v1/midi';
+    private readonly baseUrl = environment.apiBaseUrl;
 
     constructor(private http: HttpClient){}
 

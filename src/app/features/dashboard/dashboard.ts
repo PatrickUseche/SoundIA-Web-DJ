@@ -3,6 +3,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { TelemetryService, DjSessionLog, MidiEvent } from '../../core/services/telemetry';
 import { TelemetryStreamService } from '../../core/services/telemetry-stream';
 import { ConnectionState, DecisionMessage, StreamEvent } from '../../core/models/stream-messages';
+import { MidiPanelComponent } from '../midi-panel/midi-panel';
 
 /** Decision de la IA tal como se muestra en el panel (la accion es null si la IA no respondio). */
 export interface DecisionVista {
@@ -29,6 +30,7 @@ const TEXTO_ESTADO: Record<ConnectionState, string> = {
 
 @Component({
   selector: 'app-dashboard',
+  imports: [MidiPanelComponent],
   templateUrl: './dashboard.html'
 })
 export class DashboardComponent implements OnInit {

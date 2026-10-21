@@ -76,6 +76,20 @@ describe('DashboardComponent', () => {
     expect((fixture.nativeElement as HTMLElement).querySelectorAll('li').length).toBe(1);
   });
 
+  it('muestra la accion de la IA de cada evento del historial y marca los que no la tuvieron', async () => {
+    fixture.detectChanges();
+    http.expectOne(`${BASE_URL}/logs`).flush([
+      { id: 2, controlId: 14, value: 127, action: 'Corte de EQ en deck 14', createdIn: '2026-10-21T10:00:00' },
+      { id: 1, controlId: 15, value: 64, action: null, createdIn: '2026-10-21T09:59:00' },
+    ]);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const items = (fixture.nativeElement as HTMLElement).querySelectorAll('li');
+    expect(items[0].textContent).toContain('Corte de EQ en deck 14');
+    expect(items[1].textContent).toContain('Sin decision de la IA');
+  });
+
   describe('estados de carga y error', () => {
     const texto = () => (fixture.nativeElement as HTMLElement).textContent ?? '';
 

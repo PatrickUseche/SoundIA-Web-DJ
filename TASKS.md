@@ -30,11 +30,11 @@ Al terminarla se marca `[x]` en ese mismo commit.
 
 ## Fase 4 — Interfaz de DJ
 
-- [ ] feat(decks): componente de deck con reproducción usando Web Audio API [4.1]
-- [ ] feat(decks): visualización de forma de onda [4.2]
-- [ ] feat(mixer): crossfader y controles de EQ [4.3]
-- [ ] feat(library): lista de pistas con BPM y tonalidad [4.4]
-- [ ] feat(autodj): modo auto-DJ con cola y transiciones propuestas por la IA [4.5]
+- [x] feat(decks): componente de deck con reproducción usando Web Audio API [4.1]
+- [x] feat(decks): visualización de forma de onda [4.2]
+- [x] feat(mixer): crossfader y controles de EQ [4.3]
+- [x] feat(library): lista de pistas con BPM y tonalidad [4.4]
+- [x] feat(autodj): modo auto-DJ con cola y transiciones propuestas por la IA [4.5]
 
 ## Fase 5 — Calidad
 

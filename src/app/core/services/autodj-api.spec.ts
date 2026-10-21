@@ -3,7 +3,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { AutoDjApiService } from './autodj-api';
 import { SessionsApiService } from './sessions-api';
-import { DjSession, NextTracksResponse, QueueItem, TransitionPlan } from '../models/autodj';
+import { DjSession, NextTracksResponse, QueueItem, TransitionPlan, WeightsInfo } from '../models/autodj';
 import { environment } from '../../../environments/environment';
 
 const ROOT = environment.apiRootUrl;
@@ -40,6 +40,36 @@ describe('AutoDjApiService', () => {
     service.nextTracks(7).subscribe();
 
     expect(http.expectOne(`${ROOT}/autodj/next`).request.body).toEqual({ trackId: 7 });
+  });
+
+  it('sendFeedback hace POST con las dos pistas y si gusto', () => {
+    let info: WeightsInfo | undefined;
+
+    service.sendFeedback(1, 2, true).subscribe((i) => (info = i));
+
+    const req = http.expectOne(`${ROOT}/autodj/feedback`);
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({ fromTrackId: 1, toTrackId: 2, liked: true });
+    req.flush({ weights: { tempo: 0.4, harmonic: 0.4, energy: 0.2 }, learned: false, samples: 1 });
+    expect(info?.samples).toBe(1);
+  });
+
+  it('sendFeedback envia false cuando no gusto', () => {
+    service.sendFeedback(1, 2, false).subscribe();
+
+    expect(http.expectOne(`${ROOT}/autodj/feedback`).request.body.liked).toBe(false);
+  });
+
+  it('weights pide los pesos vigentes', () => {
+    let info: WeightsInfo | undefined;
+
+    service.weights().subscribe((i) => (info = i));
+
+    const req = http.expectOne(`${ROOT}/autodj/weights`);
+    expect(req.request.method).toBe('GET');
+    req.flush({ weights: { tempo: 0.2, harmonic: 0.6, energy: 0.2 }, learned: true, samples: 42 });
+    expect(info?.learned).toBe(true);
+    expect(info?.weights.harmonic).toBe(0.6);
   });
 
   it('transition hace POST con los dos ids y devuelve el plan', () => {

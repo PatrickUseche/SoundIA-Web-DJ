@@ -92,3 +92,19 @@ export interface QueueItem {
   trackId: number;
   addedAt: string;
 }
+
+/** Cuanto pesa cada criterio en la puntuacion de compatibilidad (valores de 0 a 1 que suman 1). */
+export interface ScoringWeights {
+  tempo: number;
+  harmonic: number;
+  energy: number;
+}
+
+/** Respuesta de GET /autodj/weights y de POST /autodj/feedback. */
+export interface WeightsInfo {
+  weights: ScoringWeights;
+  /** true si los pesos se aprendieron de las valoraciones del DJ; false si son los de por defecto. */
+  learned: boolean;
+  /** Valoraciones acumuladas. */
+  samples: number;
+}

@@ -2,7 +2,6 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TelemetryService, AiDecision, MidiEvent } from '../../core/services/telemetry';
 import { Observable } from 'rxjs';
-import { threadId } from 'worker_threads';
 
 @Component({
   selector: 'app-dashboard',

@@ -10,7 +10,7 @@ import { Observable } from 'rxjs';
   templateUrl: './dashboard.html'
 })
 
-export class DashboradComponent implements OnInit{
+export class DashboardComponent implements OnInit{
   // Patron de inyeccion de dependencias moderno.
   private telemetryService = inject(TelemetryService);
 

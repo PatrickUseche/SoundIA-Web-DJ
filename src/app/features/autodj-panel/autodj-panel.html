@@ -26,6 +26,47 @@
         </div>
     }
 
+    @if (autodj.lastTransition(); as ultima) {
+        <div class="valoracion">
+            <h4>Ultima mezcla</h4>
+            <p>De <strong>{{ ultima.from.title }}</strong> a <strong>{{ ultima.to.title }}</strong></p>
+            @if (autodj.rating() === null) {
+                <p>Te gusto la mezcla?</p>
+                <button type="button" class="me-gusto" (click)="autodj.rate(true)">Me gusto</button>
+                <button type="button" class="no-me-gusto" (click)="autodj.rate(false)">No me gusto</button>
+            } @else {
+                <p role="status" class="gracias">
+                    @if (autodj.rating() === 'liked') {
+                        Gracias: la IA tendra en cuenta que te gusto.
+                    } @else {
+                        Gracias: la IA evitara mezclas parecidas.
+                    }
+                </p>
+            }
+            @if (autodj.feedbackError(); as mensaje) {
+                <p role="alert" class="valoracion-error" style="color: #c62828;">{{ mensaje }}</p>
+            }
+        </div>
+    }
+
+    @if (pesos(); as p) {
+        <div class="aprendido">
+            <h4>Lo que la IA ha aprendido</h4>
+            @if (p.aprendidos) {
+                <p>
+                    Segun tus {{ p.valoraciones }} valoraciones, pesa: tempo {{ p.tempo }}%,
+                    armonia {{ p.armonia }}%, energia {{ p.energia }}%.
+                </p>
+            } @else {
+                <p>
+                    Todavia usa los pesos por defecto (tempo {{ p.tempo }}%, armonia {{ p.armonia }}%,
+                    energia {{ p.energia }}%). Necesita al menos 10 valoraciones, con mezclas que te gustaron y otras que no
+                    (llevas {{ p.valoraciones }}).
+                </p>
+            }
+        </div>
+    }
+
     <h4>Cola de la sesion</h4>
     @if (queue.error(); as mensaje) {
         <p role="alert" class="cola-error" style="color: #c62828;">{{ mensaje }}</p>

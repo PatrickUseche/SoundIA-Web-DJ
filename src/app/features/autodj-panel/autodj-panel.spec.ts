@@ -6,7 +6,7 @@ import { AutoDjService, AutoDjStatus, PreparedNext } from '../../core/services/a
 import { QueueService } from '../../core/services/queue';
 import { TrackApiService } from '../../core/services/tracks';
 import { TransitionRunnerService } from '../../core/services/transition-runner';
-import { QueueItem, TransitionPlan } from '../../core/models/autodj';
+import { QueueItem, TransitionPlan, WeightsInfo } from '../../core/models/autodj';
 import { Track } from '../../core/models/track';
 
 const pista = (id: number, title = `pista ${id}`): Track => ({
@@ -32,6 +32,12 @@ describe('AutoDjPanelComponent', () => {
     status: signal<AutoDjStatus>('off'),
     next: signal<PreparedNext | null>(null),
     message: signal<string | null>(null),
+    lastTransition: signal<{ from: Track; to: Track } | null>(null),
+    rating: signal<'liked' | 'disliked' | null>(null),
+    feedbackError: signal<string | null>(null),
+    weights: signal<WeightsInfo | null>(null),
+    rate: vi.fn(async (liked: boolean) => { autodj.rating.set(liked ? 'liked' : 'disliked'); }),
+    loadWeights: vi.fn(async () => undefined),
     start: vi.fn(async () => { autodj.enabled.set(true); autodj.status.set('esperando'); }),
     stop: vi.fn(() => { autodj.enabled.set(false); autodj.status.set('off'); }),
   };
@@ -71,6 +77,12 @@ describe('AutoDjPanelComponent', () => {
     autodj.status.set('off');
     autodj.next.set(null);
     autodj.message.set(null);
+    autodj.lastTransition.set(null);
+    autodj.rating.set(null);
+    autodj.feedbackError.set(null);
+    autodj.weights.set(null);
+    autodj.rate.mockClear();
+    autodj.loadWeights.mockClear();
     queue.items.set([]);
     queue.error.set(null);
     queue.loading.set(false);
@@ -189,6 +201,122 @@ describe('AutoDjPanelComponent', () => {
       await crear();
 
       expect(el().querySelector('.siguiente')?.textContent).toContain('corte directo');
+    });
+  });
+
+  describe('valorar la ultima mezcla', () => {
+    const transicion = () => ({ from: pista(1, 'Tema uno'), to: pista(2, 'Tema dos') });
+
+    it('sin transicion no muestra la seccion', async () => {
+      await crear();
+
+      expect(el().querySelector('.valoracion')).toBeNull();
+    });
+
+    it('tras una transicion nombra las dos pistas y pregunta si gusto', async () => {
+      autodj.lastTransition.set(transicion());
+      await crear();
+
+      const seccion = el().querySelector('.valoracion')?.textContent ?? '';
+      expect(seccion).toContain('Tema uno');
+      expect(seccion).toContain('Tema dos');
+      expect(seccion).toContain('Te gusto la mezcla');
+    });
+
+    it('Me gusto envia una valoracion positiva', async () => {
+      autodj.lastTransition.set(transicion());
+      await crear();
+
+      (el().querySelector('.me-gusto') as HTMLButtonElement).click();
+
+      expect(autodj.rate).toHaveBeenCalledWith(true);
+    });
+
+    it('No me gusto envia una valoracion negativa', async () => {
+      autodj.lastTransition.set(transicion());
+      await crear();
+
+      (el().querySelector('.no-me-gusto') as HTMLButtonElement).click();
+
+      expect(autodj.rate).toHaveBeenCalledWith(false);
+    });
+
+    it('una vez valorada agradece y quita los botones', async () => {
+      autodj.lastTransition.set(transicion());
+      await crear();
+
+      (el().querySelector('.me-gusto') as HTMLButtonElement).click();
+      fixture.detectChanges();
+
+      expect(el().querySelector('.gracias')?.textContent).toContain('tendra en cuenta que te gusto');
+      expect(el().querySelector('.me-gusto')).toBeNull();
+      expect(el().querySelector('.no-me-gusto')).toBeNull();
+    });
+
+    it('si no gusto el agradecimiento lo refleja', async () => {
+      autodj.lastTransition.set(transicion());
+      autodj.rating.set('disliked');
+      await crear();
+
+      expect(el().querySelector('.gracias')?.textContent).toContain('evitara mezclas parecidas');
+    });
+
+    it('muestra el error al valorar como alerta y mantiene los botones para reintentar', async () => {
+      autodj.lastTransition.set(transicion());
+      autodj.feedbackError.set('El motor de IA no esta disponible');
+      await crear();
+
+      expect(el().querySelector('.valoracion-error')?.getAttribute('role')).toBe('alert');
+      expect(el().querySelector('.valoracion-error')?.textContent).toContain('El motor de IA no esta disponible');
+      expect(el().querySelector('.me-gusto')).not.toBeNull();
+    });
+  });
+
+  describe('lo que la IA ha aprendido', () => {
+    it('al iniciar consulta los pesos del motor', async () => {
+      await crear();
+
+      expect(autodj.loadWeights).toHaveBeenCalled();
+    });
+
+    it('sin conocer los pesos no muestra la seccion', async () => {
+      await crear();
+
+      expect(el().querySelector('.aprendido')).toBeNull();
+    });
+
+    it('con los pesos por defecto lo explica y cuenta cuantas valoraciones lleva', async () => {
+      autodj.weights.set({ weights: { tempo: 0.45, harmonic: 0.4, energy: 0.15 }, learned: false, samples: 3 });
+      await crear();
+
+      const seccion = el().querySelector('.aprendido')?.textContent ?? '';
+      expect(seccion).toContain('Todavia usa los pesos por defecto');
+      expect(seccion).toContain('tempo 45%');
+      expect(seccion).toContain('armonia 40%');
+      expect(seccion).toContain('energia 15%');
+      expect(seccion).toContain('llevas 3');
+    });
+
+    it('con pesos aprendidos muestra los porcentajes y el numero de valoraciones', async () => {
+      autodj.weights.set({ weights: { tempo: 0.2, harmonic: 0.62, energy: 0.18 }, learned: true, samples: 42 });
+      await crear();
+
+      const seccion = el().querySelector('.aprendido')?.textContent ?? '';
+      expect(seccion).toContain('Segun tus 42 valoraciones');
+      expect(seccion).toContain('tempo 20%');
+      expect(seccion).toContain('armonia 62%');
+      expect(seccion).toContain('energia 18%');
+      expect(seccion).not.toContain('Todavia usa los pesos por defecto');
+    });
+
+    it('se actualiza cuando llegan pesos nuevos tras valorar', async () => {
+      autodj.weights.set({ weights: { tempo: 0.45, harmonic: 0.4, energy: 0.15 }, learned: false, samples: 9 });
+      await crear();
+
+      autodj.weights.set({ weights: { tempo: 0.3, harmonic: 0.55, energy: 0.15 }, learned: true, samples: 10 });
+      fixture.detectChanges();
+
+      expect(el().querySelector('.aprendido')?.textContent).toContain('armonia 55%');
     });
   });
 

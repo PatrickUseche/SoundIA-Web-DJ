@@ -60,7 +60,24 @@ export class AutoDjPanelComponent implements OnInit {
     });
   }
 
+  /** Pesos aprendidos como porcentajes enteros; null hasta conocerlos. */
+  protected readonly pesos = computed(() => {
+    const info = this.autodj.weights();
+    if (!info) {
+      return null;
+    }
+    const { tempo, harmonic, energy } = info.weights;
+    return {
+      aprendidos: info.learned,
+      valoraciones: info.samples,
+      tempo: Math.round(tempo * 100),
+      armonia: Math.round(harmonic * 100),
+      energia: Math.round(energy * 100),
+    };
+  });
+
   ngOnInit(): void {
+    void this.autodj.loadWeights();
     this.tracks
       .list()
       .pipe(takeUntilDestroyed(this.destroyRef))

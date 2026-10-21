@@ -1,0 +1,82 @@
+<section aria-labelledby="titulo-biblioteca" style="margin: 20px 0; padding: 15px; border: 1px solid #999;">
+    <h3 id="titulo-biblioteca">Biblioteca</h3>
+
+    <div class="subida">
+        <label>
+            Analizar una pista nueva (WAV, MP3, FLAC u OGG):
+            <input type="file" accept="audio/*,.wav,.mp3,.flac,.ogg" (change)="alElegirArchivo($event)"
+                [disabled]="subiendo()" aria-label="Archivo de audio" />
+        </label>
+        @if (subiendo()) {
+            <p role="status">Analizando la pista... puede tardar unos segundos.</p>
+        }
+        @if (mensajeSubida(); as mensaje) {
+            <p role="status" class="subida-ok">{{ mensaje }}</p>
+        }
+        @if (errorSubida(); as mensaje) {
+            <p role="alert" class="subida-error" style="color: #c62828;">{{ mensaje }}</p>
+        }
+    </div>
+
+    <button type="button" (click)="recargar()" [disabled]="cargando()">Actualizar</button>
+
+    @if (errorDeck(); as mensaje) {
+        <p role="alert" class="deck-error" style="color: #c62828;">{{ mensaje }}</p>
+    }
+
+    @if (error(); as mensaje) {
+        <p role="alert" class="lista-error" style="color: #c62828;">{{ mensaje }}</p>
+    } @else if (cargando() && tracks().length === 0) {
+        <p>Cargando biblioteca...</p>
+    } @else if (tracks().length === 0) {
+        <p>Todavia no hay pistas. Sube una para analizarla.</p>
+    } @else {
+        <table>
+            <caption>Pistas analizadas</caption>
+            <thead>
+                <tr>
+                    <th scope="col">Titulo</th>
+                    <th scope="col">BPM</th>
+                    <th scope="col">Tonalidad</th>
+                    <th scope="col">Camelot</th>
+                    <th scope="col">Energia</th>
+                    <th scope="col">Duracion</th>
+                    <th scope="col">Cargar</th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (pista of tracks(); track pista.id) {
+                    <tr [class.compatible]="compatible(pista)" [class.en-deck]="enDeck(pista)">
+                        <td>
+                            {{ pista.title }}
+                            @if (compatible(pista) && !enDeck(pista)) {
+                                <span class="etiqueta-compatible" title="Mezcla bien con una pista cargada">compatible</span>
+                            }
+                        </td>
+                        <td>{{ formatBpm(pista.bpm) }}</td>
+                        <td>{{ pista.key }}</td>
+                        <td>{{ pista.camelot }}</td>
+                        <td>
+                            <meter min="0" max="1" [value]="pista.energy" [attr.aria-label]="'Energia de ' + pista.title">
+                                {{ pista.energy }}
+                            </meter>
+                        </td>
+                        <td>{{ formatTime(pista.duration) }}</td>
+                        <td>
+                            @if (pista.hasAudio && mixer.supported) {
+                                <button type="button" (click)="cargarEnDeck('A', pista)" [disabled]="cargandoDeck() !== null">
+                                    {{ cargandoDeck() === 'A' ? 'Cargando...' : 'Deck A' }}
+                                </button>
+                                <button type="button" (click)="cargarEnDeck('B', pista)" [disabled]="cargandoDeck() !== null">
+                                    {{ cargandoDeck() === 'B' ? 'Cargando...' : 'Deck B' }}
+                                </button>
+                            } @else if (!pista.hasAudio) {
+                                <span class="sin-audio" title="Se analizo antes de guardar el audio: vuelve a subirla">sin audio</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</section>

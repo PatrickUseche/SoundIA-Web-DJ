@@ -2,6 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { DashboardComponent } from './dashboard';
+import { FakeEventSource, provideFakeEventSource } from '../../core/testing/fake-event-source';
 import { environment } from '../../../environments/environment';
 
 const BASE_URL = environment.apiBaseUrl;
@@ -13,7 +14,7 @@ describe('DashboardComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [DashboardComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [provideHttpClient(), provideHttpClientTesting(), provideFakeEventSource()],
     }).compileComponents();
 
     fixture = TestBed.createComponent(DashboardComponent);
@@ -157,6 +158,166 @@ describe('DashboardComponent', () => {
       const alerta = (fixture.nativeElement as HTMLElement).querySelector('[role="alert"]');
       expect(alerta?.textContent).toContain('No se pudo calcular la mezcla');
       expect(boton.disabled).toBe(false);
+    });
+  });
+
+  describe('en vivo (SSE)', () => {
+    const el = () => fixture.nativeElement as HTMLElement;
+    const texto = () => el().textContent ?? '';
+
+    async function iniciar(historial: unknown[] = []) {
+      fixture.detectChanges();
+      http.expectOne(`${BASE_URL}/logs`).flush(historial);
+      await fixture.whenStable();
+      fixture.detectChanges();
+    }
+
+    async function emitir(tipo: 'midi' | 'decision', datos: object) {
+      FakeEventSource.last.emit(tipo, JSON.stringify(datos));
+      await fixture.whenStable();
+      fixture.detectChanges();
+    }
+
+    it('abre la conexion en vivo al iniciar', async () => {
+      await iniciar();
+
+      expect(FakeEventSource.instances.length).toBe(1);
+      expect(FakeEventSource.last.url).toBe(`${BASE_URL}/stream`);
+    });
+
+    it('cierra la conexion al destruir el componente', async () => {
+      await iniciar();
+
+      fixture.destroy();
+
+      expect(FakeEventSource.last.closed).toBe(true);
+    });
+
+    it('muestra el estado de la conexion', async () => {
+      await iniciar();
+      expect(el().querySelector('[role="status"]')?.textContent).toContain('Conectando');
+
+      FakeEventSource.last.open();
+      fixture.detectChanges();
+      expect(el().querySelector('[role="status"]')?.textContent).toContain('En vivo');
+
+      FakeEventSource.last.fail();
+      fixture.detectChanges();
+      expect(el().querySelector('[role="status"]')?.textContent).toContain('Reconectando');
+
+      FakeEventSource.last.fail(true);
+      fixture.detectChanges();
+      expect(el().querySelector('[role="status"]')?.textContent).toContain('Sin conexion en vivo');
+    });
+
+    it('muestra en el feed cada evento MIDI que llega', async () => {
+      await iniciar();
+
+      await emitir('midi', { controlId: 14, value: 127 });
+
+      const feed = el().querySelector('[aria-live="polite"]');
+      expect(feed?.textContent).toContain('Control 14');
+      expect(feed?.textContent).toContain('127');
+    });
+
+    it('agrega al historial la decision que llega sin pedirlo otra vez al API', async () => {
+      await iniciar();
+
+      await emitir('decision', {
+        id: 5, controlId: 14, value: 127, status: 'success',
+        action: 'Corte de EQ en deck 14', createdIn: '2026-10-21T10:00:00',
+      });
+
+      expect(el().querySelectorAll('li.historial').length).toBe(1);
+      expect(texto()).toContain('Corte de EQ en deck 14');
+      http.expectNone(`${BASE_URL}/logs`);
+    });
+
+    it('muestra la ultima decision de la IA en su panel', async () => {
+      await iniciar();
+
+      await emitir('decision', {
+        id: 5, controlId: 14, value: 127, status: 'success',
+        action: 'Corte de EQ en deck 14', createdIn: '2026-10-21T10:00:00',
+      });
+
+      expect(fixture.componentInstance.ultimaDecision()).toEqual({
+        status: 'success', action: 'Corte de EQ en deck 14',
+      });
+    });
+
+    it('una decision unavailable queda sin accion', async () => {
+      await iniciar();
+
+      await emitir('decision', {
+        id: 6, controlId: 15, value: 64, status: 'unavailable',
+        action: null, createdIn: '2026-10-21T10:01:00',
+      });
+
+      expect(texto()).toContain('unavailable');
+      expect(texto()).toContain('Sin decision de la IA');
+    });
+
+    it('no duplica una decision que ya estaba en el historial', async () => {
+      await iniciar([{ id: 5, controlId: 14, value: 127, action: null, createdIn: '2026-10-21T10:00:00' }]);
+
+      await emitir('decision', {
+        id: 5, controlId: 14, value: 127, status: 'success',
+        action: 'Corte de EQ en deck 14', createdIn: '2026-10-21T10:00:00',
+      });
+
+      expect(el().querySelectorAll('li.historial').length).toBe(1);
+      expect(texto()).toContain('Corte de EQ en deck 14');
+    });
+
+    it('mantiene el historial en 50 eventos como maximo', async () => {
+      const previos = Array.from({ length: 50 }, (_, i) => ({
+        id: i + 1, controlId: 1, value: i, action: null, createdIn: '2026-10-21T09:00:00',
+      }));
+      await iniciar(previos);
+
+      await emitir('decision', {
+        id: 99, controlId: 2, value: 9, status: 'success', action: 'nuevo', createdIn: '2026-10-21T10:00:00',
+      });
+
+      expect(fixture.componentInstance.logs().length).toBe(50);
+      expect(fixture.componentInstance.logs()[0].id).toBe(99);
+    });
+
+    it('el feed conserva solo los 20 eventos mas recientes', async () => {
+      await iniciar();
+
+      for (let i = 0; i < 25; i++) {
+        await emitir('midi', { controlId: 1, value: i });
+      }
+
+      expect(el().querySelectorAll('[aria-live="polite"] li').length).toBe(20);
+    });
+
+    it('con la conexion en vivo abierta no vuelve a pedir el historial tras disparar un evento', async () => {
+      await iniciar();
+      FakeEventSource.last.open();
+      fixture.detectChanges();
+
+      fixture.componentInstance.simularMezclaAutomatica();
+      http.expectOne(`${BASE_URL}/ai/predict`).flush({ status: 'success', action: 'x' });
+      await fixture.whenStable();
+
+      http.expectNone(`${BASE_URL}/logs`);
+    });
+
+    it('al reconectar recarga el historial para recuperar lo perdido durante el corte', async () => {
+      await iniciar();
+      FakeEventSource.last.open();
+      fixture.detectChanges();
+      http.expectNone(`${BASE_URL}/logs`);
+
+      FakeEventSource.last.fail();
+      fixture.detectChanges();
+      FakeEventSource.last.open();
+      fixture.detectChanges();
+
+      http.expectOne(`${BASE_URL}/logs`).flush([]);
     });
   });
 });

@@ -19,8 +19,8 @@ Al terminarla se marca `[x]` en ese mismo commit.
 
 ## Fase 2 — Tiempo real
 
-- [ ] feat(telemetry): servicio que consuma el stream SSE o WebSocket de Spring [2.1]
-- [ ] feat(dashboard): historial y decisiones de la IA actualizados en vivo [2.2]
+- [x] feat(telemetry): servicio que consuma el stream SSE de Spring [2.1]
+- [x] feat(dashboard): historial y decisiones de la IA actualizados en vivo [2.2]
 
 ## Fase 3 — MIDI real
 

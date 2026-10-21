@@ -20,6 +20,22 @@ describe('httpErrorMessage', () => {
     expect(httpErrorMessage(http(404, 'texto plano'))).toBe('No se encontro lo que se pedia.');
   });
 
+  it('lee el mensaje cuando el cuerpo llega como ArrayBuffer (descargas binarias que fallan)', () => {
+    const cuerpo = new TextEncoder().encode('{"error":"La pista no tiene audio guardado."}').buffer;
+
+    expect(httpErrorMessage(http(404, cuerpo))).toBe('La pista no tiene audio guardado.');
+  });
+
+  it('un ArrayBuffer que no contiene JSON usa el mensaje del codigo HTTP', () => {
+    const cuerpo = new TextEncoder().encode('<html>Not Found</html>').buffer;
+
+    expect(httpErrorMessage(http(404, cuerpo))).toBe('No se encontro lo que se pedia.');
+  });
+
+  it('un ArrayBuffer vacio usa el mensaje del codigo HTTP', () => {
+    expect(httpErrorMessage(http(502, new ArrayBuffer(0)))).toContain('problema');
+  });
+
   it('sin conexion (status 0) lo explica', () => {
     expect(httpErrorMessage(http(0))).toContain('No se pudo conectar');
   });

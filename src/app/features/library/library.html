@@ -20,6 +20,13 @@
 
     <button type="button" (click)="recargar()" [disabled]="cargando()">Actualizar</button>
 
+    @if (mensajeCola(); as mensaje) {
+        <p role="status" class="cola-ok">{{ mensaje }}</p>
+    }
+    @if (errorCola(); as mensaje) {
+        <p role="alert" class="cola-error" style="color: #c62828;">{{ mensaje }}</p>
+    }
+
     @if (errorDeck(); as mensaje) {
         <p role="alert" class="deck-error" style="color: #c62828;">{{ mensaje }}</p>
     }
@@ -73,6 +80,10 @@
                             } @else if (!pista.hasAudio) {
                                 <span class="sin-audio" title="Se analizo antes de guardar el audio: vuelve a subirla">sin audio</span>
                             }
+                            <button type="button" (click)="encolar(pista)" [disabled]="!pista.hasAudio"
+                                [attr.aria-label]="'Agregar ' + pista.title + ' a la cola'">
+                                A la cola
+                            </button>
                         </td>
                     </tr>
                 }

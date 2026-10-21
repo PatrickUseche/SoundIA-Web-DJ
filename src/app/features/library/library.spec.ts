@@ -3,6 +3,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { LibraryComponent } from './library';
 import { MixerService } from '../../core/services/mixer';
+import { QueueService } from '../../core/services/queue';
 import { Track } from '../../core/models/track';
 import { FakeAudioBuffer, FakeAudioContext, provideFakeAudio } from '../../core/testing/fake-audio';
 import { environment } from '../../../environments/environment';
@@ -25,10 +26,19 @@ describe('LibraryComponent', () => {
   const botonEn = (fila: Element, nombre: string) =>
     Array.from(fila.querySelectorAll('button')).find((b) => b.textContent?.includes(nombre)) as HTMLButtonElement;
 
+  // La logica de la cola se prueba en su propio spec: aqui solo se verifica que la biblioteca la use.
+  const colaDoble = { enqueue: vi.fn(async () => true), error: vi.fn(() => null as string | null) };
+
   function crear(ctx: FakeAudioContext | null = new FakeAudioContext()) {
+    colaDoble.enqueue.mockClear();
+    colaDoble.enqueue.mockResolvedValue(true);
+    colaDoble.error.mockReturnValue(null);
     TestBed.configureTestingModule({
       imports: [LibraryComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting(), provideFakeAudio(ctx)],
+      providers: [
+        provideHttpClient(), provideHttpClientTesting(), provideFakeAudio(ctx),
+        { provide: QueueService, useValue: colaDoble },
+      ],
     });
     http = TestBed.inject(HttpTestingController);
     mixer = TestBed.inject(MixerService);
@@ -164,6 +174,68 @@ describe('LibraryComponent', () => {
 
       expect(filas()[0].classList.contains('en-deck')).toBe(true);
       expect(filas()[1].classList.contains('en-deck')).toBe(false);
+    });
+  });
+
+  describe('agregar a la cola', () => {
+    it('cada pista con audio tiene un boton A la cola', async () => {
+      crear();
+      await responderLista([pista({ id: 1 }), pista({ id: 2, title: 'Dos' })]);
+
+      expect(botonEn(filas()[0], 'A la cola').disabled).toBe(false);
+      expect(botonEn(filas()[1], 'A la cola').disabled).toBe(false);
+    });
+
+    it('el boton tiene una etiqueta accesible con el titulo', async () => {
+      crear();
+      await responderLista([pista({ title: 'Tema uno' })]);
+
+      expect(botonEn(filas()[0], 'A la cola').getAttribute('aria-label')).toBe('Agregar Tema uno a la cola');
+    });
+
+    it('una pista sin audio no se puede encolar (el Auto-DJ no podria reproducirla)', async () => {
+      crear();
+      await responderLista([pista({ hasAudio: false })]);
+
+      expect(botonEn(filas()[0], 'A la cola').disabled).toBe(true);
+    });
+
+    it('al pulsarlo agrega la pista a la cola y lo confirma', async () => {
+      crear();
+      await responderLista([pista({ id: 7, title: 'Tema siete' })]);
+
+      botonEn(filas()[0], 'A la cola').click();
+      await esperar();
+
+      expect(colaDoble.enqueue).toHaveBeenCalledWith(7);
+      expect(el().querySelector('.cola-ok')?.textContent).toContain('"Tema siete" agregada a la cola.');
+      expect(el().querySelector('.cola-error')).toBeNull();
+    });
+
+    it('si no se pudo encolar muestra el motivo', async () => {
+      crear();
+      colaDoble.enqueue.mockResolvedValue(false);
+      colaDoble.error.mockReturnValue('La cola de la sesion 5 esta llena (maximo 100).');
+      await responderLista([pista({ id: 7 })]);
+
+      botonEn(filas()[0], 'A la cola').click();
+      await esperar();
+
+      expect(el().querySelector('.cola-error')?.textContent).toContain('esta llena');
+      expect(el().querySelector('.cola-ok')).toBeNull();
+    });
+
+    it('un aviso nuevo reemplaza al anterior', async () => {
+      crear();
+      await responderLista([pista({ id: 1, title: 'Uno' }), pista({ id: 2, title: 'Dos' })]);
+
+      botonEn(filas()[0], 'A la cola').click();
+      await esperar();
+      botonEn(filas()[1], 'A la cola').click();
+      await esperar();
+
+      expect(el().querySelector('.cola-ok')?.textContent).toContain('"Dos"');
+      expect(el().querySelector('.cola-ok')?.textContent).not.toContain('"Uno"');
     });
   });
 

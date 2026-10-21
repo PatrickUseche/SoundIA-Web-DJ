@@ -7,6 +7,7 @@ import { formatBpm, formatTime } from '../../core/audio/format';
 import { httpErrorMessage } from '../../core/http-error-message';
 import { Track } from '../../core/models/track';
 import { MixerService } from '../../core/services/mixer';
+import { QueueService } from '../../core/services/queue';
 import { TrackApiService } from '../../core/services/tracks';
 
 /** Biblioteca de pistas analizadas: se cargan en un deck o se sube un archivo nuevo para analizarlo. */
@@ -17,6 +18,7 @@ import { TrackApiService } from '../../core/services/tracks';
 export class LibraryComponent implements OnInit {
   private readonly api = inject(TrackApiService);
   protected readonly mixer = inject(MixerService);
+  private readonly queue = inject(QueueService);
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly formatBpm = formatBpm;
@@ -30,6 +32,10 @@ export class LibraryComponent implements OnInit {
   readonly subiendo = signal(false);
   readonly mensajeSubida = signal<string | null>(null);
   readonly errorSubida = signal<string | null>(null);
+
+  /** Aviso tras agregar una pista a la cola del Auto-DJ (o el motivo por el que no se pudo). */
+  readonly mensajeCola = signal<string | null>(null);
+  readonly errorCola = signal<string | null>(null);
 
   /** Deck cuyo audio se esta descargando (para deshabilitar sus botones). */
   readonly cargandoDeck = signal<DeckId | null>(null);
@@ -86,6 +92,17 @@ export class LibraryComponent implements OnInit {
       this.errorDeck.set(httpErrorMessage(err, `No se pudo cargar "${track.title}" en el deck ${deck}.`));
     } finally {
       this.cargandoDeck.set(null);
+    }
+  }
+
+  /** Agrega la pista al final de la cola de la sesion (se abre una si no hay ninguna). */
+  async encolar(track: Track): Promise<void> {
+    this.mensajeCola.set(null);
+    this.errorCola.set(null);
+    if (await this.queue.enqueue(track.id)) {
+      this.mensajeCola.set(`"${track.title}" agregada a la cola.`);
+    } else {
+      this.errorCola.set(this.queue.error() ?? 'No se pudo agregar la pista a la cola.');
     }
   }
 

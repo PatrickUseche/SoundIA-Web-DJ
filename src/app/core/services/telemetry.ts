@@ -19,6 +19,8 @@ export interface DjSessionLog {
     id: number;
     controlId: number;
     value: number;
+    // Decision de la IA; null si el motor no estuvo disponible para ese evento.
+    action: string | null;
     createdIn: string;
 }
 

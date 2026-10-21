@@ -1,0 +1,53 @@
+<section aria-labelledby="titulo-midi" style="margin: 20px 0; padding: 15px; border: 1px solid #999;">
+    <h3 id="titulo-midi">Controlador MIDI</h3>
+
+    @switch (midi.state()) {
+        @case ('unsupported') {
+            <p role="status">Este navegador no soporta Web MIDI. Usa Chrome o Edge.</p>
+        }
+        @case ('idle') {
+            <button type="button" (click)="conectar()">Conectar controlador MIDI</button>
+        }
+        @case ('requesting') {
+            <p role="status">Esperando el permiso del navegador...</p>
+        }
+        @case ('denied') {
+            <p role="alert" style="color: #c62828;">
+                Se denego el acceso a MIDI. Permitelo en la configuracion del sitio y vuelve a intentarlo.
+            </p>
+            <button type="button" (click)="conectar()">Reintentar</button>
+        }
+        @case ('error') {
+            <p role="alert" style="color: #c62828;">No se pudo acceder a MIDI.</p>
+            <button type="button" (click)="conectar()">Reintentar</button>
+        }
+        @case ('ready') {
+            @if (midi.inputs().length === 0) {
+                <p role="status">No hay controladores conectados. Enchufa uno y aparecera aqui.</p>
+            } @else {
+                <label>
+                    Controlador:
+                    <select (change)="alElegirControlador($event)">
+                        <option value="" [selected]="midi.selectedInputId() === null">Ninguno</option>
+                        @for (input of midi.inputs(); track input.id) {
+                            <option [value]="input.id" [selected]="input.id === midi.selectedInputId()">
+                                {{ input.name }}
+                            </option>
+                        }
+                    </select>
+                </label>
+
+                <button type="button" (click)="alternarEnvio()" [disabled]="midi.selectedInputId() === null"
+                    [attr.aria-pressed]="bridge.active()">
+                    {{ bridge.active() ? 'Detener envio al API' : 'Iniciar envio al API' }}
+                </button>
+
+                <p role="status" aria-live="polite">
+                    Enviados: <strong>{{ bridge.sent() }}</strong> |
+                    Fallidos: <strong>{{ bridge.failed() }}</strong>
+                    <button type="button" (click)="bridge.resetCounters()">Reiniciar</button>
+                </p>
+            }
+        }
+    }
+</section>

@@ -35,6 +35,7 @@ Al terminarla se marca `[x]` en ese mismo commit.
 - [x] feat(mixer): crossfader y controles de EQ [4.3]
 - [x] feat(library): lista de pistas con BPM y tonalidad [4.4]
 - [x] feat(autodj): modo auto-DJ con cola y transiciones propuestas por la IA [4.5]
+- [x] feat(autodj): valorar cada mezcla del Auto-DJ (me gustó / no me gustó) y ver lo que la IA ha aprendido [4.6]
 
 ## Fase 5 — Calidad
 

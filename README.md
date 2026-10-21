@@ -59,6 +59,11 @@ src/app/
   hay, la mejor recomendación de la IA con audio que no haya sonado) y, al llegar al punto de salida del plan, hace la
   transición moviendo crossfader y EQ (con intercambio de graves, para que nunca suenen los graves de las dos pistas a la vez).
 
+- **Valoración**: tras cada transición del Auto-DJ aparece «¿Te gustó la mezcla?». Cada respuesta se envía al motor, que
+  ajusta cuánto pesan tempo, armonía y energía en sus recomendaciones. El panel muestra esos pesos y cuántas valoraciones
+  lleva; con menos de 10 (o todas iguales) la IA sigue usando los de por defecto. Solo se pueden valorar las mezclas que hace
+  el Auto-DJ, no las que haces a mano.
+
 ### Limitaciones conocidas
 
 - **Todo el audio se probó con un Web Audio simulado**: la lógica (grafo, ganancias, posiciones, curvas) está probada, pero

@@ -15,6 +15,7 @@ Al terminarla se marca `[x]` en ese mismo commit.
 - [ ] refactor(config): mover la URL del API a environment [1.8]
 - [ ] fix(ssr): desactivar el prerender del dashboard, que depende de datos en vivo [1.9]
 - [ ] feat(dashboard): estados de carga y error al llamar al API [1.10]
+- [x] test(telemetry): corregir telemetry.spec.ts y probar TelemetryService con HttpTestingController [1.11]
 
 ## Fase 2 — Tiempo real
 

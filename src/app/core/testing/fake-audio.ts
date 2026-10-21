@@ -1,3 +1,5 @@
+import { AUDIO_CONTEXT_FACTORY } from '../audio/audio-context';
+
 /**
  * Web Audio de mentira para las pruebas: los nodos registran sus conexiones y los parametros guardan su
  * valor, y el reloj (`currentTime`) lo mueve la propia prueba. Implementa solo lo que usa la aplicacion.
@@ -153,4 +155,9 @@ export class FakeAudioContext {
   get lastSource(): FakeBufferSourceNode {
     return this.sources[this.sources.length - 1];
   }
+}
+
+/** Provider para TestBed: entrega este contexto falso (o ninguno, simulando un navegador sin Web Audio). */
+export function provideFakeAudio(ctx: FakeAudioContext | null) {
+  return { provide: AUDIO_CONTEXT_FACTORY, useValue: () => ctx as unknown as AudioContext | null };
 }

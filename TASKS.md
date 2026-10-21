@@ -6,7 +6,7 @@ Al terminarla se marca `[x]` en ese mismo commit.
 ## Fase 1 — Estabilizar lo existente
 
 - [x] fix(dashboard): eliminar el import de worker_threads que rompe el build del navegador [1.1]
-- [ ] fix(dashboard): mostrar el estado de la decisión (status) en la plantilla [1.2]
+- [x] fix(dashboard): mostrar el estado de la decisión (status) en la plantilla [1.2]
 - [ ] fix(dashboard): corregir el nombre DashboradComponent a DashboardComponent [1.3]
 - [ ] test(dashboard): corregir dashboard.spec.ts para que compile y pase [1.4]
 - [ ] test(app): corregir app.spec.ts, que espera un h1 inexistente [1.5]

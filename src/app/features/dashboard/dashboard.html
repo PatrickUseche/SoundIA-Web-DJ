@@ -7,8 +7,8 @@
     <!-- Bloque condicional: Solo se renderiza si Django responde -->
      <div *ngIf="ultimaDecision" style="margin-top: 20px; padding: 15px; border: 2px solid #4caf50;">
         <h3>Decision del Motor IA (Django)</h3>
-        <p><strong>Estado:</strong> {{ultimaDecision}}</p>
-        <p><strong>Accion Ejecutada:</strong>{{ultimaDecision.action}}</p>
+        <p><strong>Estado:</strong> {{ultimaDecision.status}}</p>
+        <p><strong>Accion Ejecutada:</strong> {{ultimaDecision.action}}</p>
      </div>
 
      <h3>Historial en PostgreSQL (Via Spring Boot)</h3>

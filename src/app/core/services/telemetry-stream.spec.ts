@@ -1,46 +1,13 @@
 import { TestBed } from '@angular/core/testing';
 import { PLATFORM_ID } from '@angular/core';
-import { EVENT_SOURCE_FACTORY, TelemetryStreamService } from './telemetry-stream';
+import { TelemetryStreamService } from './telemetry-stream';
+import { FakeEventSource, provideFakeEventSource } from '../testing/fake-event-source';
 import { StreamEvent } from '../models/stream-messages';
 import { environment } from '../../../environments/environment';
 
-/** EventSource de mentira: permite emitir eventos y simular cortes de conexion. */
-class FakeEventSource {
-  static instances: FakeEventSource[] = [];
-  onopen: (() => void) | null = null;
-  onerror: (() => void) | null = null;
-  readyState = 0;
-  closed = false;
-  private listeners = new Map<string, ((event: MessageEvent<string>) => void)[]>();
-
-  constructor(readonly url: string) {
-    FakeEventSource.instances.push(this);
-  }
-
-  addEventListener(type: string, listener: (event: MessageEvent<string>) => void): void {
-    this.listeners.set(type, [...(this.listeners.get(type) ?? []), listener]);
-  }
-
-  close(): void {
-    this.closed = true;
-    this.readyState = 2;
-  }
-
-  emit(type: string, data: string): void {
-    this.listeners.get(type)?.forEach((l) => l({ data } as MessageEvent<string>));
-  }
-}
-
 function setup(platform: 'browser' | 'server' = 'browser'): TelemetryStreamService {
-  FakeEventSource.instances = [];
   TestBed.configureTestingModule({
-    providers: [
-      { provide: PLATFORM_ID, useValue: platform },
-      {
-        provide: EVENT_SOURCE_FACTORY,
-        useValue: (url: string) => new FakeEventSource(url) as unknown as EventSource,
-      },
-    ],
+    providers: [{ provide: PLATFORM_ID, useValue: platform }, provideFakeEventSource()],
   });
   return TestBed.inject(TelemetryStreamService);
 }
@@ -68,7 +35,7 @@ describe('TelemetryStreamService', () => {
     const service = setup();
     service.connect().subscribe();
 
-    FakeEventSource.instances[0].onopen?.();
+    FakeEventSource.instances[0].open();
 
     expect(service.state()).toBe('open');
   });
@@ -108,9 +75,8 @@ describe('TelemetryStreamService', () => {
     const service = setup();
     service.connect().subscribe();
     const source = FakeEventSource.instances[0];
-    source.readyState = 0; // CONNECTING: el navegador esta reintentando
 
-    source.onerror?.();
+    source.fail(); // el navegador sigue reintentando
 
     expect(service.state()).toBe('reconnecting');
   });
@@ -119,9 +85,8 @@ describe('TelemetryStreamService', () => {
     const service = setup();
     service.connect().subscribe();
     const source = FakeEventSource.instances[0];
-    source.readyState = 2;
 
-    source.onerror?.();
+    source.fail(true);
 
     expect(service.state()).toBe('closed');
   });
@@ -130,7 +95,7 @@ describe('TelemetryStreamService', () => {
     const service = setup();
     const subscription = service.connect().subscribe();
     const source = FakeEventSource.instances[0];
-    source.onopen?.();
+    source.open();
 
     subscription.unsubscribe();
 

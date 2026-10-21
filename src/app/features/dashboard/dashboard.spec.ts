@@ -75,4 +75,74 @@ describe('DashboardComponent', () => {
 
     expect((fixture.nativeElement as HTMLElement).querySelectorAll('li').length).toBe(1);
   });
+
+  describe('estados de carga y error', () => {
+    const texto = () => (fixture.nativeElement as HTMLElement).textContent ?? '';
+
+    beforeEach(() => {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+    });
+
+    afterEach(() => vi.restoreAllMocks());
+
+    it('muestra un indicador mientras carga el historial', () => {
+      fixture.detectChanges();
+
+      expect(texto()).toContain('Cargando historial');
+      http.expectOne(`${BASE_URL}/logs`).flush([]);
+    });
+
+    it('muestra un estado vacio cuando no hay eventos', async () => {
+      fixture.detectChanges();
+      http.expectOne(`${BASE_URL}/logs`).flush([]);
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(texto()).not.toContain('Cargando historial');
+      expect(texto()).toContain('Sin eventos registrados');
+    });
+
+    it('muestra un error si falla la carga del historial', async () => {
+      fixture.detectChanges();
+      http
+        .expectOne(`${BASE_URL}/logs`)
+        .flush('fallo', { status: 500, statusText: 'Internal Server Error' });
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      const alerta = (fixture.nativeElement as HTMLElement).querySelector('[role="alert"]');
+      expect(alerta?.textContent).toContain('No se pudo cargar el historial');
+      expect(texto()).not.toContain('Sin eventos registrados');
+    });
+
+    it('deshabilita el boton mientras se calcula la mezcla', () => {
+      fixture.detectChanges();
+      http.expectOne(`${BASE_URL}/logs`).flush([]);
+      const boton = (fixture.nativeElement as HTMLElement).querySelector('button')!;
+
+      boton.click();
+      fixture.detectChanges();
+
+      expect(boton.disabled).toBe(true);
+      http.expectOne(`${BASE_URL}/ai/predict`).flush({ status: 'success', action: 'x' });
+      http.expectOne(`${BASE_URL}/logs`).flush([]);
+    });
+
+    it('muestra un error si falla el calculo de la mezcla y reactiva el boton', async () => {
+      fixture.detectChanges();
+      http.expectOne(`${BASE_URL}/logs`).flush([]);
+      const boton = (fixture.nativeElement as HTMLElement).querySelector('button')!;
+
+      boton.click();
+      http
+        .expectOne(`${BASE_URL}/ai/predict`)
+        .flush('fallo', { status: 502, statusText: 'Bad Gateway' });
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      const alerta = (fixture.nativeElement as HTMLElement).querySelector('[role="alert"]');
+      expect(alerta?.textContent).toContain('No se pudo calcular la mezcla');
+      expect(boton.disabled).toBe(false);
+    });
+  });
 });

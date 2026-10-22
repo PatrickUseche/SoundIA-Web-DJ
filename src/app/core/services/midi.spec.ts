@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { MidiService } from './midi';
 import { FakeMidiAccess, FakeMidiInput, provideFakeMidi } from '../testing/fake-midi';
-import { MidiEvent } from './telemetry';
+import { ControllerEvent } from '../midi/midi-parser';
 
 function crear(access: FakeMidiAccess | null, error?: Error): MidiService {
   TestBed.configureTestingModule({ providers: [provideFakeMidi(access, error)] });
@@ -147,7 +147,7 @@ describe('MidiService', () => {
     async function conectado() {
       const input = new FakeMidiInput('a');
       const service = crear(new FakeMidiAccess([input]));
-      const recibidos: MidiEvent[] = [];
+      const recibidos: ControllerEvent[] = [];
       service.events$.subscribe((e) => recibidos.push(e));
       await service.requestAccess();
       return { service, input, recibidos };
@@ -160,8 +160,20 @@ describe('MidiService', () => {
       input.send(0xb0, 14, 64);
 
       expect(recibidos).toEqual([
-        { controlId: 14, value: 127 },
-        { controlId: 14, value: 64 },
+        { controlId: 14, value: 127, channel: 0 },
+        { controlId: 14, value: 64, channel: 0 },
+      ]);
+    });
+
+    it('emite el canal del mensaje para distinguir el mismo CC en canales distintos', async () => {
+      const { input, recibidos } = await conectado();
+
+      input.send(0xb0, 7, 10);
+      input.send(0xb1, 7, 20);
+
+      expect(recibidos).toEqual([
+        { controlId: 7, value: 10, channel: 0 },
+        { controlId: 7, value: 20, channel: 1 },
       ]);
     });
 
@@ -180,14 +192,14 @@ describe('MidiService', () => {
 
       input.send(0x90, 36, 100);
 
-      expect(recibidos).toEqual([{ controlId: 164, value: 100 }]);
+      expect(recibidos).toEqual([{ controlId: 164, value: 100, channel: 0 }]);
     });
 
     it('al cambiar de controlador deja de escuchar el anterior', async () => {
       const a = new FakeMidiInput('a');
       const b = new FakeMidiInput('b');
       const service = crear(new FakeMidiAccess([a, b]));
-      const recibidos: MidiEvent[] = [];
+      const recibidos: ControllerEvent[] = [];
       service.events$.subscribe((e) => recibidos.push(e));
       await service.requestAccess();
 
@@ -196,7 +208,7 @@ describe('MidiService', () => {
       a.send(0xb0, 1, 10);
       b.send(0xb0, 2, 20);
 
-      expect(recibidos).toEqual([{ controlId: 2, value: 20 }]);
+      expect(recibidos).toEqual([{ controlId: 2, value: 20, channel: 0 }]);
       expect(a.onmidimessage).toBeNull();
     });
 

@@ -98,7 +98,8 @@ src/app/
 
 `MidiService` usa la Web MIDI API (Chrome y Edge; en Firefox/Safari el panel avisa que no hay soporte) para
 listar los controladores conectados, detectar si se enchufan o desenchufan con la página abierta y emitir sus
-movimientos como `{controlId, value}`. `parseMidiMessage` define la conversión:
+movimientos como `{controlId, value}` más el canal MIDI (0-15), que solo usa el navegador. `parseMidiMessage` define
+la conversión:
 
 | Mensaje MIDI | controlId | value |
 |---|---|---|
@@ -108,8 +109,8 @@ movimientos como `{controlId, value}`. `parseMidiMessage` define la conversión:
 
 `MidiBridgeService` reenvía esos eventos a `POST /api/v1/midi/event` con un *throttle* por control (50 ms,
 conserva siempre el último valor) y envío secuencial por control. El envío **empieza apagado**: se activa con el
-botón del panel MIDI. Limitación conocida: el canal MIDI se ignora, así que dos decks que usen el mismo CC en
-canales distintos llegan como el mismo control.
+botón del panel MIDI. Al API solo viaja `{controlId, value}`: el canal no se envía, así que para el motor de IA
+el mismo CC de dos canales sigue siendo el mismo control.
 
 ### Controlar el mezclador con el aparato
 
@@ -118,8 +119,11 @@ lista los 18 controles (crossfader, volumen maestro y, por deck, volumen, pitch,
 Se pulsa **Asignar** en uno y se mueve el fader, la perilla o el botón del aparato: queda asignado y se guarda en
 `localStorage` (clave `soundia.midi-mapping`). Faders y perillas usan el valor 0-127; el pitch recorre ±8 % con el
 centro exacto en 1; los botones actúan al pulsarse, no al soltarse. Un control del aparato solo controla una cosa.
-Limitaciones: igual que el envío al API, el canal MIDI se ignora; y **solo se probó con un controlador simulado**
-(no con un aparato real), así que los CC/notas de cada marca no están verificados.
+La asignación **distingue el canal MIDI**: el mismo CC en canales distintos (por ejemplo el volumen de cada deck)
+se asigna a controles distintos, y el panel lo muestra como «Canal 2 · CC 7». Las asignaciones guardadas antes de
+distinguir el canal siguen funcionando para cualquier canal y se muestran como «CC 7 (cualquier canal)»; si hay
+una del canal exacto, gana sobre la de cualquier canal. Limitación: **solo se probó con un controlador simulado**
+(no con un aparato real), así que los CC/notas/canales de cada marca no están verificados.
 
 ## Tiempo real
 

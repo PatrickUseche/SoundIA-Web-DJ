@@ -4,7 +4,9 @@ import {
   controlLabel,
   isButton,
   isMixerControl,
+  mappingKey,
   midiControlLabel,
+  parseMappingKey,
   valueToPitch,
   valueToUnit,
 } from './midi-mapping';
@@ -84,6 +86,8 @@ describe('etiquetas', () => {
     expect(midiControlLabel(127)).toBe('CC 127');
     expect(midiControlLabel(128)).toBe('Nota 0');
     expect(midiControlLabel(164)).toBe('Nota 36');
+    expect(midiControlLabel(14, 0)).toBe('Canal 1 · CC 14');
+    expect(midiControlLabel(164, 15)).toBe('Canal 16 · Nota 36');
   });
 });
 
@@ -123,6 +127,28 @@ describe('valueToPitch', () => {
     for (let v = -10; v <= 140; v++) {
       expect(valueToPitch(v)).toBeGreaterThanOrEqual(0.92 - 1e-9);
       expect(valueToPitch(v)).toBeLessThanOrEqual(1.08 + 1e-9);
+    }
+  });
+});
+
+describe('clave de asignacion', () => {
+  it('sin canal es solo el controlId y con canal lleva el canal delante', () => {
+    expect(mappingKey(14)).toBe('14');
+    expect(mappingKey(14, null)).toBe('14');
+    expect(mappingKey(14, 0)).toBe('0:14');
+    expect(mappingKey(164, 15)).toBe('15:164');
+  });
+
+  it('se puede leer de vuelta', () => {
+    expect(parseMappingKey('14')).toEqual({ channel: null, controlId: 14 });
+    expect(parseMappingKey('0:14')).toEqual({ channel: 0, controlId: 14 });
+    expect(parseMappingKey('15:255')).toEqual({ channel: 15, controlId: 255 });
+    expect(parseMappingKey('007')).toEqual({ channel: null, controlId: 7 });
+  });
+
+  it('rechaza lo que no es una clave valida', () => {
+    for (const clave of ['', 'abc', '-3', '256', '16:7', '1:300', '1:', ':7', '1:2:3', '1.5', ' 7']) {
+      expect(parseMappingKey(clave), clave).toBeNull();
     }
   });
 });

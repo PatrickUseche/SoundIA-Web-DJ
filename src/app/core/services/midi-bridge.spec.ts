@@ -57,6 +57,18 @@ describe('MidiBridgeService', () => {
     expect(bridge.sent()).toBe(1);
   });
 
+  it('no envia el canal MIDI al API: el cuerpo lleva solo controlId y value', () => {
+    bridge.start();
+
+    controlador.send(0xb3, 14, 100);
+    avanzar(50);
+
+    const req = http.expectOne(EVENT_URL);
+    expect(Object.keys(req.request.body).sort()).toEqual(['controlId', 'value']);
+    expect(req.request.body).toEqual({ controlId: 14, value: 100 });
+    aceptar(req);
+  });
+
   it('una rafaga de movimientos del mismo control envia solo el ultimo valor', () => {
     bridge.start();
 

@@ -23,10 +23,18 @@ export class MidiMappingComponent implements OnInit, OnDestroy {
     this.mapper.stop();
   }
 
-  /** Texto de la asignacion de un control, por ejemplo "CC 14" o "Sin asignar". */
+  /**
+   * Texto de la asignacion de un control, por ejemplo "Canal 2 · CC 14" o "Sin asignar". Las asignaciones
+   * guardadas antes de distinguir el canal valen para cualquiera y se muestran como "CC 14 (cualquier canal)".
+   */
   asignacion(control: MixerControl): string {
-    const controlId = this.mapper.assignedTo(control);
-    return controlId === null ? 'Sin asignar' : midiControlLabel(controlId);
+    const asignado = this.mapper.assignedTo(control);
+    if (asignado === null) {
+      return 'Sin asignar';
+    }
+    return asignado.channel === null
+      ? `${midiControlLabel(asignado.controlId)} (cualquier canal)`
+      : midiControlLabel(asignado.controlId, asignado.channel);
   }
 
   asignar(control: MixerControl): void {

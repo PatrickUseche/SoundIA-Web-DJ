@@ -1,7 +1,6 @@
 import { Injectable, InjectionToken, inject, signal } from '@angular/core';
 import { Observable, Subject } from 'rxjs';
-import { MidiEvent } from './telemetry';
-import { parseMidiMessage } from '../midi/midi-parser';
+import { ControllerEvent, parseMidiMessage } from '../midi/midi-parser';
 
 /** Acceso a la Web MIDI API; es null cuando el navegador no la soporta (o al renderizar en servidor). */
 export interface MidiApi {
@@ -35,7 +34,7 @@ export class MidiService {
 
   private access: MIDIAccess | null = null;
   private attachedInput: MIDIInput | null = null;
-  private readonly eventSubject = new Subject<MidiEvent>();
+  private readonly eventSubject = new Subject<ControllerEvent>();
 
   private readonly _state = signal<MidiState>(this.api ? 'idle' : 'unsupported');
   private readonly _inputs = signal<MidiInputInfo[]>([]);
@@ -46,8 +45,8 @@ export class MidiService {
   readonly inputs = this._inputs.asReadonly();
   readonly selectedInputId = this._selectedInputId.asReadonly();
 
-  /** Eventos de control del controlador seleccionado, ya convertidos a {controlId, value}. */
-  readonly events$: Observable<MidiEvent> = this.eventSubject.asObservable();
+  /** Eventos de control del controlador seleccionado, ya convertidos a {controlId, value, channel}. */
+  readonly events$: Observable<ControllerEvent> = this.eventSubject.asObservable();
 
   /** Pide permiso al navegador y empieza a vigilar los controladores conectados. */
   async requestAccess(): Promise<void> {

@@ -115,6 +115,22 @@ fieldset {
   color: var(--peligro);
 }
 
+/* Pantalla de inicio de sesion. */
+.login {
+  max-width: 24rem;
+  margin: var(--espacio) auto;
+}
+
+.login form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cerrar-sesion {
+  margin-left: auto;
+}
+
 .tabla-scroll {
   overflow-x: auto;
 }

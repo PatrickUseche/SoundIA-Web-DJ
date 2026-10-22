@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { LibraryComponent } from './library';
+import { LibraryComponent, REFRESCO_VOZ_MS } from './library';
 import { MixerService } from '../../core/services/mixer';
 import { QueueService } from '../../core/services/queue';
 import { Track } from '../../core/models/track';
@@ -357,6 +357,79 @@ describe('LibraryComponent', () => {
 
       expect(filas().length).toBe(1);
       expect(filas()[0].textContent).toContain('Actualizada');
+    });
+  });
+
+  describe('analisis de voz en segundo plano', () => {
+    const voz = (status: 'pending' | 'running' | 'done') => ({ status, lastEnd: status === 'done' ? 200 : null });
+
+    beforeEach(() => vi.useFakeTimers());
+    afterEach(() => vi.useRealTimers());
+
+    const listar = async (tracks: Track[]) => {
+      http.expectOne(TRACKS).flush({ tracks });
+      await vi.advanceTimersByTimeAsync(0);
+      fixture.detectChanges();
+    };
+
+    it('vuelve a pedir la lista mientras una pista analiza la voz y se detiene al terminar', async () => {
+      crear();
+      await listar([pista({ vocals: voz('running') })]);
+      expect(texto()).toContain('analizando voz');
+
+      await vi.advanceTimersByTimeAsync(REFRESCO_VOZ_MS);
+      await listar([pista({ vocals: voz('running') })]);
+      expect(texto()).toContain('analizando voz');
+
+      await vi.advanceTimersByTimeAsync(REFRESCO_VOZ_MS);
+      await listar([pista({ vocals: voz('done') })]);
+      expect(texto()).not.toContain('analizando voz');
+
+      await vi.advanceTimersByTimeAsync(REFRESCO_VOZ_MS * 3);
+      http.expectNone(TRACKS);
+    });
+
+    it('no vuelve a pedir la lista si ninguna pista analiza la voz', async () => {
+      crear();
+      await listar([pista({ vocals: voz('done') }), pista({ id: 2 })]);
+
+      await vi.advanceTimersByTimeAsync(REFRESCO_VOZ_MS * 3);
+
+      http.expectNone(TRACKS);
+    });
+
+    it('no muestra el estado de carga en el refresco automatico', async () => {
+      crear();
+      await listar([pista({ vocals: voz('pending') })]);
+
+      await vi.advanceTimersByTimeAsync(REFRESCO_VOZ_MS);
+
+      expect(texto()).not.toContain('Cargando biblioteca');
+      expect(filas().length).toBe(1);
+      http.expectOne(TRACKS).flush({ tracks: [pista({ vocals: voz('pending') })] });
+    });
+
+    it('deja de pedir la lista al destruir el componente', async () => {
+      crear();
+      await listar([pista({ vocals: voz('running') })]);
+
+      fixture.destroy();
+      await vi.advanceTimersByTimeAsync(REFRESCO_VOZ_MS * 2);
+
+      http.expectNone(TRACKS);
+    });
+
+    // El refresco es de fondo: un fallo del servidor no debe mostrar un error ni dejar un reintento en marcha.
+    it('si el refresco falla conserva la lista y deja de insistir', async () => {
+      crear();
+      await listar([pista({ vocals: voz('running') })]);
+
+      await vi.advanceTimersByTimeAsync(REFRESCO_VOZ_MS);
+      http.expectOne(TRACKS).flush('error', { status: 500, statusText: 'Server Error' });
+      await vi.advanceTimersByTimeAsync(REFRESCO_VOZ_MS * 3);
+
+      http.expectNone(TRACKS);
+      expect(filas().length).toBe(1);
     });
   });
 });

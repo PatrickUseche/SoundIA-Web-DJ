@@ -10,6 +10,9 @@ import { MixerService } from '../../core/services/mixer';
 import { QueueService } from '../../core/services/queue';
 import { TrackApiService } from '../../core/services/tracks';
 
+/** Cada cuanto se vuelve a pedir la lista mientras alguna pista tiene la voz en analisis. */
+export const REFRESCO_VOZ_MS = 5000;
+
 /** Biblioteca de pistas analizadas: se cargan en un deck o se sube un archivo nuevo para analizarlo. */
 @Component({
   selector: 'app-library',
@@ -51,11 +54,18 @@ export class LibraryComponent implements OnInit {
       .filter((codigo): codigo is string => !!codigo);
   });
 
+  /** Pistas que se analizaron antes de guardar el audio: no se pueden cargar y hay que volver a subirlas. */
+  readonly sinAudio = computed(() => this.tracks().filter((t) => !t.hasAudio).length);
+
+  private temporizadorVoz: ReturnType<typeof setTimeout> | null = null;
+
   ngOnInit(): void {
+    this.destroyRef.onDestroy(() => this.cancelarRefrescoVoz());
     this.recargar();
   }
 
   recargar(): void {
+    this.cancelarRefrescoVoz();
     this.cargando.set(true);
     this.error.set(null);
     this.api
@@ -65,12 +75,45 @@ export class LibraryComponent implements OnInit {
         next: (tracks) => {
           this.tracks.set(tracks);
           this.cargando.set(false);
+          this.programarRefrescoVoz();
         },
         error: (err) => {
           this.error.set(httpErrorMessage(err, 'No se pudo cargar la biblioteca.'));
           this.cargando.set(false);
         },
       });
+  }
+
+  /**
+   * Mientras alguna pista tenga la voz en analisis (tarda minutos, en segundo plano) vuelve a pedir la lista cada
+   * pocos segundos, sin el estado de carga, para que el aviso "analizando voz" se quite solo. Si falla se detiene:
+   * el boton Actualizar la reanuda.
+   */
+  private programarRefrescoVoz(): void {
+    if (this.temporizadorVoz !== null || !this.tracks().some((t) => this.analizandoVoz(t))) {
+      return;
+    }
+    this.temporizadorVoz = setTimeout(() => {
+      this.temporizadorVoz = null;
+      this.api
+        .list()
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: (tracks) => {
+            this.tracks.set(tracks);
+            this.programarRefrescoVoz();
+          },
+          // Es un refresco de fondo: si falla se deja la lista como esta, sin mostrar un error ni reintentar.
+          error: () => undefined,
+        });
+    }, REFRESCO_VOZ_MS);
+  }
+
+  private cancelarRefrescoVoz(): void {
+    if (this.temporizadorVoz !== null) {
+      clearTimeout(this.temporizadorVoz);
+      this.temporizadorVoz = null;
+    }
   }
 
   /** La pista mezcla bien (por tonalidad) con alguna de las que ya estan cargadas en los decks. */
@@ -132,6 +175,7 @@ export class LibraryComponent implements OnInit {
           this.tracks.update((actuales) => [track, ...actuales.filter((t) => t.id !== track.id)]);
           this.mensajeSubida.set(`"${track.title}" analizada: ${formatBpm(track.bpm)} BPM, ${track.key} (${track.camelot}).`);
           this.subiendo.set(false);
+          this.programarRefrescoVoz();
         },
         error: (err) => {
           this.errorSubida.set(httpErrorMessage(err, 'No se pudo analizar el archivo.'));

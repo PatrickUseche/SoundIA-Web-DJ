@@ -44,8 +44,9 @@ export class MidiBridgeService {
             // Conserva solo el ultimo valor de cada ventana, para que el fader no quede desfasado.
             auditTime(this.throttleMs),
             // Envio ordenado por control: un valor viejo nunca pisa a uno mas nuevo.
-            concatMap((event) =>
-              this.telemetry.sendEvent(event).pipe(
+            concatMap(({ controlId, value }) =>
+              // El canal no se envia: el API recibe solo {controlId, value}.
+              this.telemetry.sendEvent({ controlId, value }).pipe(
                 tap(() => this._sent.update((n) => n + 1)),
                 catchError((err) => {
                   console.error('[MIDI] No se pudo enviar el evento al API:', err);

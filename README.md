@@ -50,6 +50,7 @@ src/app/
     ├── autodj-panel/                  # Auto-DJ y cola de la sesión
     ├── midi-panel/                    # controlador MIDI
     ├── midi-mapping/                  # asignar controles del aparato al mezclador
+    ├── login/                         # inicio de sesión (/login), solo si el API lo exige
     └── dashboard/                     # telemetría en vivo (/dashboard)
 ```
 
@@ -140,3 +141,25 @@ expone el estado de la conexión como signal (`connecting`, `open`, `reconnectin
 
 `EventSource` se crea mediante el token `EVENT_SOURCE_FACTORY`, así las pruebas usan un falso
 (`provideFakeEventSource()`). En el servidor (SSR) el servicio no abre ninguna conexión.
+
+Con el **inicio de sesión** encendido en el API (ver abajo), `EventSource` no puede enviar cabeceras, así que el
+servicio pide un **ticket de 30 s** (`POST /api/v1/auth/stream-ticket`) y abre el stream con `?ticket=...`. Si la
+conexión se corta, la cierra y, a los 3 s, pide un ticket nuevo y la reabre (la reconexión automática del navegador
+reutilizaría el ticket vencido). Si el API responde 401 al pedir el ticket, no reintenta: la sesión ya no vale.
+
+## Inicio de sesión
+
+El API Gateway puede exigir login (viene apagado por defecto; ver su README). El front se adapta solo:
+
+- `AuthService.status()` pregunta `GET /api/v1/auth/status` una vez. Si el API no exige login (o no responde), la
+  aplicación funciona como siempre, sin pantalla de login ni botón de cerrar sesión.
+- Si lo exige, el **guard** (`authGuard`) de `/dj` y `/dashboard` lleva a **`/login`** recordando a dónde ibas
+  (`?returnUrl=`, solo rutas internas). Tras entrar vuelves ahí.
+- El token se guarda en `sessionStorage` (se borra al cerrar la pestaña) y el **interceptor** lo envía como
+  `Authorization: Bearer ...` a las peticiones al API (y solo a él). Un 401 del API cierra la sesión y lleva al
+  login. El botón «Cerrar sesión» de la barra aparece solo con login exigido y sesión iniciada.
+- El login responde 401 con un mensaje genérico y 429 (con cuánto esperar) tras demasiados intentos fallidos.
+
+Limitación: un token en el navegador lo puede leer cualquier script de la página, así que no se deben cargar
+scripts de terceros; los tokens caducan (8 h por defecto) y no se pueden revocar antes desde el front. Usa HTTPS en
+producción. Las pruebas e2e simulan el API con login (`simularApi(page, { conLogin: true })`).

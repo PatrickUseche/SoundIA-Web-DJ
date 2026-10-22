@@ -47,6 +47,7 @@ Al terminarla se marca `[x]` en ese mismo commit.
 - [x] test(e2e): pruebas end-to-end del flujo principal [5.2]
 - [x] chore(ci): pipeline de GitHub Actions con build y tests [5.3]
 - [x] chore(docker): Dockerfile en dos etapas con nginx [5.4] (escrito pero sin probar: no hay Docker en la máquina de desarrollo)
+- [x] feat(auth): pantalla de login, token en cada petición al API, guard de rutas, cerrar sesión y ticket para el stream en vivo [5.6] (solo si el API tiene la autenticación encendida; se probó con el API simulado, no con Spring real)
 
 ## Fase 6 — Pendiente
 

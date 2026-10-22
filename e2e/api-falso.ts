@@ -44,7 +44,14 @@ export function crearWav(segundos = 2, frecuencia = 8000): Buffer {
 }
 
 /** Simula el API Gateway (localhost:8080) con datos fijos; todo lo no previsto responde 404. */
-export async function simularApi(page: Page, opciones: { pistas?: unknown[] } = {}): Promise<void> {
+export const TOKEN_FALSO = 'token-falso';
+export const CREDENCIALES = { username: 'dj', password: 'clave-de-prueba' };
+
+/**
+ * Con `conLogin` el API exige iniciar sesion como el de verdad: el login devuelve un token, las demas rutas
+ * responden 401 sin el y el stream pide un ticket.
+ */
+export async function simularApi(page: Page, opciones: { pistas?: unknown[]; conLogin?: boolean } = {}): Promise<void> {
   const pistas = opciones.pistas ?? PISTAS;
   const wav = crearWav();
 
@@ -52,10 +59,29 @@ export async function simularApi(page: Page, opciones: { pistas?: unknown[] } = 
     const url = new URL(route.request().url());
     const metodo = route.request().method();
     const ruta = url.pathname.replace('/api/v1', '');
-    const cors = { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*' };
+    // "*" no cubre la cabecera Authorization en un preflight: hay que nombrarla.
+    const cors = { 'access-control-allow-origin': '*', 'access-control-allow-headers': 'authorization, content-type' };
 
     if (metodo === 'OPTIONS') {
       return route.fulfill({ status: 204, headers: { ...cors, 'access-control-allow-methods': '*' } });
+    }
+    if (ruta === '/auth/status') {
+      return route.fulfill({ json: { enabled: !!opciones.conLogin }, headers: cors });
+    }
+    if (opciones.conLogin) {
+      if (ruta === '/auth/login' && metodo === 'POST') {
+        const enviado = route.request().postDataJSON() as { username?: string; password?: string };
+        return enviado.username === CREDENCIALES.username && enviado.password === CREDENCIALES.password
+          ? route.fulfill({ json: { token: TOKEN_FALSO, expiresAt: '2999-01-01T00:00:00Z' }, headers: cors })
+          : route.fulfill({ status: 401, json: { error: 'Usuario o contrasena incorrectos' }, headers: cors });
+      }
+      const esElStream = ruta === '/midi/stream' && url.searchParams.get('ticket') === 'ticket-falso';
+      if (!esElStream && route.request().headers()['authorization'] !== `Bearer ${TOKEN_FALSO}`) {
+        return route.fulfill({ status: 401, json: { error: 'No autorizado' }, headers: cors });
+      }
+      if (ruta === '/auth/stream-ticket' && metodo === 'POST') {
+        return route.fulfill({ json: { ticket: 'ticket-falso', expiresAt: '2999-01-01T00:00:00Z' }, headers: cors });
+      }
     }
     if (ruta === '/tracks' && metodo === 'GET') {
       return route.fulfill({ json: { tracks: pistas }, headers: cors });

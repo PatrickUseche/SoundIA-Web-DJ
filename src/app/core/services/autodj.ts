@@ -13,6 +13,12 @@ import { TransitionRunnerService } from './transition-runner';
 
 /** Cada cuanto el Auto-DJ revisa en que punto va la pista que suena (ms). */
 export const AUTODJ_TICK_MS = 500;
+/**
+ * Cuanto antes del punto de salida (s) el Auto-DJ lanza la transicion cuando se puede alinear a compas: la entrante
+ * se programa para el compas de la saliente que cae en el punto de salida, y eso hay que pedirlo con algo de
+ * antelacion. Debe superar el intervalo del temporizador mas el margen para programar el arranque.
+ */
+export const AUTODJ_ALIGN_LOOKAHEAD_SECONDS = 1.0;
 /** Espera antes de reintentar tras un error o cuando no hay pistas para continuar (ms). */
 export const AUTODJ_RETRY_MS = 10_000;
 /** Cuantas recomendaciones se piden a la IA para poder descartar las repetidas o sin audio. */
@@ -188,8 +194,10 @@ export class AutoDjService {
       }
       return;
     }
-    if (current.position() >= prepared.plan.mixOutAt) {
-      await this.transition(current, prepared);
+    // Si la mezcla se alinea a compas se lanza un poco antes; si no, exactamente al llegar al punto de salida.
+    const lookahead = this.runner.canAlign(prepared.plan, current.id, prepared.deck) ? AUTODJ_ALIGN_LOOKAHEAD_SECONDS : 0;
+    if ((prepared.plan.mixOutAt - current.position()) / current.pitch() <= lookahead) {
+      await this.transition(current, prepared, prepared.plan.mixOutAt);
     }
   }
 
@@ -254,12 +262,13 @@ export class AutoDjService {
     return null;
   }
 
-  private async transition(current: Deck, prepared: PreparedNext): Promise<void> {
+  /** `notBefore`: la mezcla programada no empieza antes de ese punto de la pista que suena (el punto de salida). */
+  private async transition(current: Deck, prepared: PreparedNext, notBefore?: number): Promise<void> {
     this.busy = true;
     this.status.set('mezclando');
     try {
       const outgoing = current.track();
-      const result = await this.runner.run(prepared.plan, this.deckId(current), prepared.deck);
+      const result = await this.runner.run(prepared.plan, this.deckId(current), prepared.deck, { notBefore });
       if (result === 'completed') {
         this.played.add(prepared.track.id);
         if (outgoing) {

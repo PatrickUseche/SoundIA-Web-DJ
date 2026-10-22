@@ -68,7 +68,15 @@ export class TransitionRunnerService {
     this.apply(plan, from, outgoing, incoming, 0);
     const delayMs = alignment ? alignment.delaySeconds * 1000 : 0;
     if (alignment) {
-      incoming.playIn(alignment.delaySeconds);
+      // La hora sale del reloj de la propia pista saliente (cuando llegue a su compas) y no de "ahora + espera":
+      // entre calcular la espera y programar el arranque pasa tiempo de ejecucion (con la CPU cargada, decenas de
+      // ms) que desplazaria la entrante respecto al golpe.
+      const when = outgoing.timeAtPosition(alignment.outgoingTarget);
+      if (when === null) {
+        incoming.playIn(alignment.delaySeconds);
+      } else {
+        incoming.playAt(when);
+      }
       this.pendingStartAt = Date.now() + delayMs;
       this.pendingDeck = incoming;
     } else {

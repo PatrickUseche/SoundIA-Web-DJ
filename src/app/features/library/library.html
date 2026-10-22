@@ -20,6 +20,13 @@
 
     <button type="button" (click)="recargar()" [disabled]="cargando()">Actualizar</button>
 
+    @if (sinAudio() > 0) {
+        <p role="status" class="aviso-sin-audio">
+            {{ sinAudio() === 1 ? '1 pista no tiene el audio guardado' : sinAudio() + ' pistas no tienen el audio guardado' }}:
+            no se pueden cargar ni poner en cola hasta que vuelvas a subirlas.
+        </p>
+    }
+
     @if (mensajeCola(); as mensaje) {
         <p role="status" class="cola-ok">{{ mensaje }}</p>
     }

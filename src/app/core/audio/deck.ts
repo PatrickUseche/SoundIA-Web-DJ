@@ -108,7 +108,8 @@ export class Deck {
     if (!this.playing()) {
       return this.offset;
     }
-    const elapsed = (this.ctx.currentTime - this.startedAt) * this.pitch();
+    // Un arranque programado todavia no ha empezado: el tiempo transcurrido no puede ser negativo.
+    const elapsed = Math.max(0, this.ctx.currentTime - this.startedAt) * this.pitch();
     return Math.min(this.duration, this.offset + elapsed);
   }
 
@@ -125,6 +126,25 @@ export class Deck {
       this.offset = 0;
     }
     this.startSource(this.offset);
+    this.playing.set(true);
+  }
+
+  /**
+   * Programa el arranque para dentro de `delaySeconds` segundos del reloj de audio (mucho mas preciso que un
+   * temporizador): asi la pista entrante puede caer justo sobre un golpe de la que suena. Hasta entonces la
+   * pista cuenta como sonando, pero su posicion no avanza.
+   */
+  playIn(delaySeconds: number): void {
+    if (!this.buffer || this.playing()) {
+      return;
+    }
+    if (this.ctx.state === 'suspended') {
+      void this.ctx.resume();
+    }
+    if (this.offset >= this.duration) {
+      this.offset = 0;
+    }
+    this.startSource(this.offset, this.ctx.currentTime + Math.max(0, delaySeconds));
     this.playing.set(true);
   }
 
@@ -165,9 +185,12 @@ export class Deck {
   setPitch(ratio: number): void {
     const next = clampPitch(ratio);
     if (this.playing()) {
-      // Se fija la posicion con el pitch anterior para que no haya un salto al cambiar la velocidad.
-      this.offset = this.position();
-      this.startedAt = this.ctx.currentTime;
+      // Se fija la posicion con el pitch anterior para que no haya un salto al cambiar la velocidad. Si el
+      // arranque esta programado y aun no llego, no hay posicion que fijar: se respeta la hora de arranque.
+      if (this.ctx.currentTime >= this.startedAt) {
+        this.offset = this.position();
+        this.startedAt = this.ctx.currentTime;
+      }
       if (this.source) {
         this.source.playbackRate.value = next;
       }
@@ -205,16 +228,17 @@ export class Deck {
     return filter;
   }
 
-  private startSource(from: number): void {
+  /** Inicia una fuente desde `from` (s de la pista), ahora o a la hora `when` del reloj del contexto. */
+  private startSource(from: number, when = 0): void {
     const source = this.ctx.createBufferSource();
     source.buffer = this.buffer;
     source.playbackRate.value = this.pitch();
     source.connect(this.filters.low);
     source.onended = () => this.onSourceEnded(source);
-    source.start(0, from);
+    source.start(when, from);
     this.source = source;
     this.offset = from;
-    this.startedAt = this.ctx.currentTime;
+    this.startedAt = Math.max(when, this.ctx.currentTime);
   }
 
   /** Detiene la fuente actual sin que su evento "ended" se interprete como el fin de la pista. */

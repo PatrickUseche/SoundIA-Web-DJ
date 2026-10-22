@@ -137,6 +137,90 @@ describe('Deck', () => {
     });
   });
 
+  describe('arranque programado', () => {
+    it('playIn programa el arranque en el reloj de audio y la pista cuenta como sonando', () => {
+      cargar();
+      deck.seek(2);
+      ctx.currentTime = 5;
+
+      deck.playIn(1.5);
+
+      expect(deck.playing()).toBe(true);
+      expect(ctx.lastSource.startedWith).toEqual([6.5, 2]);
+    });
+
+    it('hasta que llega el momento la posicion no se mueve; despues avanza con el pitch', () => {
+      cargar();
+      deck.seek(2);
+      deck.setPitch(1.04);
+      ctx.currentTime = 5;
+      deck.playIn(1.5);
+
+      ctx.currentTime = 6;
+      expect(deck.position()).toBe(2);
+
+      ctx.currentTime = 8.5; // 2 s despues de arrancar
+      expect(deck.position()).toBeCloseTo(2 + 2 * 1.04);
+    });
+
+    it('cambiar el pitch mientras espera no adelanta ni retrasa el arranque', () => {
+      cargar();
+      ctx.currentTime = 5;
+      deck.playIn(2);
+
+      ctx.currentTime = 6;
+      deck.setPitch(1.05);
+
+      expect(ctx.lastSource.playbackRate.value).toBe(1.05);
+      expect(ctx.lastSource.startedWith![0]).toBe(7);
+      ctx.currentTime = 7;
+      expect(deck.position()).toBe(0);
+      ctx.currentTime = 8;
+      expect(deck.position()).toBeCloseTo(1.05);
+    });
+
+    it('pausar antes de que llegue el momento cancela el arranque y deja la posicion donde estaba', () => {
+      cargar();
+      deck.seek(3);
+      ctx.currentTime = 5;
+      deck.playIn(2);
+
+      deck.pause();
+
+      expect(deck.playing()).toBe(false);
+      expect(ctx.lastSource.stopped).toBe(true);
+      expect(deck.position()).toBe(3);
+    });
+
+    it('con un retraso de 0 es lo mismo que play', () => {
+      cargar();
+      ctx.currentTime = 4;
+
+      deck.playIn(0);
+
+      expect(ctx.lastSource.startedWith).toEqual([4, 0]);
+    });
+
+    it('un retraso negativo se trata como 0', () => {
+      cargar();
+      ctx.currentTime = 4;
+
+      deck.playIn(-1);
+
+      expect(ctx.lastSource.startedWith).toEqual([4, 0]);
+    });
+
+    it('sin pista cargada o ya sonando no hace nada', () => {
+      deck.playIn(1);
+      expect(ctx.sources.length).toBe(0);
+
+      cargar();
+      deck.play();
+      deck.playIn(1);
+      expect(ctx.sources.length).toBe(1);
+    });
+  });
+
   describe('reproducir y pausar', () => {
     it('play sin pista cargada no hace nada', () => {
       deck.play();

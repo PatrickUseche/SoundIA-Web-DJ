@@ -239,6 +239,87 @@ describe('MixerService', () => {
       expect(mixer.deck('B').pitch()).toBeCloseTo(1.08);
     });
 
+    describe('fase de los pulsos', () => {
+      const rejilla = { offset: 0, downbeat: 0, confidence: 0.9 };
+      let ctx: FakeAudioContext;
+      let mixer: MixerService;
+
+      /** A suena desde el segundo 0 y B desde 0.1: con el reloj en 10.3, A esta en 10.3 y B en 10.2. */
+      beforeEach(() => {
+        ctx = new FakeAudioContext();
+        mixer = crear(ctx).mixer;
+        mixer.loadBuffer('A', buffer(30), pista({ bpm: 120, grid: rejilla }));
+        mixer.loadBuffer('B', buffer(30), pista({ id: 2, bpm: 120, grid: rejilla }));
+        mixer.deck('A').play();
+        ctx.currentTime = 0.1;
+        mixer.deck('B').play();
+        ctx.currentTime = 10.3;
+      });
+
+      it('con los dos decks sonando mueve la pista para que sus pulsos caigan sobre los del otro', () => {
+        expect(mixer.deck('B').position()).toBeCloseTo(10.2);
+
+        mixer.sync('B');
+
+        expect(mixer.deck('B').position()).toBeCloseTo(10.3);
+      });
+
+      it('tambien atrasa la pista si va adelantada', () => {
+        mixer.deck('B').seek(10.4);
+
+        mixer.sync('B');
+
+        expect(mixer.deck('B').position()).toBeCloseTo(10.3);
+      });
+
+      it('si ya estan en fase no reposiciona la pista', () => {
+        mixer.deck('B').seek(10.3);
+        const antes = mixer.deck('B').position();
+
+        mixer.sync('B');
+
+        expect(mixer.deck('B').position()).toBeCloseTo(antes);
+      });
+
+      it('si el deck no suena solo iguala el tempo', () => {
+        mixer.deck('B').pause();
+        const posicion = mixer.deck('B').position();
+
+        mixer.sync('B');
+
+        expect(mixer.deck('B').position()).toBeCloseTo(posicion);
+      });
+
+      it('si el otro deck no suena solo iguala el tempo', () => {
+        mixer.deck('A').pause();
+
+        mixer.sync('B');
+
+        expect(mixer.deck('B').position()).toBeCloseTo(10.2);
+      });
+
+      it('sin rejilla en alguna pista solo iguala el tempo', () => {
+        mixer.loadBuffer('B', buffer(30), pista({ id: 2, bpm: 120 }));
+        mixer.deck('B').play();
+
+        mixer.sync('B');
+
+        expect(mixer.deck('B').position()).toBeCloseTo(0, 0);
+      });
+
+      it('si el ajuste no cabe en el fader no mueve la pista', () => {
+        mixer.loadBuffer('B', buffer(30), pista({ id: 2, bpm: 100, grid: rejilla })); // pide +20 %
+        ctx.currentTime = 10.4;
+        mixer.deck('B').play();
+        ctx.currentTime = 20.4;
+        const posicion = mixer.deck('B').position();
+
+        mixer.sync('B');
+
+        expect(mixer.deck('B').position()).toBeCloseTo(posicion);
+      });
+    });
+
     it('devuelve null si el otro deck esta vacio', () => {
       const { mixer } = crear(new FakeAudioContext());
       mixer.loadBuffer('B', buffer(), pista());

@@ -1,6 +1,7 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { AUDIO_CONTEXT_FACTORY } from '../audio/audio-context';
+import { MIN_PHASE_SHIFT_SECONDS, phaseShift } from '../audio/beatgrid';
 import { TempoMatch, matchTempo } from '../audio/beatmatch';
 import { crossfaderGains } from '../audio/crossfader';
 import { Deck, DeckId } from '../audio/deck';
@@ -110,17 +111,42 @@ export class MixerService {
    * Ajusta el pitch del deck para que su tempo coincida con el del otro deck. Devuelve el ajuste
    * calculado, o null si falta alguna pista con BPM conocido. Si el ajuste no cabe en el rango del
    * fader (+-8 %), el pitch queda al limite y `feasible` es false.
+   *
+   * Si los dos decks suenan y tienen rejilla de pulsos, ademas mueve la pista de este deck (como mucho medio
+   * pulso) para que sus golpes caigan sobre los del otro: igualar el tempo solo no basta para que coincidan.
+   * Eso no se hace si el ajuste no cabe en el fader ni si el motor lo igualaria a la mitad o al doble de tempo.
    */
   sync(id: DeckId): TempoMatch | null {
     const deck = this.deck(id);
-    const reference = this.otherDeck(id).effectiveBpm;
+    const other = this.otherDeck(id);
+    const reference = other.effectiveBpm;
     const track = deck.track();
     if (reference === null || !track) {
       return null;
     }
     const match = matchTempo(reference, track.bpm);
     deck.setPitch(match.ratio);
+    this.alignPhase(deck, other, match);
     return match;
+  }
+
+  private alignPhase(deck: Deck, other: Deck, match: TempoMatch): void {
+    const follower = deck.track();
+    const leader = other.track();
+    if (!follower || !leader || !match.feasible || match.multiplier !== 1 || !deck.playing() || !other.playing()) {
+      return;
+    }
+    const shift = phaseShift({
+      leader,
+      leaderPosition: other.position(),
+      leaderRate: other.pitch(),
+      follower,
+      followerPosition: deck.position(),
+      followerRate: deck.pitch(),
+    });
+    if (shift !== null && Math.abs(shift) >= MIN_PHASE_SHIFT_SECONDS) {
+      deck.seek(Math.max(0, deck.position() + shift));
+    }
   }
 
   private applyCrossfader(): void {

@@ -41,7 +41,10 @@ export interface AlignmentInput {
   /** Posicion de la pista que suena (s de la pista) y factor de pitch al que suena. */
   outgoingPosition: number;
   outgoingRate: number;
-  /** Factor con el que el motor reinterpreta el tempo de la entrante (1 = tal cual; 0.5 o 2 = mitad o doble). */
+  /**
+   * Factor con el que el motor reinterpreta el tempo de la entrante (1 = tal cual; 2 = va a la mitad de pulsos y
+   * sus golpes caen cada dos de la saliente; 0.5 = al doble de pulsos). Es el `multiplier` del ajuste de tempo.
+   */
   multiplier: number;
   /** Punto de entrada que propone el plan, en segundos de la entrante. */
   mixInAt: number;
@@ -58,23 +61,25 @@ export interface Alignment {
   outgoingTarget: number;
   /** Posicion de la entrante desde la que arranca, sobre su rejilla. */
   incomingStart: number;
-  /** Factor de pitch de la entrante para que suene al tempo al que suena la saliente. */
+  /** Factor de pitch de la entrante para que suene al tempo al que suena la saliente (con el multiplicador). */
   ratio: number;
 }
 
 /**
  * Cuando y desde donde arrancar la pista entrante para que sus golpes caigan sobre los de la saliente:
  * se espera al proximo compas (o pulso) de la saliente, y la entrante arranca justo en su propio compas (o
- * pulso) con su tempo igualado. Devuelve null si no se puede alinear: sin rejilla en alguna de las pistas,
- * con un tempo que no cabe en el pitch fader o con el motor mezclando a la mitad o al doble de tempo.
+ * pulso) con su tempo igualado. Si el motor mezcla a la mitad o al doble de tempo (multiplicador 2 o 0.5) tambien
+ * se alinea: la entrante arranca en uno de sus pulsos sobre uno de la saliente y, como va al doble o a la mitad de
+ * pulsos, los siguientes siguen cayendo sobre golpes de la saliente (todos, o uno de cada dos). Devuelve null si
+ * no se puede alinear: sin rejilla en alguna de las pistas o con un tempo que no cabe en el pitch fader.
  */
 export function planAlignment(input: AlignmentInput): Alignment | null {
   const { outgoing, incoming } = input;
   const level = alignmentLevel(outgoing, incoming);
-  if (level === null || !outgoing.grid || !incoming.grid || input.multiplier !== 1) {
+  if (level === null || !outgoing.grid || !incoming.grid || !(input.multiplier > 0)) {
     return null;
   }
-  const ratio = (outgoing.bpm * input.outgoingRate) / incoming.bpm;
+  const ratio = (outgoing.bpm * input.outgoingRate) / (incoming.bpm * input.multiplier);
   if (Math.abs(ratio - 1) > MAX_PITCH_ADJUSTMENT + 1e-9) {
     return null;
   }

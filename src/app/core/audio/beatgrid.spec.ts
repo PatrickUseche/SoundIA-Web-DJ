@@ -61,6 +61,11 @@ describe('planAlignment', () => {
     expect(plan.delaySeconds).toBeCloseTo(1.7); // el compas siguiente empieza en 12.0
   });
 
+  it('dice en que punto de la saliente cae el compas elegido', () => {
+    expect(planAlignment(base)!.outgoingTarget).toBeCloseTo(12.0);
+    expect(planAlignment({ ...base, notBefore: 16.0 })!.outgoingTarget).toBeCloseTo(16.0);
+  });
+
   it('arranca la entrante en su primer tiempo mas cercano al punto de entrada del plan', () => {
     expect(planAlignment(base)!.incomingStart).toBeCloseTo(0.2);
     expect(planAlignment({ ...base, mixInAt: 6.5 })!.incomingStart).toBeCloseTo(0.2 + (60 / 124) * 4 * 3); // 3 compases

@@ -54,6 +54,8 @@ export interface Alignment {
   level: AlignmentLevel;
   /** Segundos (de reloj) hasta el momento de arrancar la entrante. */
   delaySeconds: number;
+  /** Punto de la saliente (s de la pista) en el que arranca la entrante: un compas o pulso suyo. */
+  outgoingTarget: number;
   /** Posicion de la entrante desde la que arranca, sobre su rejilla. */
   incomingStart: number;
   /** Factor de pitch de la entrante para que suene al tempo al que suena la saliente. */
@@ -94,6 +96,7 @@ export function planAlignment(input: AlignmentInput): Alignment | null {
   return {
     level,
     delaySeconds: (target - input.outgoingPosition) / input.outgoingRate,
+    outgoingTarget: target,
     incomingStart,
     ratio,
   };

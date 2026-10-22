@@ -196,6 +196,13 @@ describe('AutoDjPanelComponent', () => {
       expect(siguiente).toContain('compatibilidad 93%');
     });
 
+    it('un fundido sin igualar el tempo se describe como tal', async () => {
+      autodj.next.set({ track: pista(2), plan: plan({ style: 'fade', bars: 2 }), deck: 'A' });
+      await crear();
+
+      expect(el().querySelector('.siguiente')?.textContent).toContain('fundido de 2 compases');
+    });
+
     it('un corte directo se describe como tal', async () => {
       autodj.next.set({ track: pista(2), plan: plan({ style: 'cut', bars: 0 }), deck: 'A' });
       await crear();

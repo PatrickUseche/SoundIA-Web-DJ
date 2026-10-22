@@ -26,7 +26,7 @@ npm run e2e        # pruebas end-to-end (Playwright)
 
 ### Pruebas end-to-end
 
-Las pruebas de `e2e/` abren la aplicación en Chromium (escritorio y móvil) contra un API **simulado** dentro del propio navegador, así que no necesitan Spring ni Django. La primera vez hay que descargar el navegador: `npx playwright install chromium`. Playwright levanta `ng serve` en el puerto 4300 por su cuenta.
+Las pruebas de `e2e/` abren la aplicación en Chromium (escritorio y móvil) contra un API **simulado** dentro del propio navegador, así que no necesitan Spring ni Django. La primera vez hay que descargar el navegador: `npx playwright install chromium`. Playwright levanta `ng serve` en el puerto 4300 por su cuenta. En GitHub Actions corren en un job aparte («Pruebas end-to-end (Playwright)») junto con las pruebas unitarias y el build; si fallan se guardan las trazas como artefacto (`trazas-e2e`).
 
 ## Configuración
 

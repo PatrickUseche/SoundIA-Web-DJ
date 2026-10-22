@@ -19,6 +19,12 @@ export interface Track {
     /** Segundo en que acaba la ultima frase cantada; null si no se analizo o no hay voz al final. */
     lastEnd: number | null;
   };
+  /**
+   * Rejilla de pulsos: los golpes caen en `offset + k * 60 / bpm`, y los compases empiezan en `downbeat` cada
+   * 4 pulsos. `confidence` (0-1) es la seguridad de que `downbeat` sea de verdad el primer tiempo. null si la
+   * pista no tiene un ritmo claro; las pistas antiguas no la traen.
+   */
+  grid?: { offset: number; downbeat: number; confidence: number } | null;
   /** Si el backend guardo el audio original (las pistas analizadas antes de guardarlo no lo tienen). */
   hasAudio: boolean;
   createdAt: string;

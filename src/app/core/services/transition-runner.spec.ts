@@ -70,6 +70,39 @@ describe('TransitionRunnerService', () => {
     });
   });
 
+  describe('fundido sin igualar el tempo', () => {
+    const fundido = () => plan({
+      style: 'fade', bars: 2, seconds: 4, automation: automatizacion(8),
+      tempoMatch: { ratio: 0.87, multiplier: 1, feasible: false },
+    });
+
+    it('la pista entrante suena a su tempo natural: no se fuerza un pitch que no encaja', async () => {
+      const mezcla = runner.run(fundido(), 'A', 'B');
+      await flush();
+
+      expect(mixer.deck('B').pitch()).toBe(1);
+      await avanzar(5000);
+      await mezcla;
+    });
+
+    it('cruza las dos pistas durante los segundos del plan en vez de cortar', async () => {
+      const mezcla = runner.run(fundido(), 'A', 'B');
+      await flush();
+      await avanzar(2000);
+
+      expect(runner.running()).toBe(true);
+      expect(mixer.deck('A').playing()).toBe(true);
+      expect(mixer.deck('B').playing()).toBe(true);
+      expect(mixer.crossfader()).toBeGreaterThan(0.3);
+      expect(mixer.crossfader()).toBeLessThan(0.7);
+
+      await avanzar(3000);
+      expect(await mezcla).toBe('completed');
+      expect(mixer.deck('A').playing()).toBe(false);
+      expect(mixer.crossfader()).toBe(1);
+    });
+  });
+
   describe('corte', () => {
     const corte = () => plan({ style: 'cut', bars: 0, seconds: 0, automation: [] });
 

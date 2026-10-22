@@ -61,8 +61,11 @@ export interface AutomationPoint {
 export interface TransitionPlan {
   fromTrackId: number;
   toTrackId: number;
-  /** "blend": las dos suenan a la vez; "cut": corte directo porque los tempos no se igualan. */
-  style: 'blend' | 'cut';
+  /**
+   * "blend": las dos suenan a la vez con los tempos igualados; "fade": fundido corto porque los tempos no se
+   * pueden igualar (la entrante suena a su ritmo); "cut": corte directo (sin duracion).
+   */
+  style: 'blend' | 'fade' | 'cut';
   bars: number;
   /** Duracion de la mezcla; 0 en un corte. */
   seconds: number;

@@ -38,8 +38,9 @@ export class TransitionRunnerService {
       throw new Error('Los dos decks necesitan una pista cargada para hacer la transicion.');
     }
 
-    // La pista entrante entra a su ritmo y en su punto de entrada, con las curvas ya en la posicion inicial.
-    incoming.setPitch(plan.tempoMatch.ratio);
+    // La pista entrante entra en su punto de entrada, con las curvas ya en la posicion inicial. Solo se iguala
+    // su tempo si cabe en el pitch fader: si no, suena a su ritmo natural en vez de quedar a medio ajustar.
+    incoming.setPitch(plan.tempoMatch.feasible ? plan.tempoMatch.ratio : 1);
     incoming.seek(plan.mixInAt);
     incoming.setVolume(1);
     this.apply(plan, from, outgoing, incoming, 0);

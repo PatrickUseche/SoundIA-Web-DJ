@@ -110,9 +110,70 @@ describe('planAlignment', () => {
     expect(planAlignment({ ...base, incoming: pista(140, rejilla(0, 0), 2) })).toBeNull();
   });
 
-  it('si el motor mezcla a la mitad o al doble de tempo no se alinea (aun)', () => {
-    expect(planAlignment({ ...base, multiplier: 2 })).toBeNull();
-    expect(planAlignment({ ...base, multiplier: 0.5 })).toBeNull();
+  describe('con el motor mezclando a la mitad o al doble de tempo', () => {
+    /**
+     * Instantes (en tiempo de la saliente) en que caen los primeros pulsos o compases de la entrante una vez
+     * arrancada, expresados en pulsos o compases de la saliente: deben ser enteros para que coincidan.
+     */
+    const posiciones = (plan: NonNullable<ReturnType<typeof planAlignment>>, a: Track, b: Track, unidad: number) =>
+      Array.from({ length: 8 }, (_, k) => {
+        const duracionEntrante = ((unidad * 60) / b.bpm) / plan.ratio; // s de reloj por pulso (o compas) de la entrante
+        const instante = plan.outgoingTarget + k * duracionEntrante;
+        const origen = unidad === 4 ? a.grid!.downbeat : a.grid!.offset;
+        return (instante - origen) / ((unidad * 60) / a.bpm);
+      });
+
+    it('la entrante a la mitad de tempo (multiplicador 2) se alinea y sus golpes caen sobre los de la saliente', () => {
+      const lenta = pista(70, rejilla(0.2, 0.2), 3);
+      const rapida = pista(140, rejilla(0, 0));
+
+      const plan = planAlignment({ ...base, outgoing: rapida, incoming: lenta, multiplier: 2 })!;
+
+      expect(plan.level).toBe('bar');
+      expect(plan.ratio).toBeCloseTo(1); // 140 / (70 * 2): suena a su ritmo natural
+      for (const unidad of [1, 4]) {
+        for (const posicion of posiciones(plan, rapida, lenta, unidad)) {
+          expect(posicion).toBeCloseTo(Math.round(posicion), 6);
+        }
+      }
+      // Cada pulso de la entrante cae sobre uno de cada dos pulsos de la saliente.
+      const [p0, p1] = posiciones(plan, rapida, lenta, 1);
+      expect(p1 - p0).toBeCloseTo(2);
+    });
+
+    it('la entrante al doble de tempo (multiplicador 0.5) se alinea y sus golpes caen sobre los de la saliente', () => {
+      const rapidisima = pista(280, rejilla(0.05, 0.05), 3);
+      const lenta = pista(140, rejilla(0, 0));
+
+      const plan = planAlignment({ ...base, outgoing: lenta, incoming: rapidisima, multiplier: 0.5 })!;
+
+      expect(plan.ratio).toBeCloseTo(1); // 140 / (280 * 0.5)
+      const pulsos = posiciones(plan, lenta, rapidisima, 1);
+      // Dos pulsos de la entrante por cada uno de la saliente: coincide uno de cada dos y el otro cae justo en medio.
+      pulsos.forEach((posicion, k) => {
+        const esperado = k % 2 === 0 ? Math.round(posicion) : Math.round(posicion - 0.5) + 0.5;
+        expect(posicion).toBeCloseTo(esperado, 6);
+      });
+      expect(pulsos[1] - pulsos[0]).toBeCloseTo(0.5);
+    });
+
+    it('el factor de pitch incluye el multiplicador', () => {
+      const lenta = pista(68, rejilla(0, 0), 3);
+      const rapida = pista(140, rejilla(0, 0));
+
+      expect(planAlignment({ ...base, outgoing: rapida, incoming: lenta, multiplier: 2 })!.ratio).toBeCloseTo(140 / 136);
+    });
+
+    it('si con el multiplicador el tempo sigue sin caber en el pitch fader no hay alineacion', () => {
+      const lenta = pista(100, rejilla(0, 0), 3);
+      const rapida = pista(140, rejilla(0, 0));
+
+      expect(planAlignment({ ...base, outgoing: rapida, incoming: lenta, multiplier: 2 })).toBeNull();
+    });
+
+    it('un multiplicador no positivo no se alinea', () => {
+      expect(planAlignment({ ...base, multiplier: 0 })).toBeNull();
+    });
   });
 
   it('el punto de entrada nunca es negativo', () => {

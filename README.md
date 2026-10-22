@@ -87,8 +87,10 @@ src/app/
   programado), los golpes de las dos pistas quedan a unos 9-15 ms de media (hasta ~25-40 ms en tramos con ritmo débil),
   frente a 150-230 ms al arrancar sin alinear. En el navegador, la hora programada coincide con el pulso de la saliente
   a 0,00 ms según la rejilla. El primer tiempo del compás es una heurística (en el reggaetón, con el bombo en todos los
-  pulsos, no se puede saber). No se alinea cuando el motor mezcla a la mitad o al doble de tempo. El botón **Sync** de los
-  decks sigue igualando solo el tempo, no la fase.
+  pulsos, no se puede saber). Cuando el motor mezcla a la mitad o al doble de tempo también se alinea: la entrante
+  arranca en uno de sus pulsos sobre uno de la saliente; a la mitad de tempo sus pulsos caen sobre uno de cada dos de
+  la saliente, y al doble cae uno sobre cada pulso y el otro justo en medio. El botón **Sync** de los decks sigue
+  igualando solo el tempo, no la fase.
 - Los temporizadores del Auto-DJ (500 ms) y de la transición (100 ms) se **ralentizan en pestañas en segundo plano**: para
   mezclar, la pestaña debe estar visible.
 - Hay que reproducir algo manualmente antes de activar el Auto-DJ (el navegador exige un gesto del usuario para sonar).

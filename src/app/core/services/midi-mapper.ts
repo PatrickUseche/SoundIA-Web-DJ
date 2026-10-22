@@ -3,16 +3,19 @@ import { Subscription } from 'rxjs';
 import { DeckId } from '../audio/deck';
 import { EqBand } from '../audio/eq';
 import {
+  MidiAssignment,
   MidiMapping,
   MixerControl,
   isButton,
   isMixerControl,
+  mappingKey,
+  parseMappingKey,
   valueToPitch,
   valueToUnit,
 } from '../midi/midi-mapping';
+import { ControllerEvent } from '../midi/midi-parser';
 import { MidiService } from './midi';
 import { MixerService } from './mixer';
-import { MidiEvent } from './telemetry';
 
 /** Almacenamiento donde se guarda la asignacion (localStorage); null si no hay (servidor, navegador privado). */
 export const MIDI_MAPPING_STORAGE = new InjectionToken<Pick<Storage, 'getItem' | 'setItem'> | null>(
@@ -43,7 +46,7 @@ export class MidiMapperService {
 
   private subscription: Subscription | null = null;
 
-  /** Asignaciones actuales: controlId MIDI -> control de pantalla. */
+  /** Asignaciones actuales: control fisico del aparato (canal y controlId) -> control de pantalla. */
   readonly mapping = signal<MidiMapping>(this.load());
   /** Control de pantalla que espera que muevas un control del aparato para asignarlo (modo aprender). */
   readonly learning = signal<MixerControl | null>(null);
@@ -71,18 +74,18 @@ export class MidiMapperService {
     this.learning.set(null);
   }
 
-  /** controlId MIDI asignado a un control de pantalla, o null si no tiene. */
-  assignedTo(control: MixerControl): number | null {
+  /** Control fisico asignado a un control de pantalla (con su canal, o null si vale cualquiera), o null si no tiene. */
+  assignedTo(control: MixerControl): MidiAssignment | null {
     const entry = Object.entries(this.mapping()).find(([, assigned]) => assigned === control);
-    return entry ? Number(entry[0]) : null;
+    return entry ? parseMappingKey(entry[0]) : null;
   }
 
   /** Quita la asignacion de un control de pantalla. */
   clear(control: MixerControl): void {
     const next = { ...this.mapping() };
-    for (const [id, assigned] of Object.entries(next)) {
+    for (const [key, assigned] of Object.entries(next)) {
       if (assigned === control) {
-        delete next[Number(id)];
+        delete next[key];
       }
     }
     this.setMapping(next);
@@ -94,32 +97,34 @@ export class MidiMapperService {
     this.setMapping({});
   }
 
-  private handle(event: MidiEvent): void {
+  private handle(event: ControllerEvent): void {
     const learning = this.learning();
     if (learning !== null) {
       // Un boton de aparato envia 127 al pulsar y 0 al soltar: asignar solo con el primer movimiento
       // que tenga valor evita tomar la liberacion de la pulsacion anterior.
       if (event.value > 0 || !isButton(learning)) {
-        this.assign(event.controlId, learning);
+        this.assign(mappingKey(event.controlId, event.channel), learning);
       }
       return;
     }
 
-    const control = this.mapping()[event.controlId];
+    // Primero la asignacion de ese canal y, si no la hay, la de cualquier canal (las guardadas antes del canal).
+    const mapping = this.mapping();
+    const control = mapping[mappingKey(event.controlId, event.channel)] ?? mapping[mappingKey(event.controlId)];
     if (control !== undefined && this.mixer.supported) {
       this.apply(control, event.value);
     }
   }
 
-  /** Asigna el controlId al control: un controlId solo controla una cosa y un control solo tiene un controlId. */
-  private assign(controlId: number, control: MixerControl): void {
+  /** Asigna la clave al control: una clave solo controla una cosa y un control solo tiene una clave. */
+  private assign(key: string, control: MixerControl): void {
     const next = { ...this.mapping() };
-    for (const [id, assigned] of Object.entries(next)) {
+    for (const [existing, assigned] of Object.entries(next)) {
       if (assigned === control) {
-        delete next[Number(id)];
+        delete next[existing];
       }
     }
-    next[controlId] = control;
+    next[key] = control;
     this.learning.set(null);
     this.setMapping(next);
   }
@@ -189,9 +194,10 @@ export class MidiMapperService {
       }
       const mapping: MidiMapping = {};
       for (const [key, control] of Object.entries(parsed)) {
-        const controlId = Number(key);
-        if (Number.isInteger(controlId) && controlId >= 0 && controlId <= 255 && isMixerControl(control)) {
-          mapping[controlId] = control;
+        const assignment = parseMappingKey(key);
+        if (assignment && isMixerControl(control)) {
+          // Se guarda la clave normalizada ("007" y "7" son el mismo control).
+          mapping[mappingKey(assignment.controlId, assignment.channel)] = control;
         }
       }
       return mapping;

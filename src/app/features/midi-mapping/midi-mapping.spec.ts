@@ -20,7 +20,7 @@ describe('MidiMappingComponent', () => {
     Array.from(el().querySelectorAll('tbody tr')).find((tr) => tr.querySelector('td')?.textContent?.trim() === texto)!;
   const boton = (texto: string, clase: string) => fila(texto).querySelector(`button.${clase}`) as HTMLButtonElement | null;
 
-  async function crear(opciones: { conectado?: boolean; guardado?: Record<number, string> } = {}) {
+  async function crear(opciones: { conectado?: boolean; guardado?: Record<string, string> } = {}) {
     controlador = new FakeMidiInput('ddj');
     almacen = new Map();
     if (opciones.guardado) {
@@ -65,12 +65,19 @@ describe('MidiMappingComponent', () => {
       expect(asignaciones.every((a) => a === 'Sin asignar')).toBe(true);
     });
 
-    it('muestra las asignaciones guardadas como CC o Nota', async () => {
+    it('muestra las asignaciones guardadas como CC o Nota, con su canal', async () => {
       TestBed.resetTestingModule();
-      await crear({ guardado: { 14: 'crossfader', 164: 'A.play' } });
+      await crear({ guardado: { '0:14': 'crossfader', '2:164': 'A.play' } });
 
-      expect(fila('Crossfader').querySelector('.asignacion')?.textContent?.trim()).toBe('CC 14');
-      expect(fila('Deck A: play/pausa').querySelector('.asignacion')?.textContent?.trim()).toBe('Nota 36');
+      expect(fila('Crossfader').querySelector('.asignacion')?.textContent?.trim()).toBe('Canal 1 · CC 14');
+      expect(fila('Deck A: play/pausa').querySelector('.asignacion')?.textContent?.trim()).toBe('Canal 3 · Nota 36');
+    });
+
+    it('las asignaciones guardadas sin canal se muestran como validas para cualquier canal', async () => {
+      TestBed.resetTestingModule();
+      await crear({ guardado: { 14: 'crossfader' } });
+
+      expect(fila('Crossfader').querySelector('.asignacion')?.textContent?.trim()).toBe('CC 14 (cualquier canal)');
     });
 
     it('solo los controles asignados ofrecen Quitar', async () => {
@@ -113,10 +120,10 @@ describe('MidiMappingComponent', () => {
     it('al mover el aparato queda asignado y se ve en la fila', () => {
       boton('Crossfader', 'asignar')!.click();
 
-      controlador.send(0xb0, 14, 64);
+      controlador.send(0xb1, 14, 64);
       refrescar();
 
-      expect(fila('Crossfader').querySelector('.asignacion')?.textContent?.trim()).toBe('CC 14');
+      expect(fila('Crossfader').querySelector('.asignacion')?.textContent?.trim()).toBe('Canal 2 · CC 14');
       expect(boton('Crossfader', 'quitar')).not.toBeNull();
       expect(el().querySelector('p.aprendiendo')).toBeNull();
     });
@@ -162,7 +169,7 @@ describe('MidiMappingComponent', () => {
       refrescar();
 
       expect(fila('Crossfader').querySelector('.asignacion')?.textContent?.trim()).toBe('Sin asignar');
-      expect(fila('Deck A: volumen').querySelector('.asignacion')?.textContent?.trim()).toBe('CC 7');
+      expect(fila('Deck A: volumen').querySelector('.asignacion')?.textContent?.trim()).toBe('CC 7 (cualquier canal)');
     });
 
     it('Restablecer todo borra todas las asignaciones', () => {

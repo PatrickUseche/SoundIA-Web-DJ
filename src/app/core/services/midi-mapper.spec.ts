@@ -73,8 +73,8 @@ describe('MidiMapperService', () => {
 
       mover(14, 64);
 
-      expect(mapper.mapping()).toEqual({ 14: 'crossfader' });
-      expect(mapper.assignedTo('crossfader')).toBe(14);
+      expect(mapper.mapping()).toEqual({ '0:14': 'crossfader' });
+      expect(mapper.assignedTo('crossfader')).toEqual({ channel: 0, controlId: 14 });
       expect(mapper.learning()).toBeNull();
     });
 
@@ -91,7 +91,7 @@ describe('MidiMapperService', () => {
 
       pulsar(36);
 
-      expect(mapper.mapping()).toEqual({ 164: 'A.play' });
+      expect(mapper.mapping()).toEqual({ '0:164': 'A.play' });
     });
 
     it('un boton no se asigna con la liberacion (valor 0) de la pulsacion anterior', () => {
@@ -101,7 +101,7 @@ describe('MidiMapperService', () => {
       expect(mapper.learning()).toBe('A.play');
       mover(20, 127); // pulsacion de verdad
 
-      expect(mapper.mapping()).toEqual({ 20: 'A.play' });
+      expect(mapper.mapping()).toEqual({ '0:20': 'A.play' });
     });
 
     it('un fader si se puede asignar con el valor 0', () => {
@@ -109,7 +109,7 @@ describe('MidiMapperService', () => {
 
       mover(7, 0);
 
-      expect(mapper.mapping()).toEqual({ 7: 'A.volume' });
+      expect(mapper.mapping()).toEqual({ '0:7': 'A.volume' });
     });
 
     it('reasignar un control quita su asignacion anterior', () => {
@@ -119,7 +119,7 @@ describe('MidiMapperService', () => {
 
       mover(15, 64);
 
-      expect(mapper.mapping()).toEqual({ 15: 'crossfader' });
+      expect(mapper.mapping()).toEqual({ '0:15': 'crossfader' });
     });
 
     it('un mismo control del aparato solo controla una cosa: la ultima asignacion gana', () => {
@@ -129,7 +129,7 @@ describe('MidiMapperService', () => {
 
       mover(14, 64);
 
-      expect(mapper.mapping()).toEqual({ 14: 'masterVolume' });
+      expect(mapper.mapping()).toEqual({ '0:14': 'masterVolume' });
       expect(mapper.assignedTo('crossfader')).toBeNull();
     });
 
@@ -345,7 +345,7 @@ describe('MidiMapperService', () => {
       mapper.startLearning('crossfader');
       mover(14, 64);
 
-      expect(JSON.parse(storage.datos.get(MIDI_MAPPING_STORAGE_KEY) ?? 'null')).toEqual({ 14: 'crossfader' });
+      expect(JSON.parse(storage.datos.get(MIDI_MAPPING_STORAGE_KEY) ?? 'null')).toEqual({ '0:14': 'crossfader' });
     });
 
     it('guarda tambien al quitar y al restablecer', async () => {
@@ -388,7 +388,88 @@ describe('MidiMapperService', () => {
       mapper.startLearning('crossfader');
       mover(14, 64);
 
-      expect(mapper.mapping()).toEqual({ 14: 'crossfader' });
+      expect(mapper.mapping()).toEqual({ '0:14': 'crossfader' });
+    });
+  });
+
+  describe('canal MIDI', () => {
+    const moverEnCanal = (canal: number, cc: number, valor: number) => controlador.send(0xb0 | canal, cc, valor);
+
+    it('el mismo CC en canales distintos se asigna a controles distintos', async () => {
+      await crear();
+
+      mapper.startLearning('A.volume');
+      moverEnCanal(0, 7, 64);
+      mapper.startLearning('B.volume');
+      moverEnCanal(1, 7, 64);
+
+      expect(mapper.mapping()).toEqual({ '0:7': 'A.volume', '1:7': 'B.volume' });
+      expect(mapper.assignedTo('A.volume')).toEqual({ channel: 0, controlId: 7 });
+      expect(mapper.assignedTo('B.volume')).toEqual({ channel: 1, controlId: 7 });
+    });
+
+    it('cada canal mueve solo su control', async () => {
+      await crear({ guardado: { '0:7': 'A.volume', '1:7': 'B.volume' } });
+
+      moverEnCanal(0, 7, 0);
+      expect(mixer.deck('A').volume()).toBe(0);
+      expect(mixer.deck('B').volume()).toBe(1);
+
+      moverEnCanal(1, 7, 0);
+      expect(mixer.deck('B').volume()).toBe(0);
+    });
+
+    it('un canal sin asignar no mueve nada', async () => {
+      await crear({ guardado: { '0:7': 'A.volume' } });
+
+      moverEnCanal(3, 7, 0);
+
+      expect(mixer.deck('A').volume()).toBe(1);
+    });
+
+    it('una asignacion guardada sin canal vale para cualquier canal', async () => {
+      await crear({ guardado: { 7: 'A.volume' } });
+
+      moverEnCanal(5, 7, 0);
+
+      expect(mixer.deck('A').volume()).toBe(0);
+      expect(mapper.assignedTo('A.volume')).toEqual({ channel: null, controlId: 7 });
+    });
+
+    it('la asignacion de un canal concreto gana sobre la de cualquier canal', async () => {
+      await crear({ guardado: { 7: 'A.volume', '1:7': 'B.volume' } });
+
+      moverEnCanal(1, 7, 0);
+      expect(mixer.deck('B').volume()).toBe(0);
+      expect(mixer.deck('A').volume()).toBe(1);
+
+      moverEnCanal(0, 7, 0);
+      expect(mixer.deck('A').volume()).toBe(0);
+    });
+
+    it('reasignar con otro canal reemplaza la asignacion anterior del control', async () => {
+      await crear();
+
+      mapper.startLearning('A.volume');
+      moverEnCanal(0, 7, 64);
+      mapper.startLearning('A.volume');
+      moverEnCanal(2, 7, 64);
+
+      expect(mapper.mapping()).toEqual({ '2:7': 'A.volume' });
+    });
+
+    it('guarda y recupera las asignaciones con su canal', async () => {
+      await crear();
+      mapper.startLearning('A.volume');
+      moverEnCanal(4, 9, 64);
+
+      expect(JSON.parse(storage.datos.get(MIDI_MAPPING_STORAGE_KEY) ?? 'null')).toEqual({ '4:9': 'A.volume' });
+    });
+
+    it('al cargar descarta los canales fuera de rango y normaliza las claves', async () => {
+      await crear({ guardado: { '2:7': 'A.volume', '16:7': 'B.volume', 'x:7': 'B.pitch', '1:300': 'B.cue', '007': 'crossfader' } });
+
+      expect(mapper.mapping()).toEqual({ '2:7': 'A.volume', 7: 'crossfader' });
     });
   });
 });

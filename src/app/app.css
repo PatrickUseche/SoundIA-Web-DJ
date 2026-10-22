@@ -1,0 +1,38 @@
+.principal {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 10px 20px;
+  background: var(--superficie);
+  border-bottom: 1px solid var(--borde);
+}
+
+.marca {
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  margin-right: 8px;
+}
+
+.principal a {
+  color: var(--texto-suave);
+  text-decoration: none;
+  padding: 4px 2px;
+  border-bottom: 2px solid transparent;
+}
+
+.principal a.activo {
+  color: var(--texto);
+  border-bottom-color: var(--acento);
+}
+
+.contenido {
+  display: block;
+  padding: 12px 20px;
+}
+
+@media (max-width: 600px) {
+  .contenido {
+    padding: 8px 12px;
+  }
+}

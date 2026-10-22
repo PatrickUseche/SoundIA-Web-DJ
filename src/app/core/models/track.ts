@@ -13,6 +13,12 @@ export interface Track {
   energy: number;
   /** Puntos de mezcla en segundos, de menor a mayor. */
   cuePoints: number[];
+  /** Analisis de la voz del final de la pista (se hace aparte, en segundo plano). Las pistas antiguas no lo traen. */
+  vocals?: {
+    status: 'none' | 'pending' | 'running' | 'done' | 'failed' | 'unavailable';
+    /** Segundo en que acaba la ultima frase cantada; null si no se analizo o no hay voz al final. */
+    lastEnd: number | null;
+  };
   /** Si el backend guardo el audio original (las pistas analizadas antes de guardarlo no lo tienen). */
   hasAudio: boolean;
   createdAt: string;

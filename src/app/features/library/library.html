@@ -56,6 +56,9 @@
                     <tr [class.compatible]="compatible(pista)" [class.en-deck]="enDeck(pista)">
                         <td>
                             {{ pista.title }}
+                            @if (analizandoVoz(pista)) {
+                                <span class="analizando-voz" title="Se esta analizando donde acaba la voz para no cortar la letra al mezclar">analizando voz</span>
+                            }
                             @if (compatible(pista) && !enDeck(pista)) {
                                 <span class="etiqueta-compatible" title="Mezcla bien con una pista cargada">compatible</span>
                             }

@@ -60,4 +60,5 @@ Al terminarla se marca `[x]` en ese mismo commit.
 - [x] feat(midi): distinguir el canal MIDI para que dos decks con el mismo CC no choquen [6.7]
 - [x] feat(library): refrescar la lista sola mientras se analiza la voz, y avisar de las pistas sin audio para volver a subirlas [6.8]
 - [x] chore(ci): ejecutar los tests e2e de Playwright en la CI [6.9]
+- [x] feat(deck): botón «Marcar el 1» para fijar a mano el primer tiempo de una pista (usa el endpoint nuevo del motor) [6.11]
 - [ ] test(audio): escuchar y afinar a oído el EQ y las transiciones, y probar con servicios reales [6.10]

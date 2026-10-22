@@ -60,7 +60,12 @@ src/app/
   (se descarga su audio del servidor), agregar a la cola, o subir un archivo nuevo para analizarlo. Resalta las pistas que
   mezclan bien armónicamente con las que ya están cargadas.
 - **Decks**: reproducir/pausar, punto cue, pitch de ±8 %, volumen, EQ de tres bandas, forma de onda (clic para saltar) y
-  **Sync** para igualar el tempo del otro deck y, si los dos suenan y tienen rejilla, poner sus pulsos en fase.
+  **Sync** para igualar el tempo del otro deck y, si los dos suenan y tienen rejilla, poner sus pulsos en fase. Cada deck
+  indica cómo de fiable es el **primer tiempo** de la pista (detectado con su confianza, incierto o fijado a mano) y
+  tiene el botón **Marcar el 1**: cuando la detección no se puede fiar (reggaetón), se escucha, se pausa o se busca
+  con la forma de onda en un «1» y se pulsa; el motor ajusta ese instante al pulso más cercano y la pista queda con el
+  primer tiempo fijado a mano (confianza 1), así el Auto-DJ y Sync pueden alinear por compases. No mueve los puntos de
+  mezcla (cues) de la pista.
 - **Mezclador**: crossfader de potencia constante (el volumen percibido no baja a mitad del fundido) y volumen maestro.
 - **Auto-DJ**: mientras suena una pista prepara la siguiente en el otro deck (la primera de la cola de la sesión y, si no
   hay, la mejor recomendación de la IA con audio que no haya sonado) y, al llegar al punto de salida del plan, hace la

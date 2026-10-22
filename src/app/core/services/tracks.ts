@@ -32,6 +32,14 @@ export class TrackApiService {
     return this.http.post<Track>(`${this.baseUrl}/analyze`, body);
   }
 
+  /**
+   * El DJ senala un instante (segundos) que es un "1" del compas: el motor lo ajusta al pulso mas cercano de la
+   * rejilla y lo guarda como primer tiempo. Devuelve la pista actualizada.
+   */
+  setDownbeat(id: number, seconds: number): Observable<Track> {
+    return this.http.put<Track>(`${this.baseUrl}/${id}/grid`, { downbeat: seconds });
+  }
+
   /** Audio original de la pista, listo para decodificarlo con la Web Audio API. */
   getAudio(id: number): Observable<ArrayBuffer> {
     return this.http.get(`${this.baseUrl}/${id}/audio`, { responseType: 'arraybuffer' });

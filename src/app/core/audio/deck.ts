@@ -89,6 +89,13 @@ export class Deck {
     this.peaks.set(normalizePeaks(computePeaks(buffer.getChannelData(0), WAVEFORM_PEAKS)));
   }
 
+  /** Reemplaza los datos de la pista cargada (por ejemplo su rejilla corregida) sin tocar el audio ni la reproduccion. */
+  updateTrack(track: Track): void {
+    if (this.track()?.id === track.id) {
+      this.track.set(track);
+    }
+  }
+
   /** Vacia el deck. */
   eject(): void {
     this.stopSource();

@@ -21,7 +21,12 @@ npm install
 npm start          # ng serve en http://localhost:4200
 npm test           # pruebas unitarias (Vitest)
 npm run build      # build de producción en dist/
+npm run e2e        # pruebas end-to-end (Playwright)
 ```
+
+### Pruebas end-to-end
+
+Las pruebas de `e2e/` abren la aplicación en Chromium (escritorio y móvil) contra un API **simulado** dentro del propio navegador, así que no necesitan Spring ni Django. La primera vez hay que descargar el navegador: `npx playwright install chromium`. Playwright levanta `ng serve` en el puerto 4300 por su cuenta.
 
 ## Configuración
 

@@ -58,5 +58,5 @@ Al terminarla se marca `[x]` en ese mismo commit.
 - [ ] feat(deck): key lock (master tempo) para que cambiar el pitch no cambie el tono [6.6]
 - [x] feat(midi): distinguir el canal MIDI para que dos decks con el mismo CC no choquen [6.7]
 - [x] feat(library): refrescar la lista sola mientras se analiza la voz, y avisar de las pistas sin audio para volver a subirlas [6.8]
-- [ ] chore(ci): ejecutar los tests e2e de Playwright en la CI [6.9]
+- [x] chore(ci): ejecutar los tests e2e de Playwright en la CI [6.9]
 - [ ] test(audio): escuchar y afinar a oído el EQ y las transiciones, y probar con servicios reales [6.10]

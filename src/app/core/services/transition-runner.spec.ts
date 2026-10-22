@@ -103,6 +103,111 @@ describe('TransitionRunnerService', () => {
     });
   });
 
+  describe('alineacion a compas', () => {
+    // A a 120 BPM (compas de 2 s) con el primer tiempo en 0; B a 124 BPM con el primer tiempo en 0.2.
+    const conRejilla = (id: number, bpm: number, primerTiempo: number): Track => ({
+      ...pista(id, bpm), grid: { offset: primerTiempo, downbeat: primerTiempo, confidence: 0.9 },
+    });
+    const alineable = () => plan({
+      style: 'blend', bars: 4, seconds: 8, mixInAt: 0.2, automation: automatizacion(16),
+      tempoMatch: { ratio: 120 / 124, multiplier: 1, feasible: true },
+    });
+
+    beforeEach(() => {
+      mixer.loadBuffer('A', buffer(), conRejilla(1, 120, 0));
+      mixer.loadBuffer('B', buffer(), conRejilla(2, 124, 0.2));
+      mixer.deck('A').play();
+      ctx.currentTime = 10.3; // A lleva 10.3 s sonando: el siguiente compas suyo empieza en 12.0
+    });
+
+    it('programa la entrante para el proximo compas de la que suena, en su primer tiempo y a su tempo', async () => {
+      const mezcla = runner.run(alineable(), 'A', 'B');
+      await flush();
+
+      expect(ctx.lastSource.startedWith).toEqual([expect.closeTo(12.0, 6), expect.closeTo(0.2, 6)]);
+      expect(mixer.deck('B').pitch()).toBeCloseTo(120 / 124);
+
+      await avanzar(20_000);
+      await mezcla;
+    });
+
+    it('mientras espera al compas la transicion no avanza y el crossfader sigue del lado de la saliente', async () => {
+      const mezcla = runner.run(alineable(), 'A', 'B');
+      await flush();
+      await avanzar(1000);
+
+      expect(runner.running()).toBe(true);
+      expect(runner.progress()).toBe(0);
+      expect(mixer.crossfader()).toBe(0);
+
+      await avanzar(20_000);
+      await mezcla;
+    });
+
+    it('la mezcla empieza a contar desde que arranca la entrante, no desde que se pidio', async () => {
+      const mezcla = runner.run(alineable(), 'A', 'B');
+      await flush();
+      await avanzar(1700 + 4000); // 1.7 s de espera y la mitad de los 8 s del plan
+
+      expect(runner.progress()).toBeCloseTo(0.5, 1);
+      await avanzar(5000);
+      expect(await mezcla).toBe('completed');
+    });
+
+    it('con "no antes de" espera al compas posterior al punto de salida del plan', async () => {
+      const mezcla = runner.run(alineable(), 'A', 'B', { notBefore: 16 });
+      await flush();
+
+      expect(ctx.lastSource.startedWith![0]).toBeCloseTo(16.0, 6);
+
+      await avanzar(30_000);
+      await mezcla;
+    });
+
+    it('cancelar antes de que arranque la entrante la deja detenida', async () => {
+      const mezcla = runner.run(alineable(), 'A', 'B');
+      await flush();
+
+      runner.cancel();
+
+      expect(await mezcla).toBe('cancelled');
+      expect(mixer.deck('B').playing()).toBe(false);
+    });
+
+    it('un fundido (tempos sin igualar) no espera: arranca al momento', async () => {
+      const fundido = plan({
+        style: 'fade', bars: 2, seconds: 4, mixInAt: 0.2, automation: automatizacion(8),
+        tempoMatch: { ratio: 0.87, multiplier: 1, feasible: false },
+      });
+
+      const mezcla = runner.run(fundido, 'A', 'B');
+      await flush();
+
+      expect(ctx.lastSource.startedWith![0]).toBe(0);
+      await avanzar(5000);
+      await mezcla;
+    });
+
+    it('si las pistas no tienen rejilla arranca al momento', async () => {
+      mixer.loadBuffer('B', buffer(), pista(2, 124));
+
+      const mezcla = runner.run(alineable(), 'A', 'B');
+      await flush();
+
+      expect(ctx.lastSource.startedWith![0]).toBe(0);
+      await avanzar(20_000);
+      await mezcla;
+    });
+
+    it('canAlign dice si la transicion se puede alinear', () => {
+      expect(runner.canAlign(alineable(), 'A', 'B')).toBe(true);
+      expect(runner.canAlign(plan({ style: 'fade' }), 'A', 'B')).toBe(false);
+
+      mixer.loadBuffer('B', buffer(), pista(2, 124));
+      expect(runner.canAlign(alineable(), 'A', 'B')).toBe(false);
+    });
+  });
+
   describe('corte', () => {
     const corte = () => plan({ style: 'cut', bars: 0, seconds: 0, automation: [] });
 

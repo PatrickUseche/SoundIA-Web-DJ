@@ -1,5 +1,6 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { automationToKnob, interpolateAutomation } from '../audio/automation';
+import { Alignment, planAlignment } from '../audio/beatgrid';
 import { Deck, DeckId } from '../audio/deck';
 import { EQ_BANDS, EqBand } from '../audio/eq';
 import { TransitionPlan } from '../models/autodj';
@@ -10,10 +11,19 @@ export const TRANSITION_TICK_MS = 100;
 
 export type TransitionResult = 'completed' | 'cancelled';
 
+export interface RunOptions {
+  /** No arrancar la entrante antes de este punto de la saliente (el punto de salida del plan). */
+  notBefore?: number;
+}
+
 /**
  * Ejecuta un plan de transicion entre dos decks: arranca la pista entrante a su ritmo y en su punto de
  * entrada, y durante el tiempo del plan mueve el crossfader y los ecualizadores segun sus curvas.
  * Al terminar detiene la pista saliente y deja los EQ planos.
+ *
+ * Si las dos pistas tienen rejilla de pulsos y el tempo se puede igualar, la entrante no arranca al instante:
+ * espera al proximo compas de la saliente y arranca justo en su propio compas, con el tempo igualado, para que
+ * los golpes de las dos caigan a la vez. Si no, arranca al momento como siempre.
  */
 @Injectable({ providedIn: 'root' })
 export class TransitionRunnerService {
@@ -21,6 +31,9 @@ export class TransitionRunnerService {
 
   private timer: ReturnType<typeof setInterval> | null = null;
   private finish: ((result: TransitionResult) => void) | null = null;
+  /** Hora (Date.now) en que arranca la entrante si aun no ha llegado, y el deck que esta esperando. */
+  private pendingStartAt = 0;
+  private pendingDeck: Deck | null = null;
 
   readonly running = signal(false);
   /** Avance de la transicion en curso, de 0 a 1. */
@@ -30,7 +43,7 @@ export class TransitionRunnerService {
    * Hace la transicion de `from` a `to`. Se resuelve con 'completed' al terminar o con 'cancelled' si se
    * cancela antes. Falla si alguno de los dos decks no tiene pista. Si ya habia una en curso, la cancela.
    */
-  async run(plan: TransitionPlan, from: DeckId, to: DeckId): Promise<TransitionResult> {
+  async run(plan: TransitionPlan, from: DeckId, to: DeckId, options: RunOptions = {}): Promise<TransitionResult> {
     this.cancel();
     const outgoing = this.mixer.deck(from);
     const incoming = this.mixer.deck(to);
@@ -38,14 +51,29 @@ export class TransitionRunnerService {
       throw new Error('Los dos decks necesitan una pista cargada para hacer la transicion.');
     }
 
+    // Se reanuda el contexto antes de calcular nada: la alineacion depende de en que punto va la saliente.
+    await this.mixer.resume();
+
     // La pista entrante entra en su punto de entrada, con las curvas ya en la posicion inicial. Solo se iguala
     // su tempo si cabe en el pitch fader: si no, suena a su ritmo natural en vez de quedar a medio ajustar.
-    incoming.setPitch(plan.tempoMatch.feasible ? plan.tempoMatch.ratio : 1);
-    incoming.seek(plan.mixInAt);
+    const alignment = this.alignment(plan, outgoing, incoming, options.notBefore);
+    if (alignment) {
+      incoming.setPitch(alignment.ratio);
+      incoming.seek(alignment.incomingStart);
+    } else {
+      incoming.setPitch(plan.tempoMatch.feasible ? plan.tempoMatch.ratio : 1);
+      incoming.seek(plan.mixInAt);
+    }
     incoming.setVolume(1);
     this.apply(plan, from, outgoing, incoming, 0);
-    await this.mixer.resume();
-    incoming.play();
+    const delayMs = alignment ? alignment.delaySeconds * 1000 : 0;
+    if (alignment) {
+      incoming.playIn(alignment.delaySeconds);
+      this.pendingStartAt = Date.now() + delayMs;
+      this.pendingDeck = incoming;
+    } else {
+      incoming.play();
+    }
 
     this.running.set(true);
     this.progress.set(0);
@@ -59,7 +87,8 @@ export class TransitionRunnerService {
       const startedAt = Date.now();
       this.finish = resolve;
       this.timer = setInterval(() => {
-        const progress = Math.min(1, (Date.now() - startedAt) / (plan.seconds * 1000));
+        // La mezcla cuenta desde que la entrante arranca de verdad (si hubo que esperar al compas, no antes).
+        const progress = Math.min(1, Math.max(0, (Date.now() - startedAt - delayMs) / (plan.seconds * 1000)));
         this.progress.set(progress);
         this.apply(plan, from, outgoing, incoming, progress);
         if (progress >= 1) {
@@ -69,16 +98,44 @@ export class TransitionRunnerService {
     });
   }
 
+  /** Si esta transicion se puede alinear a compas ahora mismo (rejillas, tempo y estilo de mezcla). */
+  canAlign(plan: TransitionPlan, from: DeckId, to: DeckId): boolean {
+    return this.alignment(plan, this.mixer.deck(from), this.mixer.deck(to)) !== null;
+  }
+
   /** Detiene la transicion en curso dejando el mezclador como esta en ese momento. */
   cancel(): void {
     if (this.timer === null && this.finish === null) {
       return;
     }
+    // Si la entrante estaba programada y aun no habia arrancado, se detiene: no debe empezar sola despues.
+    if (this.pendingDeck && Date.now() < this.pendingStartAt) {
+      this.pendingDeck.pause();
+    }
+    this.pendingDeck = null;
     this.stopTimer();
     const resolve = this.finish;
     this.finish = null;
     this.running.set(false);
     resolve?.('cancelled');
+  }
+
+  private alignment(plan: TransitionPlan, outgoing: Deck, incoming: Deck, notBefore?: number): Alignment | null {
+    const outgoingTrack = outgoing.track();
+    const incomingTrack = incoming.track();
+    // Solo se alinean las mezclas con los tempos igualados: un fundido no tiene golpes que hacer coincidir.
+    if (plan.style !== 'blend' || !plan.tempoMatch.feasible || !outgoingTrack || !incomingTrack || !outgoing.playing()) {
+      return null;
+    }
+    return planAlignment({
+      outgoing: outgoingTrack,
+      incoming: incomingTrack,
+      outgoingPosition: outgoing.position(),
+      outgoingRate: outgoing.pitch(),
+      multiplier: plan.tempoMatch.multiplier,
+      mixInAt: plan.mixInAt,
+      notBefore,
+    });
   }
 
   private apply(plan: TransitionPlan, from: DeckId, outgoing: Deck, incoming: Deck, progress: number): void {
@@ -100,6 +157,7 @@ export class TransitionRunnerService {
   private complete(plan: TransitionPlan, from: DeckId, outgoing: Deck, incoming: Deck): TransitionResult {
     this.stopTimer();
     this.finish = null;
+    this.pendingDeck = null;
     // Solo suena la pista entrante: crossfader de su lado, EQ planos y la saliente detenida.
     this.mixer.setCrossfader(from === 'A' ? 1 : 0);
     outgoing.pause();

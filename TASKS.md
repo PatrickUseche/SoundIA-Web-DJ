@@ -42,4 +42,4 @@ Al terminarla se marca `[x]` en ese mismo commit.
 - [x] chore(style): sistema de estilos y diseño responsive [5.1]
 - [x] feat(midi): controlar el mezclador con el aparato MIDI, con asignación por aprendizaje [5.5]
 - [x] test(e2e): pruebas end-to-end del flujo principal [5.2]
-- [ ] chore(ci): pipeline de GitHub Actions con build y tests [5.3]
+- [x] chore(ci): pipeline de GitHub Actions con build y tests [5.3]

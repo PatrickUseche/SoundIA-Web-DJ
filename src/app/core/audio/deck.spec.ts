@@ -137,7 +137,65 @@ describe('Deck', () => {
     });
   });
 
+  describe('hora a la que la pista llega a una posicion', () => {
+    it('sin sonar no se sabe', () => {
+      cargar();
+
+      expect(deck.timeAtPosition(5)).toBeNull();
+      expect(new Deck('B', ctx as unknown as AudioContext, destino as unknown as AudioNode).timeAtPosition(5)).toBeNull();
+    });
+
+    it('es la hora del reloj de audio en que el reproductor llega a esa posicion, sin depender de cuando se pregunta', () => {
+      cargar();
+      ctx.currentTime = 4;
+      deck.play(); // arranca en la hora 4 desde la posicion 0
+
+      expect(deck.timeAtPosition(10)).toBeCloseTo(14);
+      ctx.currentTime = 9.7; // da igual cuando se pregunte
+      expect(deck.timeAtPosition(10)).toBeCloseTo(14);
+    });
+
+    it('tiene en cuenta el pitch', () => {
+      cargar();
+      deck.setPitch(1.05);
+      ctx.currentTime = 4;
+      deck.play();
+
+      expect(deck.timeAtPosition(10.5)).toBeCloseTo(4 + 10.5 / 1.05);
+    });
+
+    it('tras cambiar el pitch con la pista sonando se cuenta desde ese momento', () => {
+      cargar();
+      ctx.currentTime = 0;
+      deck.play();
+      ctx.currentTime = 2; // posicion 2
+      deck.setPitch(1.05);
+
+      expect(deck.timeAtPosition(5)).toBeCloseTo(2 + 3 / 1.05);
+    });
+  });
+
   describe('arranque programado', () => {
+    it('playAt arranca en una hora absoluta del reloj de audio', () => {
+      cargar();
+      deck.seek(2);
+      ctx.currentTime = 5;
+
+      deck.playAt(8.25);
+
+      expect(deck.playing()).toBe(true);
+      expect(ctx.lastSource.startedWith).toEqual([8.25, 2]);
+    });
+
+    it('playAt con una hora ya pasada arranca ahora', () => {
+      cargar();
+      ctx.currentTime = 5;
+
+      deck.playAt(4.9);
+
+      expect(ctx.lastSource.startedWith).toEqual([5, 0]);
+    });
+
     it('playIn programa el arranque en el reloj de audio y la pista cuenta como sonando', () => {
       cargar();
       deck.seek(2);

@@ -130,11 +130,23 @@ export class Deck {
   }
 
   /**
-   * Programa el arranque para dentro de `delaySeconds` segundos del reloj de audio (mucho mas preciso que un
-   * temporizador): asi la pista entrante puede caer justo sobre un golpe de la que suena. Hasta entonces la
-   * pista cuenta como sonando, pero su posicion no avanza.
+   * Hora del reloj de audio en que la pista que suena llegara a `position` (s de la pista); null si no suena.
+   * Sale del propio modelo de la posicion, asi que no depende de cuando se pregunta: sirve para programar otra
+   * pista justo en el instante en que esta llegue a un golpe.
    */
-  playIn(delaySeconds: number): void {
+  timeAtPosition(position: number): number | null {
+    if (!this.buffer || !this.playing()) {
+      return null;
+    }
+    return this.startedAt + (position - this.offset) / this.pitch();
+  }
+
+  /**
+   * Programa el arranque para la hora `when` del reloj de audio (mucho mas preciso que un temporizador): asi la
+   * pista entrante puede caer justo sobre un golpe de la que suena. Hasta entonces la pista cuenta como sonando,
+   * pero su posicion no avanza. Una hora ya pasada arranca ahora.
+   */
+  playAt(when: number): void {
     if (!this.buffer || this.playing()) {
       return;
     }
@@ -144,8 +156,13 @@ export class Deck {
     if (this.offset >= this.duration) {
       this.offset = 0;
     }
-    this.startSource(this.offset, this.ctx.currentTime + Math.max(0, delaySeconds));
+    this.startSource(this.offset, Math.max(when, this.ctx.currentTime));
     this.playing.set(true);
+  }
+
+  /** Programa el arranque para dentro de `delaySeconds` segundos del reloj de audio. */
+  playIn(delaySeconds: number): void {
+    this.playAt(this.ctx.currentTime + Math.max(0, delaySeconds));
   }
 
   pause(): void {

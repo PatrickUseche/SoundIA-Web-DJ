@@ -1,13 +1,18 @@
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { Router, provideRouter } from '@angular/router';
 import { routes } from './app.routes';
 import { App } from './app';
+import { AUTH_STORAGE, AUTH_STORAGE_KEY, AuthService } from './core/services/auth';
+import { authGuard } from './core/services/auth-guard';
+import { environment } from '../environments/environment';
 
 describe('App', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [App],
-      providers: [provideRouter([])],
+      providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()],
     }).compileComponents();
   });
 
@@ -49,10 +54,90 @@ describe('rutas de la aplicacion', () => {
     expect(rutas()).toContain('dashboard');
   });
 
+  it('la pantalla de login esta disponible sin proteger', () => {
+    const login = routes.find((r) => r.path === 'login');
+
+    expect(login).toBeDefined();
+    expect(login?.canActivate).toBeUndefined();
+  });
+
+  it('las pantallas de DJ y de telemetria pasan por el guard de login', () => {
+    for (const ruta of ['dj', 'dashboard']) {
+      expect(routes.find((r) => r.path === ruta)?.canActivate, ruta).toEqual([authGuard]);
+    }
+  });
+
   it('la ruta vacia redirige al dashboard', () => {
     const raiz = routes.find((r) => r.path === '');
 
     expect(raiz?.redirectTo).toBe('dashboard');
     expect(raiz?.pathMatch).toBe('full');
+  });
+});
+
+describe('cerrar sesion', () => {
+  const STATUS = `${environment.apiRootUrl}/auth/status`;
+
+  function crear(opciones: { exige: boolean; sesion: boolean }) {
+    const datos = new Map<string, string>();
+    if (opciones.sesion) {
+      datos.set(AUTH_STORAGE_KEY, JSON.stringify({ token: 'abc', expiresAt: '2999-01-01T00:00:00Z' }));
+    }
+    TestBed.configureTestingModule({
+      imports: [App],
+      providers: [
+        provideRouter([]),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        {
+          provide: AUTH_STORAGE,
+          useValue: {
+            getItem: (k: string) => datos.get(k) ?? null,
+            setItem: (k: string, v: string) => datos.set(k, v),
+            removeItem: (k: string) => datos.delete(k),
+          },
+        },
+      ],
+    });
+    const auth = TestBed.inject(AuthService);
+    auth.status().subscribe();
+    TestBed.inject(HttpTestingController).expectOne(STATUS).flush({ enabled: opciones.exige });
+    const fixture = TestBed.createComponent(App);
+    fixture.detectChanges();
+    return { fixture, auth };
+  }
+
+  const boton = (fixture: { nativeElement: unknown }) =>
+    (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('.cerrar-sesion');
+
+  it('con login exigido y sesion iniciada ofrece cerrar sesion', () => {
+    const { fixture } = crear({ exige: true, sesion: true });
+
+    expect(boton(fixture)?.textContent?.trim()).toBe('Cerrar sesion');
+  });
+
+  it('sin login exigido no muestra el boton', () => {
+    const { fixture } = crear({ exige: false, sesion: false });
+
+    expect(boton(fixture)).toBeNull();
+  });
+
+  it('con login exigido pero sin sesion tampoco', () => {
+    const { fixture } = crear({ exige: true, sesion: false });
+
+    expect(boton(fixture)).toBeNull();
+  });
+
+  it('al pulsarlo cierra la sesion, quita el boton y lleva al login', () => {
+    const { fixture, auth } = crear({ exige: true, sesion: true });
+    const router = TestBed.inject(Router);
+    vi.spyOn(router, 'navigate').mockResolvedValue(true);
+
+    boton(fixture)!.click();
+    fixture.detectChanges();
+
+    expect(auth.authenticated()).toBe(false);
+    expect(router.navigate).toHaveBeenCalledWith(['/login']);
+    expect(boton(fixture)).toBeNull();
   });
 });

@@ -2,6 +2,9 @@
   <span class="marca">SoundIA</span>
   <a routerLink="/dj" routerLinkActive="activo" ariaCurrentWhenActive="page">DJ</a>
   <a routerLink="/dashboard" routerLinkActive="activo" ariaCurrentWhenActive="page">Telemetria</a>
+  @if (auth.enabled() && auth.authenticated()) {
+    <button type="button" class="cerrar-sesion" (click)="cerrarSesion()">Cerrar sesion</button>
+  }
 </nav>
 <main class="contenido">
   <router-outlet></router-outlet>

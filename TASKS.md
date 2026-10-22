@@ -43,3 +43,4 @@ Al terminarla se marca `[x]` en ese mismo commit.
 - [x] feat(midi): controlar el mezclador con el aparato MIDI, con asignación por aprendizaje [5.5]
 - [x] test(e2e): pruebas end-to-end del flujo principal [5.2]
 - [x] chore(ci): pipeline de GitHub Actions con build y tests [5.3]
+- [x] chore(docker): Dockerfile en dos etapas con nginx [5.4] (escrito pero sin probar: no hay Docker en la máquina de desarrollo)

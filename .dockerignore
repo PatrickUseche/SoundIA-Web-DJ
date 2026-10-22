@@ -1,0 +1,12 @@
+# Lo que no debe entrar al contexto de construccion de la imagen
+node_modules/
+dist/
+.angular/
+.git/
+.github/
+.vscode/
+
+.env
+.env.*
+
+*.md

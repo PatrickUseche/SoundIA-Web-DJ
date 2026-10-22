@@ -137,6 +137,148 @@ describe('Deck', () => {
     });
   });
 
+  describe('hora a la que la pista llega a una posicion', () => {
+    it('sin sonar no se sabe', () => {
+      cargar();
+
+      expect(deck.timeAtPosition(5)).toBeNull();
+      expect(new Deck('B', ctx as unknown as AudioContext, destino as unknown as AudioNode).timeAtPosition(5)).toBeNull();
+    });
+
+    it('es la hora del reloj de audio en que el reproductor llega a esa posicion, sin depender de cuando se pregunta', () => {
+      cargar();
+      ctx.currentTime = 4;
+      deck.play(); // arranca en la hora 4 desde la posicion 0
+
+      expect(deck.timeAtPosition(10)).toBeCloseTo(14);
+      ctx.currentTime = 9.7; // da igual cuando se pregunte
+      expect(deck.timeAtPosition(10)).toBeCloseTo(14);
+    });
+
+    it('tiene en cuenta el pitch', () => {
+      cargar();
+      deck.setPitch(1.05);
+      ctx.currentTime = 4;
+      deck.play();
+
+      expect(deck.timeAtPosition(10.5)).toBeCloseTo(4 + 10.5 / 1.05);
+    });
+
+    it('tras cambiar el pitch con la pista sonando se cuenta desde ese momento', () => {
+      cargar();
+      ctx.currentTime = 0;
+      deck.play();
+      ctx.currentTime = 2; // posicion 2
+      deck.setPitch(1.05);
+
+      expect(deck.timeAtPosition(5)).toBeCloseTo(2 + 3 / 1.05);
+    });
+  });
+
+  describe('arranque programado', () => {
+    it('playAt arranca en una hora absoluta del reloj de audio', () => {
+      cargar();
+      deck.seek(2);
+      ctx.currentTime = 5;
+
+      deck.playAt(8.25);
+
+      expect(deck.playing()).toBe(true);
+      expect(ctx.lastSource.startedWith).toEqual([8.25, 2]);
+    });
+
+    it('playAt con una hora ya pasada arranca ahora', () => {
+      cargar();
+      ctx.currentTime = 5;
+
+      deck.playAt(4.9);
+
+      expect(ctx.lastSource.startedWith).toEqual([5, 0]);
+    });
+
+    it('playIn programa el arranque en el reloj de audio y la pista cuenta como sonando', () => {
+      cargar();
+      deck.seek(2);
+      ctx.currentTime = 5;
+
+      deck.playIn(1.5);
+
+      expect(deck.playing()).toBe(true);
+      expect(ctx.lastSource.startedWith).toEqual([6.5, 2]);
+    });
+
+    it('hasta que llega el momento la posicion no se mueve; despues avanza con el pitch', () => {
+      cargar();
+      deck.seek(2);
+      deck.setPitch(1.04);
+      ctx.currentTime = 5;
+      deck.playIn(1.5);
+
+      ctx.currentTime = 6;
+      expect(deck.position()).toBe(2);
+
+      ctx.currentTime = 8.5; // 2 s despues de arrancar
+      expect(deck.position()).toBeCloseTo(2 + 2 * 1.04);
+    });
+
+    it('cambiar el pitch mientras espera no adelanta ni retrasa el arranque', () => {
+      cargar();
+      ctx.currentTime = 5;
+      deck.playIn(2);
+
+      ctx.currentTime = 6;
+      deck.setPitch(1.05);
+
+      expect(ctx.lastSource.playbackRate.value).toBe(1.05);
+      expect(ctx.lastSource.startedWith![0]).toBe(7);
+      ctx.currentTime = 7;
+      expect(deck.position()).toBe(0);
+      ctx.currentTime = 8;
+      expect(deck.position()).toBeCloseTo(1.05);
+    });
+
+    it('pausar antes de que llegue el momento cancela el arranque y deja la posicion donde estaba', () => {
+      cargar();
+      deck.seek(3);
+      ctx.currentTime = 5;
+      deck.playIn(2);
+
+      deck.pause();
+
+      expect(deck.playing()).toBe(false);
+      expect(ctx.lastSource.stopped).toBe(true);
+      expect(deck.position()).toBe(3);
+    });
+
+    it('con un retraso de 0 es lo mismo que play', () => {
+      cargar();
+      ctx.currentTime = 4;
+
+      deck.playIn(0);
+
+      expect(ctx.lastSource.startedWith).toEqual([4, 0]);
+    });
+
+    it('un retraso negativo se trata como 0', () => {
+      cargar();
+      ctx.currentTime = 4;
+
+      deck.playIn(-1);
+
+      expect(ctx.lastSource.startedWith).toEqual([4, 0]);
+    });
+
+    it('sin pista cargada o ya sonando no hace nada', () => {
+      deck.playIn(1);
+      expect(ctx.sources.length).toBe(0);
+
+      cargar();
+      deck.play();
+      deck.playIn(1);
+      expect(ctx.sources.length).toBe(1);
+    });
+  });
+
   describe('reproducir y pausar', () => {
     it('play sin pista cargada no hace nada', () => {
       deck.play();

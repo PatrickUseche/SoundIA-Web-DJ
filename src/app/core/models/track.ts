@@ -13,6 +13,18 @@ export interface Track {
   energy: number;
   /** Puntos de mezcla en segundos, de menor a mayor. */
   cuePoints: number[];
+  /** Analisis de la voz del final de la pista (se hace aparte, en segundo plano). Las pistas antiguas no lo traen. */
+  vocals?: {
+    status: 'none' | 'pending' | 'running' | 'done' | 'failed' | 'unavailable';
+    /** Segundo en que acaba la ultima frase cantada; null si no se analizo o no hay voz al final. */
+    lastEnd: number | null;
+  };
+  /**
+   * Rejilla de pulsos: los golpes caen en `offset + k * 60 / bpm`, y los compases empiezan en `downbeat` cada
+   * 4 pulsos. `confidence` (0-1) es la seguridad de que `downbeat` sea de verdad el primer tiempo. null si la
+   * pista no tiene un ritmo claro; las pistas antiguas no la traen.
+   */
+  grid?: { offset: number; downbeat: number; confidence: number } | null;
   /** Si el backend guardo el audio original (las pistas analizadas antes de guardarlo no lo tienen). */
   hasAudio: boolean;
   createdAt: string;

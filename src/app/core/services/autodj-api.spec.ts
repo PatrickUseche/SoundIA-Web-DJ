@@ -3,7 +3,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { AutoDjApiService } from './autodj-api';
 import { SessionsApiService } from './sessions-api';
-import { DjSession, NextTracksResponse, QueueItem, TransitionPlan, WeightsInfo } from '../models/autodj';
+import { DjSession, MixTimingInfo, NextTracksResponse, QueueItem, TransitionPlan, WeightsInfo } from '../models/autodj';
 import { environment } from '../../../environments/environment';
 
 const ROOT = environment.apiRootUrl;
@@ -58,6 +58,18 @@ describe('AutoDjApiService', () => {
     service.sendFeedback(1, 2, false).subscribe();
 
     expect(http.expectOne(`${ROOT}/autodj/feedback`).request.body.liked).toBe(false);
+  });
+
+  it('sendMixTiming hace POST con el momento planeado y el que pidio el DJ', () => {
+    let info: MixTimingInfo | undefined;
+
+    service.sendMixTiming(1, 2, 290, 250).subscribe((i) => (info = i));
+
+    const req = http.expectOne(`${ROOT}/autodj/timing`);
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({ fromTrackId: 1, toTrackId: 2, plannedMixOutAt: 290, actualMixOutAt: 250 });
+    req.flush({ samples: 3, advanceSeconds: 40, learned: true });
+    expect(info?.advanceSeconds).toBe(40);
   });
 
   it('weights pide los pesos vigentes', () => {

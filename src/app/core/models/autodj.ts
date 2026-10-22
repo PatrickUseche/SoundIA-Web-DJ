@@ -61,8 +61,11 @@ export interface AutomationPoint {
 export interface TransitionPlan {
   fromTrackId: number;
   toTrackId: number;
-  /** "blend": las dos suenan a la vez; "cut": corte directo porque los tempos no se igualan. */
-  style: 'blend' | 'cut';
+  /**
+   * "blend": las dos suenan a la vez con los tempos igualados; "fade": fundido corto porque los tempos no se
+   * pueden igualar (la entrante suena a su ritmo); "cut": corte directo (sin duracion).
+   */
+  style: 'blend' | 'fade' | 'cut';
   bars: number;
   /** Duracion de la mezcla; 0 en un corte. */
   seconds: number;
@@ -74,6 +77,18 @@ export interface TransitionPlan {
   compatibility: CompatibilityInfo;
   /** Una por pulso; vacia en un corte. */
   automation: AutomationPoint[];
+  /** Segundos que el motor adelanto la salida porque el DJ suele pedir mezclar antes (0 si aun no aprendio). */
+  mixOutAdvance?: number;
+}
+
+/** Respuesta de POST /autodj/timing: lo que el motor lleva aprendido de cuando mezclar. */
+export interface MixTimingInfo {
+  /** Veces que el DJ ha pedido mezclar antes de lo planeado. */
+  samples: number;
+  /** Segundos que se adelantan las mezclas ahora. */
+  advanceSeconds: number;
+  /** Si el motor ya adelanta sus mezclas por lo aprendido. */
+  learned: boolean;
 }
 
 /** Sesion de DJ (POST/GET /sessions). */

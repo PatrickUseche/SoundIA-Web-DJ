@@ -36,6 +36,8 @@ describe('AutoDjPanelComponent', () => {
     rating: signal<'liked' | 'disliked' | null>(null),
     feedbackError: signal<string | null>(null),
     weights: signal<WeightsInfo | null>(null),
+    secondsToMix: signal<number | null>(null),
+    mixNow: vi.fn(async () => undefined),
     rate: vi.fn(async (liked: boolean) => { autodj.rating.set(liked ? 'liked' : 'disliked'); }),
     loadWeights: vi.fn(async () => undefined),
     start: vi.fn(async () => { autodj.enabled.set(true); autodj.status.set('esperando'); }),
@@ -81,6 +83,8 @@ describe('AutoDjPanelComponent', () => {
     autodj.rating.set(null);
     autodj.feedbackError.set(null);
     autodj.weights.set(null);
+    autodj.secondsToMix.set(null);
+    autodj.mixNow.mockClear();
     autodj.rate.mockClear();
     autodj.loadWeights.mockClear();
     queue.items.set([]);
@@ -92,6 +96,76 @@ describe('AutoDjPanelComponent', () => {
     queue.refresh.mockClear();
     queue.remove.mockClear();
     tracks.list.mockReturnValue(of([pista(10, 'Tema diez'), pista(20, 'Tema veinte')]));
+  });
+
+  describe('cuenta atras y mezclar ahora', () => {
+    it('con el Auto-DJ apagado no ofrece mezclar ahora', async () => {
+      await crear();
+
+      expect(boton('Mezclar ahora')).toBeUndefined();
+    });
+
+    it('encendido pero sin siguiente preparada, el boton esta desactivado y no hay cuenta atras', async () => {
+      autodj.enabled.set(true);
+      autodj.status.set('esperando');
+      await crear();
+
+      expect(boton('Mezclar ahora').disabled).toBe(true);
+      expect(texto()).not.toContain('Mezcla en');
+    });
+
+    it('con la siguiente preparada muestra cuanto falta para mezclar', async () => {
+      autodj.enabled.set(true);
+      autodj.next.set({ track: pista(2), plan: plan(), deck: 'B' });
+      autodj.secondsToMix.set(125);
+      await crear();
+
+      expect(el().querySelector('.cuenta-atras')?.textContent).toContain('Mezcla en 2:05');
+      expect(boton('Mezclar ahora').disabled).toBe(false);
+    });
+
+    it('el boton mezcla ya', async () => {
+      autodj.enabled.set(true);
+      autodj.next.set({ track: pista(2), plan: plan(), deck: 'B' });
+      autodj.secondsToMix.set(125);
+      await crear();
+
+      boton('Mezclar ahora').click();
+
+      expect(autodj.mixNow).toHaveBeenCalledTimes(1);
+    });
+
+    it('mientras se mezcla el boton esta desactivado', async () => {
+      autodj.enabled.set(true);
+      autodj.status.set('mezclando');
+      autodj.next.set({ track: pista(2), plan: plan(), deck: 'B' });
+      await crear();
+
+      expect(boton('Mezclar ahora').disabled).toBe(true);
+    });
+
+    it('explica que mezclar antes le ensena a la IA', async () => {
+      autodj.enabled.set(true);
+      await crear();
+
+      expect(texto()).toContain('le enseñas a la IA');
+    });
+
+    it('avisa cuando la IA ya adelanta sus mezclas por lo aprendido', async () => {
+      autodj.enabled.set(true);
+      autodj.next.set({ track: pista(2), plan: plan({ mixOutAdvance: 40 }), deck: 'B' });
+      await crear();
+
+      expect(el().querySelector('.siguiente')?.textContent).toContain('adelanta sus mezclas 40 s');
+    });
+
+    it('si aun no aprendio nada no menciona el adelanto', async () => {
+      autodj.enabled.set(true);
+      autodj.next.set({ track: pista(2), plan: plan({ mixOutAdvance: 0 }), deck: 'B' });
+      await crear();
+
+      expect(texto()).not.toContain('adelanta sus mezclas');
+    });
   });
 
   describe('encender y apagar', () => {
@@ -194,6 +268,13 @@ describe('AutoDjPanelComponent', () => {
       expect(siguiente).toContain('8A');
       expect(siguiente).toContain('mezcla de 16 compases');
       expect(siguiente).toContain('compatibilidad 93%');
+    });
+
+    it('un fundido sin igualar el tempo se describe como tal', async () => {
+      autodj.next.set({ track: pista(2), plan: plan({ style: 'fade', bars: 2 }), deck: 'A' });
+      await crear();
+
+      expect(el().querySelector('.siguiente')?.textContent).toContain('fundido de 2 compases');
     });
 
     it('un corte directo se describe como tal', async () => {

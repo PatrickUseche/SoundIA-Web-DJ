@@ -13,6 +13,12 @@ import { TransitionRunnerService } from './transition-runner';
 
 /** Cada cuanto el Auto-DJ revisa en que punto va la pista que suena (ms). */
 export const AUTODJ_TICK_MS = 500;
+/**
+ * Cuanto antes del punto de salida (s) el Auto-DJ lanza la transicion cuando se puede alinear a compas: la entrante
+ * se programa para el compas de la saliente que cae en el punto de salida, y eso hay que pedirlo con algo de
+ * antelacion. Debe superar el intervalo del temporizador mas el margen para programar el arranque.
+ */
+export const AUTODJ_ALIGN_LOOKAHEAD_SECONDS = 1.0;
 /** Espera antes de reintentar tras un error o cuando no hay pistas para continuar (ms). */
 export const AUTODJ_RETRY_MS = 10_000;
 /** Cuantas recomendaciones se piden a la IA para poder descartar las repetidas o sin audio. */
@@ -45,6 +51,8 @@ export class AutoDjService {
   /** Aviso o error para mostrar al usuario. */
   readonly message = signal<string | null>(null);
   readonly sessionId = signal<number | null>(null);
+  /** Segundos que faltan para la mezcla; null si aun no hay una siguiente pista preparada. */
+  readonly secondsToMix = signal<number | null>(null);
 
   /** La ultima transicion completada, para que el DJ pueda valorarla. */
   readonly lastTransition = signal<{ from: Track; to: Track } | null>(null);
@@ -105,6 +113,7 @@ export class AutoDjService {
     this.enabled.set(false);
     this.status.set('off');
     this.next.set(null);
+    this.secondsToMix.set(null);
     this.message.set(null);
     this.played.clear();
     this.retryAt = 0;
@@ -138,6 +147,34 @@ export class AutoDjService {
     }
   }
 
+  /**
+   * El DJ quiere mezclar ya, sin esperar al punto de salida. Si es antes de lo planeado se le cuenta al motor:
+   * es su manera de aprender cuando mezclar, y asi el Auto-DJ acaba mezclando solo en el momento que el DJ quiere.
+   */
+  async mixNow(): Promise<void> {
+    if (!this.enabled() || this.busy) {
+      return;
+    }
+    const current = this.playingDeck();
+    const prepared = this.next();
+    const outgoing = current?.track();
+    if (!current || !prepared || !outgoing) {
+      return;
+    }
+    const actual = current.position();
+    const planned = prepared.plan.mixOutAt;
+
+    await this.transition(current, prepared);
+    if (this.status() === 'error' || actual >= planned) {
+      return;
+    }
+    try {
+      await firstValueFrom(this.autodj.sendMixTiming(outgoing.id, prepared.track.id, planned, actual));
+    } catch {
+      // Es informacion complementaria: si no llega, la mezcla ya se hizo y el DJ no tiene que enterarse.
+    }
+  }
+
   /** Un paso del Auto-DJ: prepara la siguiente pista o dispara la transicion. Publico para poder probarlo. */
   async tick(): Promise<void> {
     if (!this.enabled() || this.busy) {
@@ -145,18 +182,22 @@ export class AutoDjService {
     }
     const current = this.playingDeck();
     if (!current) {
+      this.secondsToMix.set(null);
       return; // nada suena (pausa del DJ o fin de pista): se espera sin hacer nada
     }
 
     const prepared = this.next();
+    this.secondsToMix.set(prepared ? Math.max(prepared.plan.mixOutAt - current.position(), 0) : null);
     if (!prepared) {
       if (Date.now() >= this.retryAt) {
         await this.prepareNext(current);
       }
       return;
     }
-    if (current.position() >= prepared.plan.mixOutAt) {
-      await this.transition(current, prepared);
+    // Si la mezcla se alinea a compas se lanza un poco antes; si no, exactamente al llegar al punto de salida.
+    const lookahead = this.runner.canAlign(prepared.plan, current.id, prepared.deck) ? AUTODJ_ALIGN_LOOKAHEAD_SECONDS : 0;
+    if ((prepared.plan.mixOutAt - current.position()) / current.pitch() <= lookahead) {
+      await this.transition(current, prepared, prepared.plan.mixOutAt);
     }
   }
 
@@ -221,12 +262,13 @@ export class AutoDjService {
     return null;
   }
 
-  private async transition(current: Deck, prepared: PreparedNext): Promise<void> {
+  /** `notBefore`: la mezcla programada no empieza antes de ese punto de la pista que suena (el punto de salida). */
+  private async transition(current: Deck, prepared: PreparedNext, notBefore?: number): Promise<void> {
     this.busy = true;
     this.status.set('mezclando');
     try {
       const outgoing = current.track();
-      const result = await this.runner.run(prepared.plan, this.deckId(current), prepared.deck);
+      const result = await this.runner.run(prepared.plan, this.deckId(current), prepared.deck, { notBefore });
       if (result === 'completed') {
         this.played.add(prepared.track.id);
         if (outgoing) {
@@ -235,6 +277,7 @@ export class AutoDjService {
           this.feedbackError.set(null);
         }
         this.next.set(null);
+        this.secondsToMix.set(null);
         this.status.set(this.enabled() ? 'esperando' : 'off');
       }
     } catch (error) {

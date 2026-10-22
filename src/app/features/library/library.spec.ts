@@ -256,6 +256,23 @@ describe('LibraryComponent', () => {
       expect(filas()[1].textContent).toContain('compatible');
     });
 
+    it('avisa mientras la voz de una pista se esta analizando', async () => {
+      crear();
+      await responderLista([
+        pista({ id: 1, title: 'En cola', vocals: { status: 'pending', lastEnd: null } }),
+        pista({ id: 2, title: 'Analizando', vocals: { status: 'running', lastEnd: null } }),
+        pista({ id: 3, title: 'Lista', vocals: { status: 'done', lastEnd: 229.7 } }),
+        pista({ id: 4, title: 'Sin modelo', vocals: { status: 'unavailable', lastEnd: null } }),
+        pista({ id: 5, title: 'Antigua' }),
+      ]);
+
+      expect(filas()[0].querySelector('.analizando-voz')).not.toBeNull();
+      expect(filas()[1].querySelector('.analizando-voz')).not.toBeNull();
+      expect(filas()[2].querySelector('.analizando-voz')).toBeNull();
+      expect(filas()[3].querySelector('.analizando-voz')).toBeNull();
+      expect(filas()[4].querySelector('.analizando-voz')).toBeNull();
+    });
+
     it('sin pistas cargadas no resalta nada', async () => {
       crear();
       await responderLista([pista({ camelot: '8B' }), pista({ id: 2, camelot: '9B' })]);

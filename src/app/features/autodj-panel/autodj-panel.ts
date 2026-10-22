@@ -1,11 +1,22 @@
 import { Component, DestroyRef, OnInit, computed, effect, inject, signal, untracked } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { formatBpm } from '../../core/audio/format';
-import { QueueItem } from '../../core/models/autodj';
+import { formatBpm, formatTime } from '../../core/audio/format';
+import { QueueItem, TransitionPlan } from '../../core/models/autodj';
 import { AutoDjService, AutoDjStatus } from '../../core/services/autodj';
 import { QueueService } from '../../core/services/queue';
 import { TrackApiService } from '../../core/services/tracks';
 import { TransitionRunnerService } from '../../core/services/transition-runner';
+
+function describirEstilo(plan: TransitionPlan): string {
+  switch (plan.style) {
+    case 'cut':
+      return 'corte directo';
+    case 'fade':
+      return `fundido de ${plan.bars} compases`;
+    default:
+      return `mezcla de ${plan.bars} compases`;
+  }
+}
 
 const TEXTO_ESTADO: Record<AutoDjStatus, string> = {
   off: 'Apagado',
@@ -28,6 +39,7 @@ export class AutoDjPanelComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly formatBpm = formatBpm;
+  protected readonly formatTime = formatTime;
 
   /** Titulos de las pistas por id, para mostrar la cola con nombres y no con numeros. */
   private readonly titulos = signal<Map<number, string>>(new Map());
@@ -47,8 +59,9 @@ export class AutoDjPanelComponent implements OnInit {
       bpm: track.bpm,
       camelot: track.camelot,
       deck: preparada.deck,
-      estilo: plan.style === 'cut' ? 'corte directo' : `mezcla de ${plan.bars} compases`,
+      estilo: describirEstilo(plan),
       compatibilidad: Math.round(plan.compatibility.score * 100),
+      adelanto: Math.round(plan.mixOutAdvance ?? 0),
     };
   });
 

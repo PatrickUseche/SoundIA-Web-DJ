@@ -1,10 +1,10 @@
 @if (mixer.supported) {
-    <div class="consola" style="display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-start;">
-        <div style="flex: 1 1 320px;">
+    <div class="consola">
+        <div class="lado">
             <app-deck deckId="A" />
         </div>
 
-        <section aria-label="Mezclador" style="flex: 0 0 200px; padding: 12px; border: 1px solid #999; margin: 8px 0;">
+        <section aria-label="Mezclador" class="panel mezclador">
             <h3>Mezclador</h3>
             <label>
                 Crossfader (A &#8596; B)
@@ -20,12 +20,12 @@
             </label>
         </section>
 
-        <div style="flex: 1 1 320px;">
+        <div class="lado">
             <app-deck deckId="B" />
         </div>
     </div>
 } @else {
-    <p role="alert" style="color: #c62828;">
+    <p role="alert" class="alerta">
         Este navegador no soporta Web Audio, asi que no se pueden reproducir pistas. Usa Chrome, Edge o Firefox.
     </p>
 }

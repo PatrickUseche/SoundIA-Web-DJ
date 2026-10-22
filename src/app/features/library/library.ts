@@ -78,6 +78,11 @@ export class LibraryComponent implements OnInit {
     return this.camelotsEnDecks().some((codigo) => codigo !== '' && areCompatible(codigo, track.camelot));
   }
 
+  /** La voz del final de la pista esta en la cola de analisis o analizandose. */
+  analizandoVoz(track: Track): boolean {
+    return track.vocals?.status === 'pending' || track.vocals?.status === 'running';
+  }
+
   /** La pista ya esta cargada en algun deck. */
   enDeck(track: Track): boolean {
     return this.mixer.supported && (['A', 'B'] as DeckId[]).some((id) => this.mixer.deck(id).track()?.id === track.id);

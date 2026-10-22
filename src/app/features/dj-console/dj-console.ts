@@ -7,6 +7,7 @@ import { DeckComponent } from '../deck/deck';
   selector: 'app-dj-console',
   imports: [DeckComponent],
   templateUrl: './dj-console.html',
+  styleUrl: './dj-console.css',
 })
 export class DjConsoleComponent {
   protected readonly mixer = inject(MixerService);

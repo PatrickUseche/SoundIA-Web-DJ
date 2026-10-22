@@ -31,7 +31,8 @@ const TEXTO_ESTADO: Record<ConnectionState, string> = {
 @Component({
   selector: 'app-dashboard',
   imports: [MidiPanelComponent],
-  templateUrl: './dashboard.html'
+  templateUrl: './dashboard.html',
+  styleUrl: './dashboard.css'
 })
 export class DashboardComponent implements OnInit {
   // Patron de inyeccion de dependencias moderno.

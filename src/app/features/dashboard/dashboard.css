@@ -1,0 +1,17 @@
+.telemetria {
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.decision {
+  margin-top: 20px;
+  border-color: var(--exito);
+}
+
+.historial {
+  overflow-wrap: anywhere;
+}
+
+[data-estado='open'] {
+  color: var(--exito);
+}

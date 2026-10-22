@@ -1,5 +1,8 @@
-<nav aria-label="Principal" style="padding: 10px 20px; font-family: sans-serif; display: flex; gap: 16px;">
+<nav class="principal" aria-label="Principal">
+  <span class="marca">SoundIA</span>
   <a routerLink="/dj" routerLinkActive="activo" ariaCurrentWhenActive="page">DJ</a>
   <a routerLink="/dashboard" routerLinkActive="activo" ariaCurrentWhenActive="page">Telemetria</a>
 </nav>
-<router-outlet></router-outlet>
+<main class="contenido">
+  <router-outlet></router-outlet>
+</main>

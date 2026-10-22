@@ -32,6 +32,13 @@ describe('DjPageComponent', () => {
     expect(el.querySelector('app-library')).not.toBeNull();
   });
 
+  it('incluye la conexion del controlador MIDI y la asignacion de sus controles', () => {
+    const { el } = crear();
+
+    expect(el.querySelector('app-midi-panel')).not.toBeNull();
+    expect(el.querySelector('app-midi-mapping')).not.toBeNull();
+  });
+
   it('al abrirse pide la biblioteca, los titulos de la cola y la cola de la sesion', () => {
     const { http } = crear();
 

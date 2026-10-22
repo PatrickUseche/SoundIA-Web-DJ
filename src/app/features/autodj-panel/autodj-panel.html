@@ -1,4 +1,4 @@
-<section aria-labelledby="titulo-autodj" style="margin: 20px 0; padding: 15px; border: 1px solid #999;">
+<section aria-labelledby="titulo-autodj" class="panel">
     <h3 id="titulo-autodj">Auto-DJ</h3>
 
     <button type="button" (click)="alternar()" [attr.aria-pressed]="autodj.enabled()">
@@ -7,12 +7,23 @@
 
     <p role="status" class="estado" [attr.data-estado]="autodj.status()">{{ textoEstado() }}</p>
 
+    @if (autodj.enabled()) {
+        @if (autodj.secondsToMix(); as faltan) {
+            <p class="cuenta-atras">Mezcla en {{ formatTime(faltan) }}</p>
+        }
+        <button type="button" class="mezclar-ahora" (click)="autodj.mixNow()"
+            [disabled]="!autodj.next() || autodj.status() === 'mezclando'">
+            Mezclar ahora
+        </button>
+        <p class="ayuda">Si mezclas antes de lo previsto, le enseñas a la IA a mezclar antes ella sola.</p>
+    }
+
     @if (autodj.status() === 'mezclando') {
         <progress max="100" [value]="porcentajeMezcla()" aria-label="Avance de la transicion">{{ porcentajeMezcla() }} %</progress>
     }
 
     @if (autodj.message(); as mensaje) {
-        <p role="alert" class="aviso" style="color: #c62828;">{{ mensaje }}</p>
+        <p role="alert" class="aviso alerta">{{ mensaje }}</p>
     }
 
     @if (resumenSiguiente(); as siguiente) {
@@ -23,6 +34,9 @@
                 ({{ formatBpm(siguiente.bpm) }} BPM, {{ siguiente.camelot }})
             </p>
             <p>{{ siguiente.estilo }}, compatibilidad {{ siguiente.compatibilidad }}%</p>
+            @if (siguiente.adelanto > 0) {
+                <p class="adelanto">Por lo que le has enseñado, la IA adelanta sus mezclas {{ siguiente.adelanto }} s.</p>
+            }
         </div>
     }
 
@@ -44,7 +58,7 @@
                 </p>
             }
             @if (autodj.feedbackError(); as mensaje) {
-                <p role="alert" class="valoracion-error" style="color: #c62828;">{{ mensaje }}</p>
+                <p role="alert" class="valoracion-error alerta">{{ mensaje }}</p>
             }
         </div>
     }
@@ -69,7 +83,7 @@
 
     <h4>Cola de la sesion</h4>
     @if (queue.error(); as mensaje) {
-        <p role="alert" class="cola-error" style="color: #c62828;">{{ mensaje }}</p>
+        <p role="alert" class="cola-error alerta">{{ mensaje }}</p>
     }
     @if (queue.items().length === 0) {
         <p class="cola-vacia">

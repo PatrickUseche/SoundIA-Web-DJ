@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { NextTracksResponse, TransitionPlan, WeightsInfo } from '../models/autodj';
+import { MixTimingInfo, NextTracksResponse, TransitionPlan, WeightsInfo } from '../models/autodj';
 
 /** Recomendaciones de la IA: que pista sigue y como mezclarla. */
 @Injectable({ providedIn: 'root' })
@@ -22,6 +22,18 @@ export class AutoDjApiService {
   /** El DJ valora una transicion (me gusto / no me gusto); el motor reajusta sus pesos con ella. */
   sendFeedback(fromTrackId: number, toTrackId: number, liked: boolean): Observable<WeightsInfo> {
     return this.http.post<WeightsInfo>(`${this.baseUrl}/feedback`, { fromTrackId, toTrackId, liked });
+  }
+
+  /**
+   * El DJ pidio mezclar en `actualMixOutAt` (segundos de la pista saliente) en vez del `plannedMixOutAt` del plan;
+   * el motor aprende de ello cuando mezclar.
+   */
+  sendMixTiming(
+    fromTrackId: number, toTrackId: number, plannedMixOutAt: number, actualMixOutAt: number,
+  ): Observable<MixTimingInfo> {
+    return this.http.post<MixTimingInfo>(`${this.baseUrl}/timing`, {
+      fromTrackId, toTrackId, plannedMixOutAt, actualMixOutAt,
+    });
   }
 
   /** Los pesos de la puntuacion que usa el motor ahora. */

@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Observable, of, throwError } from 'rxjs';
-import { AUTODJ_RETRY_MS, AUTODJ_TICK_MS, AutoDjService } from './autodj';
+import { AUTODJ_ALIGN_LOOKAHEAD_SECONDS, AUTODJ_RETRY_MS, AUTODJ_TICK_MS, AutoDjService } from './autodj';
 import { AutoDjApiService } from './autodj-api';
 import { MixerService } from './mixer';
 import { SessionsApiService } from './sessions-api';
@@ -23,6 +23,16 @@ const corte = (desde: number, hasta: number, mixOutAt = 100): TransitionPlan => 
   tempoMatch: { ratio: 1, multiplier: 1, feasible: true },
   compatibility: { score: 0.9, tempo: 1, harmonic: 1, energy: 1, tempoMatch: { ratio: 1, multiplier: 1, feasible: true } },
   automation: [],
+});
+
+/** Mezcla con los tempos igualados (A a 120 BPM, B a 124), que se puede alinear a compas. */
+const mezclaAlineable = (desde: number, hasta: number, mixOutAt = 100): TransitionPlan => ({
+  fromTrackId: desde, toTrackId: hasta, style: 'blend', bars: 4, seconds: 8, mixOutAt, mixInAt: 0.2,
+  tempoMatch: { ratio: 120 / 124, multiplier: 1, feasible: true },
+  compatibility: { score: 0.9, tempo: 1, harmonic: 1, energy: 1, tempoMatch: { ratio: 120 / 124, multiplier: 1, feasible: true } },
+  automation: Array.from({ length: 17 }, (_, i) => ({
+    position: i / 16, gainA: 1 - i / 16, gainB: i / 16, lowA: 1, lowB: 1, midA: 1, midB: 1, highA: 1, highB: 1,
+  })),
 });
 
 const sugerencias = (...ids: number[]): NextTracksResponse => ({
@@ -49,6 +59,7 @@ describe('AutoDjService', () => {
     transition: ReturnType<typeof vi.fn>;
     nextTracks: ReturnType<typeof vi.fn>;
     sendFeedback: ReturnType<typeof vi.fn>;
+    sendMixTiming: ReturnType<typeof vi.fn>;
     weights: ReturnType<typeof vi.fn>;
   };
   let sessionsApi: { active: ReturnType<typeof vi.fn>; start: ReturnType<typeof vi.fn>; pollNext: ReturnType<typeof vi.fn> };
@@ -67,6 +78,7 @@ describe('AutoDjService', () => {
       nextTracks: vi.fn(() => of(sugerencias())),
       sendFeedback: vi.fn((): Observable<WeightsInfo> => of(pesos(1, false))),
       weights: vi.fn((): Observable<WeightsInfo> => of(pesos(0, false))),
+      sendMixTiming: vi.fn(() => of({ samples: 1, advanceSeconds: 0, learned: false })),
     };
     sessionsApi = {
       active: vi.fn(() => of(sesion())),
@@ -370,6 +382,190 @@ describe('AutoDjService', () => {
       expect(service.message()).toContain('necesitan una pista');
       expect(service.next()).toBeNull();
       expect(service.enabled()).toBe(true);
+    });
+  });
+
+  describe('cuenta atras y mezclar ahora', () => {
+    beforeEach(async () => {
+      configurar();
+      sonandoEnA();
+      await service.start();
+    });
+
+    const prepararLa7 = async () => {
+      sessionsApi.pollNext.mockReturnValueOnce(of(elemento(7)));
+      await service.tick(); // prepara la 7 en el deck B con mixOutAt = 100
+    };
+
+    it('sin siguiente preparada no hay cuenta atras', async () => {
+      await service.tick();
+
+      expect(service.secondsToMix()).toBeNull();
+    });
+
+    it('con la siguiente preparada cuenta los segundos que faltan para el punto de salida', async () => {
+      await prepararLa7();
+      ctx.currentTime = 40;
+
+      await service.tick();
+
+      expect(service.secondsToMix()).toBeCloseTo(60);
+    });
+
+    it('la cuenta atras no baja de cero', async () => {
+      await prepararLa7();
+      ctx.currentTime = 99;
+      await service.tick();
+
+      expect(service.secondsToMix()).toBeCloseTo(1);
+    });
+
+    it('mezclar ahora hace la transicion sin esperar al punto de salida', async () => {
+      await prepararLa7();
+      ctx.currentTime = 40;
+
+      await service.mixNow();
+
+      expect(mixer.deck('B').playing()).toBe(true);
+      expect(mixer.deck('A').playing()).toBe(false);
+      expect(service.next()).toBeNull();
+      expect(service.secondsToMix()).toBeNull();
+    });
+
+    it('mezclar ahora antes de lo planeado le ensena a la IA cuando mezclar', async () => {
+      await prepararLa7();
+      ctx.currentTime = 40;
+
+      await service.mixNow();
+
+      expect(autodjApi.sendMixTiming).toHaveBeenCalledWith(1, 7, 100, 40);
+    });
+
+    it('si el envio del aprendizaje falla, la mezcla se hace igual y el Auto-DJ sigue activo', async () => {
+      autodjApi.sendMixTiming.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 502 })));
+      await prepararLa7();
+      ctx.currentTime = 40;
+
+      await service.mixNow();
+
+      expect(mixer.deck('B').playing()).toBe(true);
+      expect(service.enabled()).toBe(true);
+      expect(service.message()).toBeNull();
+    });
+
+    it('sin siguiente preparada mezclar ahora no hace nada', async () => {
+      await service.mixNow();
+
+      expect(mixer.deck('A').playing()).toBe(true);
+      expect(autodjApi.sendMixTiming).not.toHaveBeenCalled();
+    });
+
+    it('con el Auto-DJ apagado mezclar ahora no hace nada', async () => {
+      await prepararLa7();
+      service.stop();
+
+      await service.mixNow();
+
+      expect(mixer.deck('B').playing()).toBe(false);
+      expect(autodjApi.sendMixTiming).not.toHaveBeenCalled();
+    });
+
+    it('una mezcla automatica en el punto planeado no se envia como aprendizaje', async () => {
+      await prepararLa7();
+      ctx.currentTime = 100;
+
+      await service.tick();
+
+      expect(mixer.deck('B').playing()).toBe(true);
+      expect(autodjApi.sendMixTiming).not.toHaveBeenCalled();
+    });
+
+    it('si la transicion falla no se ensena nada', async () => {
+      await prepararLa7();
+      ctx.currentTime = 40;
+      mixer.deck('B').eject();
+
+      await service.mixNow();
+
+      expect(service.status()).toBe('error');
+      expect(autodjApi.sendMixTiming).not.toHaveBeenCalled();
+    });
+
+    it('desactivar el Auto-DJ borra la cuenta atras', async () => {
+      await prepararLa7();
+      await service.tick();
+
+      service.stop();
+
+      expect(service.secondsToMix()).toBeNull();
+    });
+  });
+
+  describe('alinear la mezcla a compas', () => {
+    // A a 120 BPM (compas de 2 s) con el primer tiempo en 0; B a 124 BPM con el primer tiempo en 0.2.
+    const conRejilla = (id: number): Track => pista(id, {
+      bpm: id === 1 ? 120 : 124, grid: { offset: id === 1 ? 0 : 0.2, downbeat: id === 1 ? 0 : 0.2, confidence: 0.9 },
+    });
+
+    beforeEach(async () => {
+      configurar();
+      autodjApi.transition.mockImplementation((desde: number, hasta: number) => of(mezclaAlineable(desde, hasta)));
+      tracksApi.get.mockImplementation((id: number) => of(conRejilla(id)));
+      mixer.loadBuffer('A', buffer(), conRejilla(1));
+      mixer.deck('A').play();
+      await service.start();
+      sessionsApi.pollNext.mockReturnValueOnce(of(elemento(2)));
+      await service.tick(); // prepara la 2 en el deck B con mixOutAt = 100 (compas 50 de A)
+    });
+
+    it('lanza la transicion un poco antes del punto de salida para caer justo en el compas', async () => {
+      ctx.currentTime = 100 - AUTODJ_ALIGN_LOOKAHEAD_SECONDS + 0.2;
+
+      const mezcla = service.tick(); // la transicion dura hasta que acaba la mezcla
+      await vi.advanceTimersByTimeAsync(0);
+
+      expect(mixer.deck('B').playing()).toBe(true);
+      expect(ctx.lastSource.startedWith![0]).toBeCloseTo(100, 6);
+      expect(ctx.lastSource.startedWith![1]).toBeCloseTo(0.2, 6);
+
+      await vi.advanceTimersByTimeAsync(30_000);
+      await mezcla;
+    });
+
+    it('no se lanza mas de un compas antes: espera a estar dentro del margen', async () => {
+      ctx.currentTime = 100 - AUTODJ_ALIGN_LOOKAHEAD_SECONDS - 0.3;
+
+      await service.tick();
+
+      expect(mixer.deck('B').playing()).toBe(false);
+      expect(service.next()).not.toBeNull();
+    });
+
+    it('mezclar ahora espera al proximo compas de la que suena', async () => {
+      ctx.currentTime = 40.3; // el proximo compas de A empieza en 42.0
+
+      const mezcla = service.mixNow();
+      await vi.advanceTimersByTimeAsync(0);
+
+      expect(ctx.lastSource.startedWith![0]).toBeCloseTo(42.0, 6);
+
+      await vi.advanceTimersByTimeAsync(30_000);
+      await mezcla;
+    });
+
+    it('sin rejilla en las pistas no se adelanta: espera exactamente al punto de salida', async () => {
+      tracksApi.get.mockImplementation((id: number) => of(pista(id)));
+      service.stop();
+      mixer.loadBuffer('A', buffer(), pista(1));
+      mixer.deck('A').play();
+      await service.start();
+      sessionsApi.pollNext.mockReturnValueOnce(of(elemento(2)));
+      await service.tick();
+      ctx.currentTime = 99.5;
+
+      await service.tick();
+
+      expect(mixer.deck('B').playing()).toBe(false);
     });
   });
 

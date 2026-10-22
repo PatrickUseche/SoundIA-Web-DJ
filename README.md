@@ -65,6 +65,13 @@ src/app/
   hay, la mejor recomendación de la IA con audio que no haya sonado) y, al llegar al punto de salida del plan, hace la
   transición moviendo crossfader y EQ (con intercambio de graves, para que nunca suenen los graves de las dos pistas a la vez).
 
+- **Mezcla alineada a compás**: si las dos pistas tienen rejilla de pulsos (la calcula el motor al analizarlas) y sus
+  tempos caben en el pitch fader, la entrante no arranca al instante: espera al próximo compás de la que suena y arranca
+  justo en su propio primer tiempo, con el pitch calculado desde el tempo al que suena la saliente. El arranque se programa
+  en el reloj de audio (no con un temporizador) a la hora exacta en que la saliente llega a su compás; el Auto-DJ lanza la
+  transición ~1 s antes del punto de salida para poder hacerlo. Si no se sabe cuál es el primer tiempo de alguna de las
+  pistas (`confidence < 0.2`) se alinea por pulsos, no por compases. Sin rejilla, o con tempos que no se igualan (fundido),
+  arranca al momento como antes.
 - **Valoración**: tras cada transición del Auto-DJ aparece «¿Te gustó la mezcla?». Cada respuesta se envía al motor, que
   ajusta cuánto pesan tempo, armonía y energía en sus recomendaciones. El panel muestra esos pesos y cuántas valoraciones
   lleva; con menos de 10 (o todas iguales) la IA sigue usando los de por defecto. Solo se pueden valorar las mezclas que hace
@@ -76,8 +83,12 @@ src/app/
   nadie lo ha **escuchado** en un navegador. Las frecuencias del EQ y la calidad de las transiciones son una primera
   aproximación sin afinar de oído.
 - Cambiar el pitch cambia también el tono (no hay *key lock* / *master tempo*).
-- **Sync iguala el tempo, no la fase de los beats**: el plan empieza la entrante en su primer punto de mezcla y la saliente
-  en un compás de su rejilla, lo que normalmente alinea los golpes, pero no está garantizado.
+- **Alineación a compás: precisión medida, no escuchada.** Con música real (dos canciones distintas, simulando el arranque
+  programado), los golpes de las dos pistas quedan a unos 9-15 ms de media (hasta ~25-40 ms en tramos con ritmo débil),
+  frente a 150-230 ms al arrancar sin alinear. En el navegador, la hora programada coincide con el pulso de la saliente
+  a 0,00 ms según la rejilla. El primer tiempo del compás es una heurística (en el reggaetón, con el bombo en todos los
+  pulsos, no se puede saber). No se alinea cuando el motor mezcla a la mitad o al doble de tempo. El botón **Sync** de los
+  decks sigue igualando solo el tempo, no la fase.
 - Los temporizadores del Auto-DJ (500 ms) y de la transición (100 ms) se **ralentizan en pestañas en segundo plano**: para
   mezclar, la pestaña debe estar visible.
 - Hay que reproducir algo manualmente antes de activar el Auto-DJ (el navegador exige un gesto del usuario para sonar).

@@ -432,4 +432,25 @@ describe('LibraryComponent', () => {
       expect(filas().length).toBe(1);
     });
   });
+
+  describe('pistas sin audio', () => {
+    it('avisa cuantas pistas no tienen el audio guardado', async () => {
+      crear();
+      await responderLista([pista({ hasAudio: false }), pista({ id: 2, hasAudio: false }), pista({ id: 3 })]);
+
+      expect(el().querySelector('.aviso-sin-audio')?.textContent).toContain('2 pistas no tienen el audio guardado');
+    });
+
+    it('usa el singular cuando es una sola pista', async () => {
+      crear();
+      await responderLista([pista({ hasAudio: false })]);
+      expect(el().querySelector('.aviso-sin-audio')?.textContent).toContain('1 pista no tiene el audio guardado');
+    });
+
+    it('no avisa si todas las pistas tienen audio', async () => {
+      crear();
+      await responderLista([pista(), pista({ id: 2 })]);
+      expect(el().querySelector('.aviso-sin-audio')).toBeNull();
+    });
+  });
 });

@@ -1,11 +1,16 @@
 import { Injectable, InjectionToken, PLATFORM_ID, inject, signal } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
-import { EMPTY, Observable } from 'rxjs';
+import { HttpErrorResponse } from '@angular/common/http';
+import { EMPTY, Observable, Subscription } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ConnectionState, StreamEvent } from '../models/stream-messages';
+import { AuthService } from './auth';
 
 // Valor de EventSource.CLOSED; se usa el numero para no depender del global (no existe al renderizar en servidor).
 const EVENT_SOURCE_CLOSED = 2;
+
+/** Con login, espera esto antes de pedir un ticket nuevo y reabrir el stream si se corta (ms). */
+export const STREAM_RECONNECT_MS = 3000;
 
 /** Crea el EventSource; se puede reemplazar en las pruebas. */
 export const EVENT_SOURCE_FACTORY = new InjectionToken<(url: string) => EventSource>(
@@ -17,6 +22,7 @@ export const EVENT_SOURCE_FACTORY = new InjectionToken<(url: string) => EventSou
 export class TelemetryStreamService {
   private readonly createEventSource = inject(EVENT_SOURCE_FACTORY);
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
+  private readonly auth = inject(AuthService);
 
   private readonly _state = signal<ConnectionState>('closed');
   /** Estado actual de la conexion. */
@@ -24,7 +30,9 @@ export class TelemetryStreamService {
 
   /**
    * Abre el flujo en vivo mientras haya un suscriptor y lo cierra al cancelar la suscripcion.
-   * EventSource reconecta solo si se corta la conexion; el estado lo refleja.
+   * Sin login, EventSource reconecta solo si se corta la conexion; el estado lo refleja. Con login el API exige un
+   * ticket de 30 s en la URL: la reconexion automatica reutilizaria uno vencido, asi que se cierra la conexion y se
+   * pide un ticket nuevo para reabrirla.
    */
   connect(): Observable<StreamEvent> {
     // EventSource solo existe en el navegador.
@@ -34,14 +42,13 @@ export class TelemetryStreamService {
 
     return new Observable<StreamEvent>((subscriber) => {
       this._state.set('connecting');
-      const source = this.createEventSource(`${environment.apiBaseUrl}/stream`);
+      const withTicket = this.auth.enabled() === true;
+      let source: EventSource | null = null;
+      let ticketRequest: Subscription | null = null;
+      let retryTimer: ReturnType<typeof setTimeout> | null = null;
 
-      source.onopen = () => this._state.set('open');
-      source.onerror = () =>
-        this._state.set(source.readyState === EVENT_SOURCE_CLOSED ? 'closed' : 'reconnecting');
-
-      const listen = (type: StreamEvent['type']) =>
-        source.addEventListener(type, (event) => {
+      const listen = (current: EventSource, type: StreamEvent['type']) =>
+        current.addEventListener(type, (event) => {
           try {
             const data = JSON.parse((event as MessageEvent<string>).data);
             subscriber.next({ type, data } as StreamEvent);
@@ -50,11 +57,55 @@ export class TelemetryStreamService {
             console.warn(`[Stream] Mensaje "${type}" ignorado por no ser JSON valido:`, err);
           }
         });
-      listen('midi');
-      listen('decision');
+
+      const scheduleReconnect = () => {
+        this._state.set('reconnecting');
+        retryTimer = setTimeout(open, STREAM_RECONNECT_MS);
+      };
+
+      const attach = (url: string) => {
+        const current = this.createEventSource(url);
+        source = current;
+        current.onopen = () => this._state.set('open');
+        current.onerror = () => {
+          if (withTicket) {
+            current.close();
+            source = null;
+            scheduleReconnect();
+          } else {
+            this._state.set(current.readyState === EVENT_SOURCE_CLOSED ? 'closed' : 'reconnecting');
+          }
+        };
+        listen(current, 'midi');
+        listen(current, 'decision');
+      };
+
+      const open = () => {
+        retryTimer = null;
+        if (!withTicket) {
+          attach(`${environment.apiBaseUrl}/stream`);
+          return;
+        }
+        ticketRequest = this.auth.streamTicket().subscribe({
+          next: (ticket) => attach(`${environment.apiBaseUrl}/stream?ticket=${encodeURIComponent(ticket)}`),
+          error: (err: unknown) => {
+            // Un 401 ya cerro la sesion y llevo al login (interceptor): no tiene sentido reintentar.
+            if (err instanceof HttpErrorResponse && err.status === 401) {
+              this._state.set('closed');
+            } else {
+              scheduleReconnect();
+            }
+          },
+        });
+      };
+      open();
 
       return () => {
-        source.close();
+        if (retryTimer !== null) {
+          clearTimeout(retryTimer);
+        }
+        ticketRequest?.unsubscribe();
+        source?.close();
         this._state.set('closed');
       };
     });

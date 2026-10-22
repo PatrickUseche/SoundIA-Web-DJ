@@ -50,7 +50,7 @@ Al terminarla se marca `[x]` en ese mismo commit.
 
 ## Fase 6 — Pendiente
 
-- [ ] feat(autodj): alinear también cuando el motor mezcla a la mitad o al doble de tempo (x0.5 / x2) [6.1]
+- [x] feat(autodj): alinear también cuando el motor mezcla a la mitad o al doble de tempo (x0.5 / x2) [6.1]
 - [ ] feat(deck): que el botón Sync de los decks alinee también la fase, no solo el tempo [6.2]
 - [ ] feat(deck): time-stretch para igualar tempos con más de un 8 % de diferencia [6.3]
 - [ ] feat(autodj): alinear por frases de 8 y 16 compases [6.4]

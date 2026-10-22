@@ -1,5 +1,5 @@
 import { Track } from '../models/track';
-import { alignmentLevel, nearestOnGrid, nextOnGrid, planAlignment } from './beatgrid';
+import { alignmentLevel, nearestOnGrid, nextOnGrid, phaseShift, planAlignment } from './beatgrid';
 
 const pista = (bpm: number, grid: Track['grid'], id = 1): Track => ({
   id, title: `pista ${id}`, duration: 200, bpm, key: 'C major', camelot: '8B', energy: 0.6,
@@ -45,6 +45,60 @@ describe('alignmentLevel', () => {
   it('sin rejilla en alguna de las dos no se puede alinear', () => {
     expect(alignmentLevel(pista(120, null), pista(122, rejilla(0, 0), 2))).toBeNull();
     expect(alignmentLevel(pista(120, rejilla(0, 0)), pista(122, undefined, 2))).toBeNull();
+  });
+});
+
+describe('phaseShift', () => {
+  // Las dos a 120 BPM (pulso de 0.5 s) con el primer pulso en 0.
+  const guia = pista(120, rejilla(0, 0));
+  const seguidora = pista(120, rejilla(0, 0), 2);
+  const base = { leader: guia, leaderPosition: 10.3, leaderRate: 1, follower: seguidora, followerPosition: 10.2, followerRate: 1 };
+
+  it('adelanta la seguidora si va retrasada respecto a los pulsos de la guia', () => {
+    // A la guia le faltan 0.2 s para su pulso (10.5) y a la seguidora 0.3 s: va 0.1 s retrasada, hay que adelantarla.
+    expect(phaseShift(base)).toBeCloseTo(0.1);
+  });
+
+  it('atrasa la seguidora si va adelantada', () => {
+    expect(phaseShift({ ...base, followerPosition: 10.4 })).toBeCloseTo(-0.1);
+  });
+
+  it('no mueve nada si ya estan en fase', () => {
+    expect(phaseShift({ ...base, followerPosition: 10.3 })).toBeCloseTo(0);
+    expect(phaseShift({ ...base, followerPosition: 7.8 })).toBeCloseTo(0); // 5 pulsos antes: misma fase
+  });
+
+  it('elige el camino mas corto: como mucho medio pulso en cualquier sentido', () => {
+    for (let posicion = 10.0; posicion < 11.0; posicion += 0.013) {
+      const desplazamiento = phaseShift({ ...base, followerPosition: posicion })!;
+      expect(Math.abs(desplazamiento)).toBeLessThanOrEqual(0.25 + 1e-9);
+    }
+  });
+
+  it('tras mover la seguidora sus pulsos caen sobre los de la guia', () => {
+    const desplazamiento = phaseShift({ ...base, followerPosition: 10.17 })!;
+
+    const pulsos = (((10.17 + desplazamiento) - 0) / 0.5) % 1;
+    const pulsoGuia = ((10.3 - 0) / 0.5) % 1;
+    expect(pulsos).toBeCloseTo(pulsoGuia, 6);
+  });
+
+  it('con una rejilla desplazada tiene en cuenta el primer pulso de cada pista', () => {
+    const conOffset = pista(120, rejilla(0.2, 0.2), 2);
+
+    // Los pulsos de la guia caen en 10.5; los de la seguidora (primer pulso en 0.2) en 10.7: va 0.2 s retrasada.
+    expect(phaseShift({ ...base, follower: conOffset, followerPosition: 10.3 })).toBeCloseTo(0.2);
+  });
+
+  it('tiene en cuenta el pitch: a otro ritmo de reloj, los segundos de pista se escalan', () => {
+    // La seguidora va un 5 % mas rapida: le faltan 0.3 s de pista (0.286 s de reloj) frente a 0.2 s de la guia, asi que
+    // el desfase de reloj es 0.0857 s, que son 0.09 s de pista.
+    expect(phaseShift({ ...base, followerRate: 1.05 })).toBeCloseTo(0.09);
+  });
+
+  it('sin rejilla en alguna de las dos no hay desplazamiento', () => {
+    expect(phaseShift({ ...base, leader: pista(120, null) })).toBeNull();
+    expect(phaseShift({ ...base, follower: pista(120, undefined, 2) })).toBeNull();
   });
 });
 

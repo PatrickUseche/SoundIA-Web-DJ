@@ -35,6 +35,43 @@ export function alignmentLevel(a: Track, b: Track): AlignmentLevel | null {
   return a.grid.confidence >= MIN_DOWNBEAT_CONFIDENCE && b.grid.confidence >= MIN_DOWNBEAT_CONFIDENCE ? 'bar' : 'beat';
 }
 
+/** Un desfase de fase menor que esto no vale la pena corregirlo (s): reposicionar la pista cuesta mas que el error. */
+export const MIN_PHASE_SHIFT_SECONDS = 0.002;
+
+export interface PhaseSyncInput {
+  /** Pista guia (la que suena) y su posicion (s de la pista) y factor de pitch. */
+  leader: Track;
+  leaderPosition: number;
+  leaderRate: number;
+  /** Pista que se mueve para caer en fase con la guia, con su posicion y factor de pitch (tempos ya igualados). */
+  follower: Track;
+  followerPosition: number;
+  followerRate: number;
+}
+
+/**
+ * Segundos de pista que hay que mover la seguidora para que sus pulsos caigan sobre los de la guia, por el camino
+ * mas corto (como mucho medio pulso hacia delante o hacia atras). Es la fase de pulso, no de compas: mover la pista
+ * un compas entero se oiria como un salto. null si alguna de las dos pistas no tiene rejilla.
+ */
+export function phaseShift(input: PhaseSyncInput): number | null {
+  const { leader, follower } = input;
+  if (!leader.grid || !follower.grid) {
+    return null;
+  }
+  const leaderBeat = 60 / leader.bpm;
+  const followerBeat = 60 / follower.bpm;
+  // Cuanto falta (en segundos de reloj) para el siguiente pulso de cada una.
+  const leaderWait = (nextOnGrid(leader.grid.offset, leaderBeat, input.leaderPosition) - input.leaderPosition) / input.leaderRate;
+  const followerWait =
+    (nextOnGrid(follower.grid.offset, followerBeat, input.followerPosition) - input.followerPosition) / input.followerRate;
+  const period = followerBeat / input.followerRate;
+  // Si el pulso de la seguidora llega despues que el de la guia va retrasada: hay que adelantarla.
+  const lag = followerWait - leaderWait;
+  const wrapped = ((((lag + period / 2) % period) + period) % period) - period / 2;
+  return wrapped * input.followerRate;
+}
+
 export interface AlignmentInput {
   outgoing: Track;
   incoming: Track;

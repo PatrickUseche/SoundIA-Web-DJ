@@ -7,6 +7,17 @@
 
     <p role="status" class="estado" [attr.data-estado]="autodj.status()">{{ textoEstado() }}</p>
 
+    @if (autodj.enabled()) {
+        @if (autodj.secondsToMix(); as faltan) {
+            <p class="cuenta-atras">Mezcla en {{ formatTime(faltan) }}</p>
+        }
+        <button type="button" class="mezclar-ahora" (click)="autodj.mixNow()"
+            [disabled]="!autodj.next() || autodj.status() === 'mezclando'">
+            Mezclar ahora
+        </button>
+        <p class="ayuda">Si mezclas antes de lo previsto, le enseñas a la IA a mezclar antes ella sola.</p>
+    }
+
     @if (autodj.status() === 'mezclando') {
         <progress max="100" [value]="porcentajeMezcla()" aria-label="Avance de la transicion">{{ porcentajeMezcla() }} %</progress>
     }
@@ -23,6 +34,9 @@
                 ({{ formatBpm(siguiente.bpm) }} BPM, {{ siguiente.camelot }})
             </p>
             <p>{{ siguiente.estilo }}, compatibilidad {{ siguiente.compatibilidad }}%</p>
+            @if (siguiente.adelanto > 0) {
+                <p class="adelanto">Por lo que le has enseñado, la IA adelanta sus mezclas {{ siguiente.adelanto }} s.</p>
+            }
         </div>
     }
 

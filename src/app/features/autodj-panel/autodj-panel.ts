@@ -1,6 +1,6 @@
 import { Component, DestroyRef, OnInit, computed, effect, inject, signal, untracked } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { formatBpm } from '../../core/audio/format';
+import { formatBpm, formatTime } from '../../core/audio/format';
 import { QueueItem, TransitionPlan } from '../../core/models/autodj';
 import { AutoDjService, AutoDjStatus } from '../../core/services/autodj';
 import { QueueService } from '../../core/services/queue';
@@ -39,6 +39,7 @@ export class AutoDjPanelComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly formatBpm = formatBpm;
+  protected readonly formatTime = formatTime;
 
   /** Titulos de las pistas por id, para mostrar la cola con nombres y no con numeros. */
   private readonly titulos = signal<Map<number, string>>(new Map());
@@ -60,6 +61,7 @@ export class AutoDjPanelComponent implements OnInit {
       deck: preparada.deck,
       estilo: describirEstilo(plan),
       compatibilidad: Math.round(plan.compatibility.score * 100),
+      adelanto: Math.round(plan.mixOutAdvance ?? 0),
     };
   });
 

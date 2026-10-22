@@ -59,7 +59,7 @@ src/app/
   (se descarga su audio del servidor), agregar a la cola, o subir un archivo nuevo para analizarlo. Resalta las pistas que
   mezclan bien armónicamente con las que ya están cargadas.
 - **Decks**: reproducir/pausar, punto cue, pitch de ±8 %, volumen, EQ de tres bandas, forma de onda (clic para saltar) y
-  **Sync** para igualar el tempo del otro deck.
+  **Sync** para igualar el tempo del otro deck y, si los dos suenan y tienen rejilla, poner sus pulsos en fase.
 - **Mezclador**: crossfader de potencia constante (el volumen percibido no baja a mitad del fundido) y volumen maestro.
 - **Auto-DJ**: mientras suena una pista prepara la siguiente en el otro deck (la primera de la cola de la sesión y, si no
   hay, la mejor recomendación de la IA con audio que no haya sonado) y, al llegar al punto de salida del plan, hace la
@@ -89,8 +89,10 @@ src/app/
   a 0,00 ms según la rejilla. El primer tiempo del compás es una heurística (en el reggaetón, con el bombo en todos los
   pulsos, no se puede saber). Cuando el motor mezcla a la mitad o al doble de tempo también se alinea: la entrante
   arranca en uno de sus pulsos sobre uno de la saliente; a la mitad de tempo sus pulsos caen sobre uno de cada dos de
-  la saliente, y al doble cae uno sobre cada pulso y el otro justo en medio. El botón **Sync** de los decks sigue
-  igualando solo el tempo, no la fase.
+  la saliente, y al doble cae uno sobre cada pulso y el otro justo en medio. El botón **Sync** de los decks iguala el
+  tempo y, si los dos decks suenan y las dos pistas tienen rejilla, mueve la pista como mucho medio pulso para que sus
+  golpes caigan sobre los del otro deck (fase de **pulso**, no de compás; no se mueve si el tempo no cabe en el pitch
+  fader ni si el motor lo igualaría a la mitad o al doble). Mover la pista con el deck sonando puede oírse como un salto.
 - Los temporizadores del Auto-DJ (500 ms) y de la transición (100 ms) se **ralentizan en pestañas en segundo plano**: para
   mezclar, la pestaña debe estar visible.
 - Hay que reproducir algo manualmente antes de activar el Auto-DJ (el navegador exige un gesto del usuario para sonar).

@@ -40,4 +40,4 @@ Al terminarla se marca `[x]` en ese mismo commit.
 
 - [ ] chore(style): sistema de estilos y diseño responsive [5.1]
 - [ ] test(e2e): pruebas end-to-end del flujo principal [5.2]
-- [ ] chore(ci): pipeline de GitHub Actions con build y tests [5.3]
+- [x] chore(ci): pipeline de GitHub Actions con build y tests [5.3]

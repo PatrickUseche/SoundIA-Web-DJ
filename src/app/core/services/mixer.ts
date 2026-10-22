@@ -23,6 +23,9 @@ export class MixerService {
   private readonly master: GainNode | null;
   private readonly decks: Record<DeckId, Deck> | null;
 
+  /** La ultima pista cuyos datos cambiaron (por ejemplo su primer tiempo): otras pantallas la actualizan en su lista. */
+  readonly updatedTrack = signal<Track | null>(null);
+
   /** Posicion del crossfader: 0 = solo deck A, 0.5 = centro, 1 = solo deck B. */
   readonly crossfader = signal(0.5);
   readonly masterVolume = signal(1);
@@ -49,6 +52,15 @@ export class MixerService {
       throw new AudioUnsupportedError();
     }
     return this.decks[id];
+  }
+
+  /** Propaga los datos nuevos de una pista a los decks donde esta cargada y avisa al resto de la aplicacion. */
+  updateTrack(track: Track): void {
+    if (this.decks) {
+      this.decks.A.updateTrack(track);
+      this.decks.B.updateTrack(track);
+    }
+    this.updatedTrack.set(track);
   }
 
   /** Deck opuesto al indicado. */

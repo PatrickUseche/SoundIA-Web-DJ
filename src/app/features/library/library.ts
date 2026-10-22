@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, effect, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DestroyRef } from '@angular/core';
 import { areCompatible } from '../../core/audio/camelot';
@@ -58,6 +58,16 @@ export class LibraryComponent implements OnInit {
   readonly sinAudio = computed(() => this.tracks().filter((t) => !t.hasAudio).length);
 
   private temporizadorVoz: ReturnType<typeof setTimeout> | null = null;
+
+  constructor() {
+    // Si una pista cambia en otra parte (por ejemplo se fija su primer tiempo en un deck), la lista se actualiza.
+    effect(() => {
+      const cambiada = this.mixer.updatedTrack();
+      if (cambiada) {
+        this.tracks.update((lista) => lista.map((t) => (t.id === cambiada.id ? cambiada : t)));
+      }
+    });
+  }
 
   ngOnInit(): void {
     this.destroyRef.onDestroy(() => this.cancelarRefrescoVoz());

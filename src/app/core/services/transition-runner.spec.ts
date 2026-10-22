@@ -131,6 +131,27 @@ describe('TransitionRunnerService', () => {
       await mezcla;
     });
 
+    it('si el motor mezcla a la mitad de tempo tambien la alinea, con el pitch al ritmo natural de la entrante', async () => {
+      ctx.currentTime = 0;
+      mixer.loadBuffer('A', buffer(), conRejilla(1, 140, 0));
+      mixer.loadBuffer('B', buffer(), conRejilla(2, 70, 0.2));
+      mixer.deck('A').play();
+      ctx.currentTime = 10.3; // A lleva 10.3 s sonando; su compas dura 4 * 60 / 140 s y el siguiente empieza en 12.0
+      const mitad = plan({
+        style: 'blend', bars: 4, seconds: 8, mixInAt: 0.2, automation: automatizacion(16),
+        tempoMatch: { ratio: 1, multiplier: 2, feasible: true },
+      });
+
+      const mezcla = runner.run(mitad, 'A', 'B');
+      await flush();
+
+      expect(ctx.lastSource.startedWith).toEqual([expect.closeTo(12.0, 6), expect.closeTo(0.2, 6)]);
+      expect(mixer.deck('B').pitch()).toBeCloseTo(1);
+
+      await avanzar(20_000);
+      await mezcla;
+    });
+
     it('mientras espera al compas la transicion no avanza y el crossfader sigue del lado de la saliente', async () => {
       const mezcla = runner.run(alineable(), 'A', 'B');
       await flush();

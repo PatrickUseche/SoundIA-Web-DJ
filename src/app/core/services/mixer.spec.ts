@@ -335,4 +335,40 @@ describe('MixerService', () => {
       expect(mixer.sync('B')).toBeNull();
     });
   });
+
+  describe('updateTrack', () => {
+    const conRejilla = (downbeat: number) =>
+      pista({ grid: { offset: 0.1, downbeat, confidence: 1, manual: true } });
+
+    it('propaga la pista nueva al deck donde esta cargada y avisa al resto de la aplicacion', () => {
+      const { mixer } = crear(new FakeAudioContext());
+      mixer.loadBuffer('A', buffer(), pista());
+      mixer.loadBuffer('B', buffer(), pista({ id: 2 }));
+
+      mixer.updateTrack(conRejilla(0.6));
+
+      expect(mixer.deck('A').track()?.grid?.downbeat).toBe(0.6);
+      expect(mixer.deck('B').track()?.id).toBe(2);
+      expect(mixer.deck('B').track()?.grid).toBeUndefined();
+      expect(mixer.updatedTrack()?.grid?.downbeat).toBe(0.6);
+    });
+
+    it('la actualiza en los dos decks si la misma pista esta cargada en ambos', () => {
+      const { mixer } = crear(new FakeAudioContext());
+      mixer.loadBuffer('A', buffer(), pista());
+      mixer.loadBuffer('B', buffer(), pista());
+
+      mixer.updateTrack(conRejilla(0.6));
+
+      expect(mixer.deck('A').track()?.grid?.downbeat).toBe(0.6);
+      expect(mixer.deck('B').track()?.grid?.downbeat).toBe(0.6);
+    });
+
+    it('sin Web Audio no falla y deja el aviso', () => {
+      const { mixer } = crear(null);
+
+      expect(() => mixer.updateTrack(conRejilla(0.6))).not.toThrow();
+      expect(mixer.updatedTrack()?.id).toBe(1);
+    });
+  });
 });

@@ -5,6 +5,9 @@ import { DeckId } from '../../core/audio/deck';
 import { EQ_BANDS, EqBand } from '../../core/audio/eq';
 import { formatBpm, formatPitch, formatTime } from '../../core/audio/format';
 import { WaveformComponent } from '../../shared/waveform/waveform';
+import { httpErrorMessage } from '../../core/http-error-message';
+import { MIN_DOWNBEAT_CONFIDENCE } from '../../core/audio/beatgrid';
+import { TrackApiService } from '../../core/services/tracks';
 
 // Cada cuanto se lee la posicion de reproduccion para refrescar el reloj y la forma de onda.
 const POSITION_REFRESH_MS = 50;
@@ -21,6 +24,7 @@ export class DeckComponent {
   readonly deckId = input.required<DeckId>();
 
   private readonly mixer = inject(MixerService);
+  private readonly tracks = inject(TrackApiService);
   protected readonly deck = computed(() => this.mixer.deck(this.deckId()));
 
   protected readonly bandas = EQ_BANDS;
@@ -33,6 +37,9 @@ export class DeckComponent {
   protected readonly position = signal(0);
   /** Resultado del ultimo intento de sincronizar el tempo, para mostrarlo al usuario. */
   protected readonly mensajeSync = signal<string | null>(null);
+  /** Resultado del ultimo intento de fijar el primer tiempo a mano. */
+  protected readonly mensajeUno = signal<{ texto: string; error: boolean } | null>(null);
+  protected readonly fijandoUno = signal(false);
 
   protected readonly progreso = computed(() => {
     const duration = this.deck().duration;
@@ -81,6 +88,45 @@ export class DeckComponent {
     } else {
       this.mensajeSync.set(null);
     }
+  }
+
+  /** Como de fiable es el primer tiempo de la pista cargada, en palabras. */
+  protected estadoDelUno(): string | null {
+    const grid = this.deck().track()?.grid;
+    if (!grid) {
+      return null;
+    }
+    if (grid.manual) {
+      return 'fijado a mano';
+    }
+    return grid.confidence >= MIN_DOWNBEAT_CONFIDENCE
+      ? `detectado (confianza ${Math.round(grid.confidence * 100)} %)`
+      : 'incierto: se alinea solo por pulsos. Escucha y marca un primer tiempo para alinear por compases';
+  }
+
+  /**
+   * Fija como primer tiempo el punto donde esta la pista ahora. Se puede pausar o buscar para acertar; el motor lo
+   * ajusta al pulso mas cercano, asi que basta con estar a menos de medio pulso.
+   */
+  marcarElUno(): void {
+    const track = this.deck().track();
+    if (!track?.grid || this.fijandoUno()) {
+      return;
+    }
+    const segundo = this.deck().position();
+    this.fijandoUno.set(true);
+    this.mensajeUno.set(null);
+    this.tracks.setDownbeat(track.id, segundo).subscribe({
+      next: (actualizada) => {
+        this.mixer.updateTrack(actualizada);
+        this.mensajeUno.set({ texto: 'Primer tiempo fijado.', error: false });
+        this.fijandoUno.set(false);
+      },
+      error: (err: unknown) => {
+        this.mensajeUno.set({ texto: httpErrorMessage(err, 'No se pudo fijar el primer tiempo.'), error: true });
+        this.fijandoUno.set(false);
+      },
+    });
   }
 
   alBuscar(fraccion: number): void {

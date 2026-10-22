@@ -10,6 +10,9 @@
             }
             | {{ pista.key }} | <span class="camelot">{{ pista.camelot }}</span>
         </p>
+        @if (estadoDelUno(); as estado) {
+            <p class="primer-tiempo">Primer tiempo: {{ estado }}</p>
+        }
     } @else if (deck().loaded) {
         <p class="titulo">Archivo local (sin analizar)</p>
     } @else {
@@ -33,11 +36,16 @@
         <button type="button" (click)="ponerCue()" [disabled]="!deck().loaded">Marcar cue</button>
         <button type="button" (click)="irAlCue()" [disabled]="!deck().loaded">Ir al cue</button>
         <button type="button" (click)="sincronizar()" [disabled]="!deck().track()">Sync</button>
+        <button type="button" (click)="marcarElUno()" [disabled]="!deck().track()?.grid || fijandoUno()"
+            title="Fija como primer tiempo (un 1) el punto donde esta la pista ahora">Marcar el 1</button>
         <button type="button" (click)="expulsar()" [disabled]="!deck().loaded">Expulsar</button>
     </div>
 
     @if (mensajeSync(); as mensaje) {
         <p role="status" class="mensaje-sync">{{ mensaje }}</p>
+    }
+    @if (mensajeUno(); as mensaje) {
+        <p [attr.role]="mensaje.error ? 'alert' : 'status'" class="mensaje-uno" [class.alerta]="mensaje.error">{{ mensaje.texto }}</p>
     }
 
     <label>

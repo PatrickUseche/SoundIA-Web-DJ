@@ -22,9 +22,10 @@ export interface Track {
   /**
    * Rejilla de pulsos: los golpes caen en `offset + k * 60 / bpm`, y los compases empiezan en `downbeat` cada
    * 4 pulsos. `confidence` (0-1) es la seguridad de que `downbeat` sea de verdad el primer tiempo. null si la
-   * pista no tiene un ritmo claro; las pistas antiguas no la traen.
+   * pista no tiene un ritmo claro; las pistas antiguas no la traen. `manual` es verdadero si el DJ fijo el primer
+   * tiempo a mano (entonces `confidence` es 1).
    */
-  grid?: { offset: number; downbeat: number; confidence: number } | null;
+  grid?: { offset: number; downbeat: number; confidence: number; manual?: boolean } | null;
   /** Si el backend guardo el audio original (las pistas analizadas antes de guardarlo no lo tienen). */
   hasAudio: boolean;
   createdAt: string;

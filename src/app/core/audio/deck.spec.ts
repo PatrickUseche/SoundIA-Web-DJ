@@ -598,4 +598,34 @@ describe('Deck', () => {
       expect(deck.eq().high).toBe(1);
     });
   });
+
+  describe('updateTrack', () => {
+    it('reemplaza los datos de la pista cargada sin tocar la reproduccion', () => {
+      cargar(10, pista({ grid: { offset: 0.1, downbeat: 0.1, confidence: 0.03 } }));
+      deck.seek(4);
+
+      deck.updateTrack(pista({ grid: { offset: 0.1, downbeat: 0.6, confidence: 1, manual: true } }));
+
+      expect(deck.track()?.grid?.downbeat).toBe(0.6);
+      expect(deck.position()).toBe(4);
+      expect(deck.loaded).toBe(true);
+    });
+
+    it('ignora los datos de otra pista', () => {
+      cargar(10, pista({ id: 1 }));
+
+      deck.updateTrack(pista({ id: 2, title: 'otra' }));
+
+      expect(deck.track()?.title).toBe('tema.wav');
+    });
+
+    it('no hace nada si el deck esta vacio o tiene un archivo local sin pista', () => {
+      deck.updateTrack(pista());
+      expect(deck.track()).toBeNull();
+
+      cargar(10, null);
+      deck.updateTrack(pista());
+      expect(deck.track()).toBeNull();
+    });
+  });
 });

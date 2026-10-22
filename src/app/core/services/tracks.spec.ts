@@ -92,4 +92,16 @@ describe('TrackApiService', () => {
     http.expectOne(`${BASE}/9/audio`).error(new ProgressEvent('error'), { status: 404, statusText: 'Not Found' });
     expect((error as { status: number }).status).toBe(404);
   });
+
+  it('setDownbeat envia el segundo con un PUT y devuelve la pista actualizada', () => {
+    let recibida: Track | undefined;
+
+    service.setDownbeat(7, 12.34).subscribe((t) => (recibida = t));
+
+    const req = http.expectOne(`${BASE}/7/grid`);
+    expect(req.request.method).toBe('PUT');
+    expect(req.request.body).toEqual({ downbeat: 12.34 });
+    req.flush(pista({ id: 7, grid: { offset: 0.1, downbeat: 0.6, confidence: 1, manual: true } }));
+    expect(recibida?.grid?.manual).toBe(true);
+  });
 });

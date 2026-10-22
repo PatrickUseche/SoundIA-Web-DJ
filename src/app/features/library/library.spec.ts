@@ -453,4 +453,28 @@ describe('LibraryComponent', () => {
       expect(el().querySelector('.aviso-sin-audio')).toBeNull();
     });
   });
+
+  describe('cambios de una pista hechos en otra parte', () => {
+    it('actualiza su fila cuando se corrige la pista (por ejemplo su primer tiempo desde un deck)', async () => {
+      crear();
+      await responderLista([pista({ id: 1, title: 'Tema uno' }), pista({ id: 2, title: 'Tema dos' })]);
+
+      mixer.updateTrack(pista({ id: 2, title: 'Tema dos', bpm: 99, grid: { offset: 0, downbeat: 0.5, confidence: 1, manual: true } }));
+      await esperar();
+
+      expect(filas()[1].textContent).toContain('99.0');
+      expect(filas()[0].textContent).toContain('128.0');
+    });
+
+    it('ignora una pista que no esta en la lista', async () => {
+      crear();
+      await responderLista([pista({ id: 1 })]);
+
+      mixer.updateTrack(pista({ id: 99, title: 'Otra' }));
+      await esperar();
+
+      expect(filas().length).toBe(1);
+      expect(texto()).not.toContain('Otra');
+    });
+  });
 });

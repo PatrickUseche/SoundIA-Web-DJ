@@ -1,5 +1,6 @@
 <div style="padding: 20px; font-family: sans-serif;">
     <h2>Panel de Telemetria DJ AI</h2>
+    <p role="status" [attr.data-estado]="estadoConexion()">{{ textoEstado(estadoConexion()) }}</p>
     <button (click)="simularMezclaAutomatica()" [disabled]="calculandoMezcla()"
         style="padding: 10px; cursor: pointer;">
         {{ calculandoMezcla() ? 'Calculando...' : 'Disparar Evento MIDI' }}
@@ -14,9 +15,16 @@
         <div style="margin-top: 20px; padding: 15px; border: 2px solid #4caf50;">
             <h3>Decision del Motor IA (Django)</h3>
             <p><strong>Estado:</strong> {{decision.status}}</p>
-            <p><strong>Accion Ejecutada:</strong> {{decision.action}}</p>
+            <p><strong>Accion Ejecutada:</strong> {{ decision.action ?? 'Sin decision de la IA' }}</p>
         </div>
     }
+
+    <h3>En vivo</h3>
+    <ul aria-live="polite">
+        @for (entrada of feed(); track entrada.id) {
+            <li>{{ entrada.texto }}</li>
+        }
+    </ul>
 
     <h3>Historial en PostgreSQL (Via Spring Boot)</h3>
     @if (errorHistorial(); as mensaje) {
@@ -28,9 +36,10 @@
     }
     <ul>
         @for (log of logs(); track log.id) {
-            <li>
+            <li class="historial">
                 <strong>Control:</strong> {{ log.controlId }} |
                 <strong>Valor:</strong> {{ log.value }} |
+                <strong>Accion IA:</strong> {{ log.action ?? 'Sin decision de la IA' }} |
                 <strong>Fecha:</strong> {{ log.createdIn }}
             </li>
         }

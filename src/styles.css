@@ -1,1 +1,139 @@
-/* You can add global styles to this file, and also import other style files */
+/* Sistema de estilos de SoundIA: tema oscuro con variables, base tipografica y piezas reutilizables. */
+:root {
+  color-scheme: dark;
+  --fondo: #14161b;
+  --superficie: #1d2027;
+  --superficie-alta: #262a33;
+  --borde: #3a3f4b;
+  --texto: #e8eaed;
+  --texto-suave: #9aa0ac;
+  --acento: #5b9cff;
+  --acento-fuerte: #82b4ff;
+  --exito: #4caf7d;
+  --peligro: #ff6b6b;
+  --radio: 8px;
+  --espacio: 12px;
+  --fuente: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--fondo);
+  color: var(--texto);
+  font-family: var(--fuente);
+  line-height: 1.5;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0 0 var(--espacio);
+  line-height: 1.25;
+}
+
+a {
+  color: var(--acento);
+}
+
+button {
+  font: inherit;
+  color: var(--texto);
+  background: var(--superficie-alta);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  padding: 6px 12px;
+  min-height: 36px;
+  cursor: pointer;
+}
+
+button:hover:not(:disabled) {
+  border-color: var(--acento);
+}
+
+button[aria-pressed='true'] {
+  background: var(--acento);
+  border-color: var(--acento);
+  color: #0b1220;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+input,
+select {
+  font: inherit;
+  color: var(--texto);
+  background: var(--superficie-alta);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  padding: 6px 8px;
+  max-width: 100%;
+}
+
+input[type='range'] {
+  display: block;
+  width: 100%;
+  padding: 0;
+  accent-color: var(--acento);
+}
+
+label {
+  display: block;
+  margin: 6px 0;
+}
+
+fieldset {
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  margin: var(--espacio) 0 0;
+}
+
+:focus-visible {
+  outline: 2px solid var(--acento-fuerte);
+  outline-offset: 2px;
+}
+
+/* Bloque con borde que agrupa una funcion (deck, biblioteca, panel...). */
+.panel {
+  margin: 8px 0;
+  padding: var(--espacio);
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+}
+
+/* Mensajes de error y de aviso. */
+.alerta {
+  color: var(--peligro);
+}
+
+.tabla-scroll {
+  overflow-x: auto;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+th,
+td {
+  padding: 6px 8px;
+  text-align: left;
+  border-bottom: 1px solid var(--borde);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}

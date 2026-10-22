@@ -36,6 +36,9 @@ Al terminarla se marca `[x]` en ese mismo commit.
 - [x] feat(library): lista de pistas con BPM y tonalidad [4.4]
 - [x] feat(autodj): modo auto-DJ con cola y transiciones propuestas por la IA [4.5]
 - [x] feat(autodj): valorar cada mezcla del Auto-DJ (me gustó / no me gustó) y ver lo que la IA ha aprendido [4.6]
+- [x] feat(autodj): botón «Mezclar ahora» con cuenta atrás, que además enseña al motor cuándo mezclar [4.7]
+- [x] feat(library): mostrar el estado del análisis de voz de cada pista [4.8]
+- [x] feat(autodj): alinear la entrada de la pista siguiente al compás de la que suena [4.9] (medido con música real, no escuchado)
 
 ## Fase 5 — Calidad
 
@@ -44,3 +47,16 @@ Al terminarla se marca `[x]` en ese mismo commit.
 - [x] test(e2e): pruebas end-to-end del flujo principal [5.2]
 - [x] chore(ci): pipeline de GitHub Actions con build y tests [5.3]
 - [x] chore(docker): Dockerfile en dos etapas con nginx [5.4] (escrito pero sin probar: no hay Docker en la máquina de desarrollo)
+
+## Fase 6 — Pendiente
+
+- [ ] feat(autodj): alinear también cuando el motor mezcla a la mitad o al doble de tempo (x0.5 / x2) [6.1]
+- [ ] feat(deck): que el botón Sync de los decks alinee también la fase, no solo el tempo [6.2]
+- [ ] feat(deck): time-stretch para igualar tempos con más de un 8 % de diferencia [6.3]
+- [ ] feat(autodj): alinear por frases de 8 y 16 compases [6.4]
+- [ ] feat(autodj): más tipos de transición y usar la intro de la pista entrante [6.5]
+- [ ] feat(deck): key lock (master tempo) para que cambiar el pitch no cambie el tono [6.6]
+- [ ] feat(midi): distinguir el canal MIDI para que dos decks con el mismo CC no choquen [6.7]
+- [ ] feat(library): refrescar la lista sola mientras se analiza la voz, y avisar de las pistas sin audio para volver a subirlas [6.8]
+- [ ] chore(ci): ejecutar los tests e2e de Playwright en la CI [6.9]
+- [ ] test(audio): escuchar y afinar a oído el EQ y las transiciones, y probar con servicios reales [6.10]

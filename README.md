@@ -82,6 +82,13 @@ src/app/
   ajusta cuánto pesan tempo, armonía y energía en sus recomendaciones. El panel muestra esos pesos y cuántas valoraciones
   lleva; con menos de 10 (o todas iguales) la IA sigue usando los de por defecto. Solo se pueden valorar las mezclas que hace
   el Auto-DJ, no las que haces a mano.
+- **Aprendizaje** (panel «Aprendizaje», apagado por defecto): con «Grabar mis mezclas» encendido, cada mezcla que haces a
+  mano entre dos pistas de la biblioteca se guarda en el motor de IA (`POST /recordings`) para aprender tu estilo: cuándo
+  entra la siguiente, cuánto solapan, y cómo mueves el crossfader, el volumen y el EQ. El detector mira el mezclador 20
+  veces por segundo y da por buena una mezcla cuando una pista sonaba sola, entró la otra y la primera acabó apagándose;
+  si te arrepientes (la que entraba se apaga), cambias una de las pistas o se alarga más de 10 minutos, se descarta. No se
+  graban las transiciones del Auto-DJ ni audio, solo números. Se guardan con el alias `dj`. El interruptor se recuerda al
+  recargar la página.
 
 ### Limitaciones conocidas
 

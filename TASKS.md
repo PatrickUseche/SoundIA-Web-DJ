@@ -63,6 +63,12 @@ Al terminarla se marca `[x]` en ese mismo commit.
 - [x] feat(deck): botón «Marcar el 1» para fijar a mano el primer tiempo de una pista (usa el endpoint nuevo del motor) [6.11]
 - [ ] test(audio): escuchar y afinar a oído el EQ y las transiciones, y probar con servicios reales [6.10]
 
+## Fase 8 — Aprender el estilo de un DJ profesional (en curso)
+
+- [x] feat(learning): modo aprendizaje que graba las mezclas hechas a mano (detector de transiciones, servicio y panel) [8.4]
+- [ ] feat(learning): pantalla para revisar las grabaciones (buenas / descartar / notas) [8.5]
+- [ ] feat(learning): género de cada pista [8.6]
+
 ## Fase 7 — Despliegue en el navegador (pendiente)
 
 Encontrado al probar el sistema completo en un navegador real (2026-10-22); nada de esto se ha hecho todavía.

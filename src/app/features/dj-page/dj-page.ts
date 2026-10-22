@@ -10,7 +10,7 @@ import { MidiPanelComponent } from '../midi-panel/midi-panel';
   selector: 'app-dj-page',
   imports: [DjConsoleComponent, AutoDjPanelComponent, LibraryComponent, MidiPanelComponent, MidiMappingComponent],
   template: `
-    <div style="padding: 20px; font-family: sans-serif;">
+    <div>
       <h2>SoundIA DJ</h2>
       <app-dj-console />
       <app-autodj-panel />

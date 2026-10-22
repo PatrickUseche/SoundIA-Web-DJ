@@ -45,6 +45,8 @@ export class AutoDjService {
   /** Aviso o error para mostrar al usuario. */
   readonly message = signal<string | null>(null);
   readonly sessionId = signal<number | null>(null);
+  /** Segundos que faltan para la mezcla; null si aun no hay una siguiente pista preparada. */
+  readonly secondsToMix = signal<number | null>(null);
 
   /** La ultima transicion completada, para que el DJ pueda valorarla. */
   readonly lastTransition = signal<{ from: Track; to: Track } | null>(null);
@@ -105,6 +107,7 @@ export class AutoDjService {
     this.enabled.set(false);
     this.status.set('off');
     this.next.set(null);
+    this.secondsToMix.set(null);
     this.message.set(null);
     this.played.clear();
     this.retryAt = 0;
@@ -138,6 +141,34 @@ export class AutoDjService {
     }
   }
 
+  /**
+   * El DJ quiere mezclar ya, sin esperar al punto de salida. Si es antes de lo planeado se le cuenta al motor:
+   * es su manera de aprender cuando mezclar, y asi el Auto-DJ acaba mezclando solo en el momento que el DJ quiere.
+   */
+  async mixNow(): Promise<void> {
+    if (!this.enabled() || this.busy) {
+      return;
+    }
+    const current = this.playingDeck();
+    const prepared = this.next();
+    const outgoing = current?.track();
+    if (!current || !prepared || !outgoing) {
+      return;
+    }
+    const actual = current.position();
+    const planned = prepared.plan.mixOutAt;
+
+    await this.transition(current, prepared);
+    if (this.status() === 'error' || actual >= planned) {
+      return;
+    }
+    try {
+      await firstValueFrom(this.autodj.sendMixTiming(outgoing.id, prepared.track.id, planned, actual));
+    } catch {
+      // Es informacion complementaria: si no llega, la mezcla ya se hizo y el DJ no tiene que enterarse.
+    }
+  }
+
   /** Un paso del Auto-DJ: prepara la siguiente pista o dispara la transicion. Publico para poder probarlo. */
   async tick(): Promise<void> {
     if (!this.enabled() || this.busy) {
@@ -145,10 +176,12 @@ export class AutoDjService {
     }
     const current = this.playingDeck();
     if (!current) {
+      this.secondsToMix.set(null);
       return; // nada suena (pausa del DJ o fin de pista): se espera sin hacer nada
     }
 
     const prepared = this.next();
+    this.secondsToMix.set(prepared ? Math.max(prepared.plan.mixOutAt - current.position(), 0) : null);
     if (!prepared) {
       if (Date.now() >= this.retryAt) {
         await this.prepareNext(current);
@@ -235,6 +268,7 @@ export class AutoDjService {
           this.feedbackError.set(null);
         }
         this.next.set(null);
+        this.secondsToMix.set(null);
         this.status.set(this.enabled() ? 'esperando' : 'off');
       }
     } catch (error) {

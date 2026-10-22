@@ -49,6 +49,7 @@ describe('AutoDjService', () => {
     transition: ReturnType<typeof vi.fn>;
     nextTracks: ReturnType<typeof vi.fn>;
     sendFeedback: ReturnType<typeof vi.fn>;
+    sendMixTiming: ReturnType<typeof vi.fn>;
     weights: ReturnType<typeof vi.fn>;
   };
   let sessionsApi: { active: ReturnType<typeof vi.fn>; start: ReturnType<typeof vi.fn>; pollNext: ReturnType<typeof vi.fn> };
@@ -67,6 +68,7 @@ describe('AutoDjService', () => {
       nextTracks: vi.fn(() => of(sugerencias())),
       sendFeedback: vi.fn((): Observable<WeightsInfo> => of(pesos(1, false))),
       weights: vi.fn((): Observable<WeightsInfo> => of(pesos(0, false))),
+      sendMixTiming: vi.fn(() => of({ samples: 1, advanceSeconds: 0, learned: false })),
     };
     sessionsApi = {
       active: vi.fn(() => of(sesion())),
@@ -370,6 +372,122 @@ describe('AutoDjService', () => {
       expect(service.message()).toContain('necesitan una pista');
       expect(service.next()).toBeNull();
       expect(service.enabled()).toBe(true);
+    });
+  });
+
+  describe('cuenta atras y mezclar ahora', () => {
+    beforeEach(async () => {
+      configurar();
+      sonandoEnA();
+      await service.start();
+    });
+
+    const prepararLa7 = async () => {
+      sessionsApi.pollNext.mockReturnValueOnce(of(elemento(7)));
+      await service.tick(); // prepara la 7 en el deck B con mixOutAt = 100
+    };
+
+    it('sin siguiente preparada no hay cuenta atras', async () => {
+      await service.tick();
+
+      expect(service.secondsToMix()).toBeNull();
+    });
+
+    it('con la siguiente preparada cuenta los segundos que faltan para el punto de salida', async () => {
+      await prepararLa7();
+      ctx.currentTime = 40;
+
+      await service.tick();
+
+      expect(service.secondsToMix()).toBeCloseTo(60);
+    });
+
+    it('la cuenta atras no baja de cero', async () => {
+      await prepararLa7();
+      ctx.currentTime = 99;
+      await service.tick();
+
+      expect(service.secondsToMix()).toBeCloseTo(1);
+    });
+
+    it('mezclar ahora hace la transicion sin esperar al punto de salida', async () => {
+      await prepararLa7();
+      ctx.currentTime = 40;
+
+      await service.mixNow();
+
+      expect(mixer.deck('B').playing()).toBe(true);
+      expect(mixer.deck('A').playing()).toBe(false);
+      expect(service.next()).toBeNull();
+      expect(service.secondsToMix()).toBeNull();
+    });
+
+    it('mezclar ahora antes de lo planeado le ensena a la IA cuando mezclar', async () => {
+      await prepararLa7();
+      ctx.currentTime = 40;
+
+      await service.mixNow();
+
+      expect(autodjApi.sendMixTiming).toHaveBeenCalledWith(1, 7, 100, 40);
+    });
+
+    it('si el envio del aprendizaje falla, la mezcla se hace igual y el Auto-DJ sigue activo', async () => {
+      autodjApi.sendMixTiming.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 502 })));
+      await prepararLa7();
+      ctx.currentTime = 40;
+
+      await service.mixNow();
+
+      expect(mixer.deck('B').playing()).toBe(true);
+      expect(service.enabled()).toBe(true);
+      expect(service.message()).toBeNull();
+    });
+
+    it('sin siguiente preparada mezclar ahora no hace nada', async () => {
+      await service.mixNow();
+
+      expect(mixer.deck('A').playing()).toBe(true);
+      expect(autodjApi.sendMixTiming).not.toHaveBeenCalled();
+    });
+
+    it('con el Auto-DJ apagado mezclar ahora no hace nada', async () => {
+      await prepararLa7();
+      service.stop();
+
+      await service.mixNow();
+
+      expect(mixer.deck('B').playing()).toBe(false);
+      expect(autodjApi.sendMixTiming).not.toHaveBeenCalled();
+    });
+
+    it('una mezcla automatica en el punto planeado no se envia como aprendizaje', async () => {
+      await prepararLa7();
+      ctx.currentTime = 100;
+
+      await service.tick();
+
+      expect(mixer.deck('B').playing()).toBe(true);
+      expect(autodjApi.sendMixTiming).not.toHaveBeenCalled();
+    });
+
+    it('si la transicion falla no se ensena nada', async () => {
+      await prepararLa7();
+      ctx.currentTime = 40;
+      mixer.deck('B').eject();
+
+      await service.mixNow();
+
+      expect(service.status()).toBe('error');
+      expect(autodjApi.sendMixTiming).not.toHaveBeenCalled();
+    });
+
+    it('desactivar el Auto-DJ borra la cuenta atras', async () => {
+      await prepararLa7();
+      await service.tick();
+
+      service.stop();
+
+      expect(service.secondsToMix()).toBeNull();
     });
   });
 

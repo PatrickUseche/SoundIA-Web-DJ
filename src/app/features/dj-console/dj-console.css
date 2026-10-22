@@ -1,0 +1,30 @@
+/* Dos decks con el mezclador en medio; en pantallas estrechas se apilan. */
+.consola {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 220px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.mezclador {
+  position: sticky;
+  top: 8px;
+}
+
+@media (max-width: 1000px) {
+  .consola {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .mezclador {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    position: static;
+  }
+}
+
+@media (max-width: 640px) {
+  .consola {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

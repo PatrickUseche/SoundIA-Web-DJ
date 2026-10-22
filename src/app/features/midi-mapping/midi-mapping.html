@@ -1,0 +1,54 @@
+<section aria-labelledby="titulo-mapeo" class="panel">
+    <h3 id="titulo-mapeo">Asignar controles MIDI</h3>
+
+    @if (midi.selectedInputId() === null) {
+        <p role="status" class="sin-aparato">
+            Conecta y elige un controlador en el panel «Controlador MIDI» para poder asignar sus controles.
+        </p>
+    } @else {
+        <p>
+            Pulsa <strong>Asignar</strong> en un control y mueve el fader, la perilla o el boton del aparato que quieres
+            usar para el. La asignacion se guarda en este navegador.
+        </p>
+    }
+
+    @if (mapper.learning(); as control) {
+        <p role="status" class="aprendiendo">Mueve ahora un control del aparato para asignarlo a «{{ etiqueta(control) }}»...</p>
+    }
+
+    <div class="tabla-scroll"><table>
+        <caption>Controles del mezclador</caption>
+        <thead>
+            <tr>
+                <th scope="col">Control</th>
+                <th scope="col">Asignado a</th>
+                <th scope="col">Accion</th>
+            </tr>
+        </thead>
+        <tbody>
+            @for (control of controles; track control) {
+                <tr [class.aprendiendo]="mapper.learning() === control">
+                    <td>{{ etiqueta(control) }}</td>
+                    <td class="asignacion">{{ asignacion(control) }}</td>
+                    <td>
+                        <button type="button" class="asignar" (click)="asignar(control)"
+                            [attr.aria-pressed]="mapper.learning() === control"
+                            [attr.aria-label]="(mapper.learning() === control ? 'Cancelar la asignacion de ' : 'Asignar ') + etiqueta(control)">
+                            {{ mapper.learning() === control ? 'Cancelar' : 'Asignar' }}
+                        </button>
+                        @if (mapper.assignedTo(control) !== null) {
+                            <button type="button" class="quitar" (click)="quitar(control)"
+                                [attr.aria-label]="'Quitar la asignacion de ' + etiqueta(control)">
+                                Quitar
+                            </button>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table></div>
+
+    <button type="button" class="restablecer" (click)="restablecer()" [disabled]="!hayAsignaciones">
+        Restablecer todo
+    </button>
+</section>

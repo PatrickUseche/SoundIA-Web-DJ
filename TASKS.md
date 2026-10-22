@@ -24,20 +24,22 @@ Al terminarla se marca `[x]` en ese mismo commit.
 
 ## Fase 3 — MIDI real
 
-- [ ] feat(midi): servicio con Web MIDI API para detectar controladores [3.1]
-- [ ] feat(midi): enviar los eventos del controlador a /api/v1/midi/event [3.2]
-- [ ] feat(midi): indicador de conexión y selector de dispositivo [3.3]
+- [x] feat(midi): servicio con Web MIDI API para detectar controladores [3.1]
+- [x] feat(midi): enviar los eventos del controlador a /api/v1/midi/event [3.2]
+- [x] feat(midi): indicador de conexión y selector de dispositivo [3.3]
 
 ## Fase 4 — Interfaz de DJ
 
-- [ ] feat(decks): componente de deck con reproducción usando Web Audio API [4.1]
-- [ ] feat(decks): visualización de forma de onda [4.2]
-- [ ] feat(mixer): crossfader y controles de EQ [4.3]
-- [ ] feat(library): lista de pistas con BPM y tonalidad [4.4]
-- [ ] feat(autodj): modo auto-DJ con cola y transiciones propuestas por la IA [4.5]
+- [x] feat(decks): componente de deck con reproducción usando Web Audio API [4.1]
+- [x] feat(decks): visualización de forma de onda [4.2]
+- [x] feat(mixer): crossfader y controles de EQ [4.3]
+- [x] feat(library): lista de pistas con BPM y tonalidad [4.4]
+- [x] feat(autodj): modo auto-DJ con cola y transiciones propuestas por la IA [4.5]
+- [x] feat(autodj): valorar cada mezcla del Auto-DJ (me gustó / no me gustó) y ver lo que la IA ha aprendido [4.6]
 
 ## Fase 5 — Calidad
 
-- [ ] chore(style): sistema de estilos y diseño responsive [5.1]
-- [ ] test(e2e): pruebas end-to-end del flujo principal [5.2]
+- [x] chore(style): sistema de estilos y diseño responsive [5.1]
+- [x] feat(midi): controlar el mezclador con el aparato MIDI, con asignación por aprendizaje [5.5]
+- [x] test(e2e): pruebas end-to-end del flujo principal [5.2]
 - [x] chore(ci): pipeline de GitHub Actions con build y tests [5.3]

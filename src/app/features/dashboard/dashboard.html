@@ -1,23 +1,24 @@
-<div style="padding: 20px; font-family: sans-serif;">
+<div class="telemetria">
     <h2>Panel de Telemetria DJ AI</h2>
     <p role="status" [attr.data-estado]="estadoConexion()">{{ textoEstado(estadoConexion()) }}</p>
-    <button (click)="simularMezclaAutomatica()" [disabled]="calculandoMezcla()"
-        style="padding: 10px; cursor: pointer;">
+    <button (click)="simularMezclaAutomatica()" [disabled]="calculandoMezcla()">
         {{ calculandoMezcla() ? 'Calculando...' : 'Disparar Evento MIDI' }}
     </button>
 
     @if (errorMezcla(); as mensaje) {
-        <p role="alert" style="color: #c62828;">{{ mensaje }}</p>
+        <p role="alert" class="alerta">{{ mensaje }}</p>
     }
 
     <!-- Bloque condicional: Solo se renderiza si Django responde -->
     @if (ultimaDecision(); as decision) {
-        <div style="margin-top: 20px; padding: 15px; border: 2px solid #4caf50;">
+        <div class="panel decision">
             <h3>Decision del Motor IA (Django)</h3>
             <p><strong>Estado:</strong> {{decision.status}}</p>
             <p><strong>Accion Ejecutada:</strong> {{ decision.action ?? 'Sin decision de la IA' }}</p>
         </div>
     }
+
+    <app-midi-panel />
 
     <h3>En vivo</h3>
     <ul aria-live="polite">
@@ -28,7 +29,7 @@
 
     <h3>Historial en PostgreSQL (Via Spring Boot)</h3>
     @if (errorHistorial(); as mensaje) {
-        <p role="alert" style="color: #c62828;">{{ mensaje }}</p>
+        <p role="alert" class="alerta">{{ mensaje }}</p>
     } @else if (cargandoHistorial() && logs().length === 0) {
         <p>Cargando historial...</p>
     } @else if (logs().length === 0) {

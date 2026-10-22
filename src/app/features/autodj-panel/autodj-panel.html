@@ -1,0 +1,106 @@
+<section aria-labelledby="titulo-autodj" class="panel">
+    <h3 id="titulo-autodj">Auto-DJ</h3>
+
+    <button type="button" (click)="alternar()" [attr.aria-pressed]="autodj.enabled()">
+        {{ autodj.enabled() ? 'Desactivar Auto-DJ' : 'Activar Auto-DJ' }}
+    </button>
+
+    <p role="status" class="estado" [attr.data-estado]="autodj.status()">{{ textoEstado() }}</p>
+
+    @if (autodj.enabled()) {
+        @if (autodj.secondsToMix(); as faltan) {
+            <p class="cuenta-atras">Mezcla en {{ formatTime(faltan) }}</p>
+        }
+        <button type="button" class="mezclar-ahora" (click)="autodj.mixNow()"
+            [disabled]="!autodj.next() || autodj.status() === 'mezclando'">
+            Mezclar ahora
+        </button>
+        <p class="ayuda">Si mezclas antes de lo previsto, le enseñas a la IA a mezclar antes ella sola.</p>
+    }
+
+    @if (autodj.status() === 'mezclando') {
+        <progress max="100" [value]="porcentajeMezcla()" aria-label="Avance de la transicion">{{ porcentajeMezcla() }} %</progress>
+    }
+
+    @if (autodj.message(); as mensaje) {
+        <p role="alert" class="aviso alerta">{{ mensaje }}</p>
+    }
+
+    @if (resumenSiguiente(); as siguiente) {
+        <div class="siguiente">
+            <h4>Siguiente</h4>
+            <p>
+                <strong>{{ siguiente.titulo }}</strong> en el deck {{ siguiente.deck }}
+                ({{ formatBpm(siguiente.bpm) }} BPM, {{ siguiente.camelot }})
+            </p>
+            <p>{{ siguiente.estilo }}, compatibilidad {{ siguiente.compatibilidad }}%</p>
+            @if (siguiente.adelanto > 0) {
+                <p class="adelanto">Por lo que le has enseñado, la IA adelanta sus mezclas {{ siguiente.adelanto }} s.</p>
+            }
+        </div>
+    }
+
+    @if (autodj.lastTransition(); as ultima) {
+        <div class="valoracion">
+            <h4>Ultima mezcla</h4>
+            <p>De <strong>{{ ultima.from.title }}</strong> a <strong>{{ ultima.to.title }}</strong></p>
+            @if (autodj.rating() === null) {
+                <p>Te gusto la mezcla?</p>
+                <button type="button" class="me-gusto" (click)="autodj.rate(true)">Me gusto</button>
+                <button type="button" class="no-me-gusto" (click)="autodj.rate(false)">No me gusto</button>
+            } @else {
+                <p role="status" class="gracias">
+                    @if (autodj.rating() === 'liked') {
+                        Gracias: la IA tendra en cuenta que te gusto.
+                    } @else {
+                        Gracias: la IA evitara mezclas parecidas.
+                    }
+                </p>
+            }
+            @if (autodj.feedbackError(); as mensaje) {
+                <p role="alert" class="valoracion-error alerta">{{ mensaje }}</p>
+            }
+        </div>
+    }
+
+    @if (pesos(); as p) {
+        <div class="aprendido">
+            <h4>Lo que la IA ha aprendido</h4>
+            @if (p.aprendidos) {
+                <p>
+                    Segun tus {{ p.valoraciones }} valoraciones, pesa: tempo {{ p.tempo }}%,
+                    armonia {{ p.armonia }}%, energia {{ p.energia }}%.
+                </p>
+            } @else {
+                <p>
+                    Todavia usa los pesos por defecto (tempo {{ p.tempo }}%, armonia {{ p.armonia }}%,
+                    energia {{ p.energia }}%). Necesita al menos 10 valoraciones, con mezclas que te gustaron y otras que no
+                    (llevas {{ p.valoraciones }}).
+                </p>
+            }
+        </div>
+    }
+
+    <h4>Cola de la sesion</h4>
+    @if (queue.error(); as mensaje) {
+        <p role="alert" class="cola-error alerta">{{ mensaje }}</p>
+    }
+    @if (queue.items().length === 0) {
+        <p class="cola-vacia">
+            La cola esta vacia: el Auto-DJ elegira las pistas que recomiende la IA. Agrega pistas desde la biblioteca
+            para decidir tu el orden.
+        </p>
+    } @else {
+        <ol class="cola">
+            @for (item of queue.items(); track item.id) {
+                <li>
+                    {{ titulo(item) }}
+                    <button type="button" (click)="quitar(item)" [attr.aria-label]="'Quitar ' + titulo(item) + ' de la cola'">
+                        Quitar
+                    </button>
+                </li>
+            }
+        </ol>
+    }
+    <button type="button" (click)="queue.refresh()" [disabled]="queue.loading()">Actualizar cola</button>
+</section>

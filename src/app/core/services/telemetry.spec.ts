@@ -36,6 +36,20 @@ describe('TelemetryService', () => {
     expect(recibido).toEqual(logs);
   });
 
+  it('sendEvent hace POST a /event con el evento y espera texto plano', () => {
+    const evento: MidiEvent = { controlId: 21, value: 64 };
+    let respuesta: string | undefined;
+
+    service.sendEvent(evento).subscribe((texto) => (respuesta = texto));
+
+    const req = http.expectOne(`${BASE_URL}/event`);
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual(evento);
+    expect(req.request.responseType).toBe('text');
+    req.flush('Evento MIDI procesado.');
+    expect(respuesta).toBe('Evento MIDI procesado.');
+  });
+
   it('predictMix hace POST del evento y devuelve la decision de la IA', () => {
     const evento: MidiEvent = { controlId: 14, value: 127 };
     const decision: AiDecision = { status: 'success', action: 'Corte de EQ' };

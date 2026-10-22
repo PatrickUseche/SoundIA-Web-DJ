@@ -1,1 +1,8 @@
-<router-outlet></router-outlet>
+<nav class="principal" aria-label="Principal">
+  <span class="marca">SoundIA</span>
+  <a routerLink="/dj" routerLinkActive="activo" ariaCurrentWhenActive="page">DJ</a>
+  <a routerLink="/dashboard" routerLinkActive="activo" ariaCurrentWhenActive="page">Telemetria</a>
+</nav>
+<main class="contenido">
+  <router-outlet></router-outlet>
+</main>

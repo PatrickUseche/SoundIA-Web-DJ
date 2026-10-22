@@ -161,6 +161,13 @@ describe('DashboardComponent', () => {
     });
   });
 
+  it('incluye el panel del controlador MIDI', () => {
+    fixture.detectChanges();
+    http.expectOne(`${BASE_URL}/logs`).flush([]);
+
+    expect((fixture.nativeElement as HTMLElement).querySelector('app-midi-panel')).not.toBeNull();
+  });
+
   describe('en vivo (SSE)', () => {
     const el = () => fixture.nativeElement as HTMLElement;
     const texto = () => el().textContent ?? '';

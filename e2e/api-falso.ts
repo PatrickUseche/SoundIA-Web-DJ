@@ -1,0 +1,80 @@
+import { Page } from '@playwright/test';
+
+export const PISTAS = [
+  {
+    id: 1, title: 'Noche de verano', duration: 2, bpm: 124, key: 'A minor', camelot: '8A',
+    energy: 0.7, cuePoints: [0.5, 1.5], hasAudio: true, createdAt: '2026-10-20T10:00:00Z',
+  },
+  {
+    id: 2, title: 'Amanecer', duration: 2, bpm: 126, key: 'E minor', camelot: '9A',
+    energy: 0.5, cuePoints: [0.5], hasAudio: true, createdAt: '2026-10-20T11:00:00Z',
+  },
+  {
+    id: 3, title: 'Pista antigua', duration: 2, bpm: 120, key: 'C major', camelot: '8B',
+    energy: 0.4, cuePoints: [], hasAudio: false, createdAt: '2026-10-19T09:00:00Z',
+  },
+];
+
+export const LOGS = [
+  { id: 1, controlId: 7, value: 64, action: 'CROSSFADE', createdIn: '2026-10-21T20:00:00Z' },
+  { id: 2, controlId: 12, value: 100, action: null, createdIn: '2026-10-21T20:01:00Z' },
+];
+
+/** WAV mono de 16 bits con un tono de 440 Hz, suficiente para que el navegador lo decodifique. */
+export function crearWav(segundos = 2, frecuencia = 8000): Buffer {
+  const muestras = segundos * frecuencia;
+  const datos = Buffer.alloc(muestras * 2);
+  for (let i = 0; i < muestras; i++) {
+    datos.writeInt16LE(Math.round(Math.sin((2 * Math.PI * 440 * i) / frecuencia) * 8000), i * 2);
+  }
+  const cabecera = Buffer.alloc(44);
+  cabecera.write('RIFF', 0);
+  cabecera.writeUInt32LE(36 + datos.length, 4);
+  cabecera.write('WAVEfmt ', 8);
+  cabecera.writeUInt32LE(16, 16);
+  cabecera.writeUInt16LE(1, 20);
+  cabecera.writeUInt16LE(1, 22);
+  cabecera.writeUInt32LE(frecuencia, 24);
+  cabecera.writeUInt32LE(frecuencia * 2, 28);
+  cabecera.writeUInt16LE(2, 32);
+  cabecera.writeUInt16LE(16, 34);
+  cabecera.write('data', 36);
+  cabecera.writeUInt32LE(datos.length, 40);
+  return Buffer.concat([cabecera, datos]);
+}
+
+/** Simula el API Gateway (localhost:8080) con datos fijos; todo lo no previsto responde 404. */
+export async function simularApi(page: Page, opciones: { pistas?: unknown[] } = {}): Promise<void> {
+  const pistas = opciones.pistas ?? PISTAS;
+  const wav = crearWav();
+
+  await page.route('http://localhost:8080/**', async (route) => {
+    const url = new URL(route.request().url());
+    const metodo = route.request().method();
+    const ruta = url.pathname.replace('/api/v1', '');
+    const cors = { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*' };
+
+    if (metodo === 'OPTIONS') {
+      return route.fulfill({ status: 204, headers: { ...cors, 'access-control-allow-methods': '*' } });
+    }
+    if (ruta === '/tracks' && metodo === 'GET') {
+      return route.fulfill({ json: { tracks: pistas }, headers: cors });
+    }
+    if (/^\/tracks\/\d+\/audio$/.test(ruta)) {
+      return route.fulfill({ body: wav, contentType: 'audio/wav', headers: cors });
+    }
+    if (ruta === '/midi/logs') {
+      return route.fulfill({ json: LOGS, headers: cors });
+    }
+    if (ruta === '/midi/stream') {
+      return route.fulfill({ body: ': conectado\n\n', contentType: 'text/event-stream', headers: cors });
+    }
+    if (ruta === '/sessions/active') {
+      return route.fulfill({ status: 404, json: {}, headers: cors });
+    }
+    if (ruta === '/autodj/weights') {
+      return route.fulfill({ status: 404, json: {}, headers: cors });
+    }
+    return route.fulfill({ status: 404, json: { error: 'no simulado' }, headers: cors });
+  });
+}

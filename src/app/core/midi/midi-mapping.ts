@@ -39,8 +39,40 @@ export function isMixerControl(value: unknown): value is MixerControl {
   return typeof value === 'string' && (MIXER_CONTROLS as string[]).includes(value);
 }
 
-/** Asignaciones: controlId MIDI -> control de pantalla. Un controlId solo controla una cosa. */
-export type MidiMapping = Record<number, MixerControl>;
+/**
+ * Asignaciones: clave de control fisico -> control de pantalla. Una clave solo controla una cosa.
+ * La clave es "canal:controlId" (canal 0-15) para un control de un canal concreto, o solo "controlId" para uno de
+ * cualquier canal: asi siguen valiendo las asignaciones guardadas antes de distinguir el canal.
+ */
+export type MidiMapping = Record<string, MixerControl>;
+
+/** Control fisico del aparato; `channel` es null cuando vale cualquier canal. */
+export interface MidiAssignment {
+  channel: number | null;
+  controlId: number;
+}
+
+const MAX_CHANNEL = 15;
+const MAX_CONTROL_ID = 255;
+
+/** Clave de una asignacion: con canal para un control de ese canal, sin canal para uno de cualquier canal. */
+export function mappingKey(controlId: number, channel: number | null = null): string {
+  return channel === null ? String(controlId) : `${channel}:${controlId}`;
+}
+
+/** Lee una clave de asignacion; null si no es valida (el almacenamiento puede estar danado). */
+export function parseMappingKey(key: string): MidiAssignment | null {
+  const match = /^(?:(\d{1,2}):)?(\d{1,3})$/.exec(key);
+  if (!match) {
+    return null;
+  }
+  const channel = match[1] === undefined ? null : Number(match[1]);
+  const controlId = Number(match[2]);
+  if ((channel !== null && channel > MAX_CHANNEL) || controlId > MAX_CONTROL_ID) {
+    return null;
+  }
+  return { channel, controlId };
+}
 
 const NOMBRE_BANDA: Record<EqBand, string> = { low: 'graves', mid: 'medios', high: 'agudos' };
 
@@ -70,9 +102,13 @@ export function controlLabel(control: MixerControl): string {
   }
 }
 
-/** Nombre legible de un controlId MIDI: los CC se muestran como "CC 14" y las notas (128+) como "Nota 36". */
-export function midiControlLabel(controlId: number): string {
-  return controlId >= 128 ? `Nota ${controlId - 128}` : `CC ${controlId}`;
+/**
+ * Nombre legible de un control del aparato: los CC se muestran como "CC 14" y las notas (128+) como "Nota 36".
+ * Con canal se antepone, contado desde 1 como lo muestran los aparatos: "Canal 2 · CC 7".
+ */
+export function midiControlLabel(controlId: number, channel: number | null = null): string {
+  const nombre = controlId >= 128 ? `Nota ${controlId - 128}` : `CC ${controlId}`;
+  return channel === null ? nombre : `Canal ${channel + 1} · ${nombre}`;
 }
 
 /** Valor MIDI (0-127) como fraccion de 0 a 1. */

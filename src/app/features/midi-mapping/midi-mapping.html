@@ -1,4 +1,4 @@
-<section aria-labelledby="titulo-mapeo" style="margin: 20px 0; padding: 15px; border: 1px solid #999;">
+<section aria-labelledby="titulo-mapeo" class="panel">
     <h3 id="titulo-mapeo">Asignar controles MIDI</h3>
 
     @if (midi.selectedInputId() === null) {
@@ -16,7 +16,7 @@
         <p role="status" class="aprendiendo">Mueve ahora un control del aparato para asignarlo a «{{ etiqueta(control) }}»...</p>
     }
 
-    <table>
+    <div class="tabla-scroll"><table>
         <caption>Controles del mezclador</caption>
         <thead>
             <tr>
@@ -46,7 +46,7 @@
                 </tr>
             }
         </tbody>
-    </table>
+    </table></div>
 
     <button type="button" class="restablecer" (click)="restablecer()" [disabled]="!hayAsignaciones">
         Restablecer todo

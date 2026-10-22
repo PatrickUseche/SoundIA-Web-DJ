@@ -1,4 +1,4 @@
-<section aria-labelledby="titulo-midi" style="margin: 20px 0; padding: 15px; border: 1px solid #999;">
+<section aria-labelledby="titulo-midi" class="panel">
     <h3 id="titulo-midi">Controlador MIDI</h3>
 
     @switch (midi.state()) {
@@ -12,13 +12,13 @@
             <p role="status">Esperando el permiso del navegador...</p>
         }
         @case ('denied') {
-            <p role="alert" style="color: #c62828;">
+            <p role="alert" class="alerta">
                 Se denego el acceso a MIDI. Permitelo en la configuracion del sitio y vuelve a intentarlo.
             </p>
             <button type="button" (click)="conectar()">Reintentar</button>
         }
         @case ('error') {
-            <p role="alert" style="color: #c62828;">No se pudo acceder a MIDI.</p>
+            <p role="alert" class="alerta">No se pudo acceder a MIDI.</p>
             <button type="button" (click)="conectar()">Reintentar</button>
         }
         @case ('ready') {

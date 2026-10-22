@@ -1,4 +1,4 @@
-<section aria-labelledby="titulo-autodj" style="margin: 20px 0; padding: 15px; border: 1px solid #999;">
+<section aria-labelledby="titulo-autodj" class="panel">
     <h3 id="titulo-autodj">Auto-DJ</h3>
 
     <button type="button" (click)="alternar()" [attr.aria-pressed]="autodj.enabled()">
@@ -12,7 +12,7 @@
     }
 
     @if (autodj.message(); as mensaje) {
-        <p role="alert" class="aviso" style="color: #c62828;">{{ mensaje }}</p>
+        <p role="alert" class="aviso alerta">{{ mensaje }}</p>
     }
 
     @if (resumenSiguiente(); as siguiente) {
@@ -44,7 +44,7 @@
                 </p>
             }
             @if (autodj.feedbackError(); as mensaje) {
-                <p role="alert" class="valoracion-error" style="color: #c62828;">{{ mensaje }}</p>
+                <p role="alert" class="valoracion-error alerta">{{ mensaje }}</p>
             }
         </div>
     }
@@ -69,7 +69,7 @@
 
     <h4>Cola de la sesion</h4>
     @if (queue.error(); as mensaje) {
-        <p role="alert" class="cola-error" style="color: #c62828;">{{ mensaje }}</p>
+        <p role="alert" class="cola-error alerta">{{ mensaje }}</p>
     }
     @if (queue.items().length === 0) {
         <p class="cola-vacia">

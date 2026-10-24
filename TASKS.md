@@ -90,7 +90,7 @@ Arquitectura acordada con el usuario (2026-10-24): este frontend en Cloudflare P
 Acordado con el usuario (2026-10-24): el DJ usa la versión de la nube, por sesiones (sube las pistas de la sesión, mezcla con el modo aprendizaje y borra las pistas al terminar; las grabaciones se conservan). El almacenamiento gratuito de Supabase es de 1 GB.
 
 - [x] feat(library): botón para borrar una pista y su audio, con confirmación [10.1]
-- [ ] feat(library): subir varias pistas de una vez, en cola y de una en una [10.2]
+- [x] feat(library): subir varias pistas de una vez, en cola y de una en una, con avance y resumen de errores [10.2]
 
 ## Fase 11 — Interfaz pensada para DJ (en curso)
 

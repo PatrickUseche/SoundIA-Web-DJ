@@ -449,6 +449,20 @@ caption {
   margin: var(--espacio);
 }
 
+/* Progreso de una subida de varias pistas y lista de las que fallaron. */
+progress {
+  display: block;
+  width: 100%;
+  height: 8px;
+  accent-color: var(--acento);
+}
+
+.subida-errores {
+  margin: 4px 0;
+  padding-left: 20px;
+  font-size: 0.9rem;
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     animation: none !important;

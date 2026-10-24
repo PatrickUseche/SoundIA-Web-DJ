@@ -102,3 +102,4 @@ Acordado con el usuario (2026-10-24, con la skill ui-ux-pro-max): tema oscuro pa
 - [x] feat(ui): aviso de que los servidores pueden estar despertando cuando una petición al API tarda más de 8 s [11.4]
 - [x] feat(library): género de cada pista, editable en la biblioteca, con sugerencias, búsqueda y orden por género [8.6]
 - [x] fix(learning): las mezclas grabadas no se pierden si el servidor está dormido o reiniciándose: quedan pendientes (también en el navegador), se reintentan solas y se avisa antes de cerrar la página [11.5]
+- [x] feat(ui): mantener despiertos los servidores mientras se usa la app (consulta cada 4 min, con tope de inactividad de 2 h) e indicador «Servidores listos» en el menú [11.6]

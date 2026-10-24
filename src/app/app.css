@@ -26,6 +26,39 @@
   border-bottom-color: var(--acento);
 }
 
+.estado-servidor {
+  margin-left: auto;
+  font-size: 0.85rem;
+  color: var(--texto-suave);
+}
+
+/* El punto lleva texto al lado: el color no es lo unico que dice el estado. */
+.estado-servidor::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: var(--aviso);
+}
+
+.estado-servidor[data-estado='listo']::before {
+  background: var(--exito);
+}
+
+.estado-servidor[data-estado='caido'] {
+  color: var(--peligro);
+}
+
+.estado-servidor[data-estado='caido']::before {
+  background: var(--peligro);
+}
+
+.estado-servidor + .cerrar-sesion {
+  margin-left: 12px;
+}
+
 .aviso-despertando {
   margin: 0;
   padding: 8px 20px;

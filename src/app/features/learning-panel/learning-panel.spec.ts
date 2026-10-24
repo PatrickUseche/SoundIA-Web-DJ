@@ -11,6 +11,7 @@ describe('LearningPanelComponent', () => {
     enabled: signal(false),
     recording: signal(false),
     saved: signal(0),
+    pendingCount: signal(0),
     message: signal<{ text: string; error: boolean } | null>(null),
     setEnabled: vi.fn((v: boolean) => recorder.enabled.set(v)),
   };

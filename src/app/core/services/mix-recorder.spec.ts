@@ -6,6 +6,9 @@ import {
   MixRecorderService,
   RECORDER_CLOCK,
   RECORDER_DJ_ALIAS,
+  RECORDER_MAX_PENDING,
+  RECORDER_PENDING_KEY,
+  RECORDER_RETRY_MS,
   RECORDER_SAMPLE_MS,
   RECORDER_STORAGE,
   RECORDER_STORAGE_KEY,
@@ -95,6 +98,8 @@ describe('MixRecorderService', () => {
         { provide: TransitionRunnerService, useValue: { running: corriendo } },
         { provide: RecordingApiService, useValue: { create } },
         { provide: RECORDER_CLOCK, useValue: () => ahora },
+        // Mas largas que lo que sigue corriendo el reloj al final de una mezcla (2 s), para controlar cuando reintenta.
+        { provide: RECORDER_RETRY_MS, useValue: [5000, 10000] },
         {
           provide: RECORDER_STORAGE,
           useValue: {
@@ -153,17 +158,190 @@ describe('MixRecorderService', () => {
     expect(recorder.recording()).toBe(true);
   });
 
-  it('un error al guardar se cuenta y se muestra, sin romper el grabador', () => {
-    create.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 502, error: { error: 'El motor de IA no responde.' } })));
+  it('un error de la propia mezcla se cuenta y se muestra, sin romper el grabador ni reintentarse', () => {
+    create.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 400, error: { error: 'El solape no es valido.' } })));
     const recorder = crear();
     recorder.setEnabled(true);
 
     mezclarAMano();
+    vi.advanceTimersByTime(60_000);
 
+    expect(create).toHaveBeenCalledTimes(1);
     expect(recorder.failed()).toBe(1);
     expect(recorder.saved()).toBe(0);
+    expect(recorder.pendingCount()).toBe(0);
     expect(recorder.message()?.error).toBe(true);
-    expect(recorder.message()?.text).toBeTruthy();
+    expect(recorder.message()?.text).toContain('El solape no es valido');
+  });
+
+  describe('si el servidor no responde (dormido o reiniciandose)', () => {
+    const caido = (status = 502) => throwError(() => new HttpErrorResponse({ status }));
+    const mezclaVieja = (n: number) => ({
+      fromTrackId: n, toTrackId: n + 1000, source: 'manual', dj: 'dj', mixOutAt: 100, mixInAt: 1, overlapSeconds: 16,
+      pitchA: 1, pitchB: 1, curves: {},
+    });
+
+    it('la mezcla no se pierde: queda pendiente y se avisa', () => {
+      create.mockReturnValue(caido());
+      const recorder = crear();
+      recorder.setEnabled(true);
+
+      mezclarAMano();
+
+      expect(recorder.pendingCount()).toBe(1);
+      expect(recorder.failed()).toBe(0);
+      expect(recorder.message()?.error).toBe(true);
+      expect(recorder.message()?.text).toContain('esperan para guardarse');
+    });
+
+    it('se reintenta sola cuando el servidor vuelve y entonces se cuenta como guardada', () => {
+      create.mockReturnValueOnce(caido()).mockReturnValue(of(guardada));
+      const recorder = crear();
+      recorder.setEnabled(true);
+
+      mezclarAMano();
+      expect(recorder.pendingCount()).toBe(1);
+      vi.advanceTimersByTime(5000);
+
+      expect(create).toHaveBeenCalledTimes(2);
+      expect(recorder.pendingCount()).toBe(0);
+      expect(recorder.saved()).toBe(1);
+      expect(recorder.message()?.error).toBe(false);
+    });
+
+    it('la espera entre reintentos crece y la ultima se repite', () => {
+      create.mockReturnValue(caido(503));
+      almacen[RECORDER_PENDING_KEY] = JSON.stringify([mezclaVieja(1)]);
+      const recorder = crear();
+
+      vi.advanceTimersByTime(1000); // al abrir la pagina intenta enviarla
+      expect(create).toHaveBeenCalledTimes(1);
+      vi.advanceTimersByTime(4999);
+      expect(create).toHaveBeenCalledTimes(1);
+      vi.advanceTimersByTime(1); // primer reintento, 5 s despues
+      expect(create).toHaveBeenCalledTimes(2);
+      vi.advanceTimersByTime(9999);
+      expect(create).toHaveBeenCalledTimes(2);
+      vi.advanceTimersByTime(1); // segundo, 10 s despues
+      expect(create).toHaveBeenCalledTimes(3);
+      vi.advanceTimersByTime(10000); // la ultima espera (10 s) se repite
+      expect(create).toHaveBeenCalledTimes(4);
+      expect(recorder.pendingCount()).toBe(1);
+    });
+
+    it('un error de red (estado 0) tambien se reintenta', () => {
+      create.mockReturnValueOnce(caido(0)).mockReturnValue(of(guardada));
+      const recorder = crear();
+      recorder.setEnabled(true);
+
+      mezclarAMano();
+      vi.advanceTimersByTime(5000);
+
+      expect(recorder.saved()).toBe(1);
+    });
+
+    it('lo pendiente se guarda en el almacenamiento para sobrevivir a recargar la pagina', () => {
+      create.mockReturnValue(caido());
+      const recorder = crear();
+      recorder.setEnabled(true);
+
+      mezclarAMano();
+
+      const guardado = JSON.parse(almacen[RECORDER_PENDING_KEY]);
+      expect(guardado.length).toBe(1);
+      expect(guardado[0].fromTrackId).toBe(1);
+      expect(guardado[0].toTrackId).toBe(2);
+    });
+
+    it('al guardarse se quita del almacenamiento', () => {
+      create.mockReturnValueOnce(caido()).mockReturnValue(of(guardada));
+      const recorder = crear();
+      recorder.setEnabled(true);
+      mezclarAMano();
+
+      vi.advanceTimersByTime(5000);
+
+      expect(JSON.parse(almacen[RECORDER_PENDING_KEY])).toEqual([]);
+    });
+
+    it('al abrir la pagina reintenta lo que quedo pendiente de la sesion anterior', () => {
+      const vieja = mezclaVieja(5);
+      almacen[RECORDER_PENDING_KEY] = JSON.stringify([vieja]);
+
+      const recorder = crear();
+      expect(recorder.pendingCount()).toBe(1);
+      vi.advanceTimersByTime(1000);
+
+      expect(create).toHaveBeenCalledWith(vieja);
+      expect(recorder.pendingCount()).toBe(0);
+      expect(recorder.saved()).toBe(1);
+    });
+
+    it('un contenido danado del almacenamiento se ignora', () => {
+      almacen[RECORDER_PENDING_KEY] = '{esto no es json';
+
+      const recorder = crear();
+      vi.advanceTimersByTime(5000);
+
+      expect(recorder.pendingCount()).toBe(0);
+      expect(create).not.toHaveBeenCalled();
+    });
+
+    it('envia las pendientes de una en una, de la mas antigua a la mas nueva', () => {
+      almacen[RECORDER_PENDING_KEY] = JSON.stringify([mezclaVieja(1), mezclaVieja(2), mezclaVieja(3)]);
+
+      const recorder = crear();
+      vi.advanceTimersByTime(1000);
+
+      expect(create.mock.calls.map((c) => c[0].fromTrackId)).toEqual([1, 2, 3]);
+      expect(recorder.saved()).toBe(3);
+      expect(recorder.pendingCount()).toBe(0);
+    });
+
+    it('no acumula mas de las permitidas: se queda con las mas nuevas', () => {
+      const todas = Array.from({ length: RECORDER_MAX_PENDING + 10 }, (_, i) => mezclaVieja(i));
+      almacen[RECORDER_PENDING_KEY] = JSON.stringify(todas);
+
+      const recorder = crear();
+
+      expect(recorder.pendingCount()).toBe(RECORDER_MAX_PENDING);
+    });
+
+    it('si la sesion caduco las conserva y no insiste hasta volver a entrar', () => {
+      create.mockReturnValue(caido(401));
+      const recorder = crear();
+      recorder.setEnabled(true);
+
+      mezclarAMano();
+      vi.advanceTimersByTime(60_000);
+
+      expect(create).toHaveBeenCalledTimes(1);
+      expect(recorder.pendingCount()).toBe(1);
+      expect(recorder.message()?.text).toContain('sesion caduco');
+    });
+
+    it('avisa antes de cerrar la pagina si hay mezclas sin guardar', () => {
+      create.mockReturnValue(caido());
+      const recorder = crear();
+      recorder.setEnabled(true);
+      mezclarAMano();
+      expect(recorder.pendingCount()).toBe(1);
+
+      const evento = new Event('beforeunload', { cancelable: true });
+      window.dispatchEvent(evento);
+
+      expect(evento.defaultPrevented).toBe(true);
+    });
+
+    it('no avisa al cerrar la pagina si no hay nada pendiente ni en curso', () => {
+      const recorder = crear();
+      recorder.setEnabled(true);
+
+      const evento = new Event('beforeunload', { cancelable: true });
+      window.dispatchEvent(evento);
+
+      expect(evento.defaultPrevented).toBe(false);
+    });
   });
 
   it('no graba mientras el Auto-DJ ejecuta una transicion', () => {

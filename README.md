@@ -73,7 +73,9 @@ src/app/
 
 - **Biblioteca**: lista las pistas analizadas (BPM, tonalidad, código Camelot, energía). Se pueden cargar en el deck A o B
   (se descarga su audio del servidor), agregar a la cola, o subir un archivo nuevo para analizarlo. Resalta las pistas que
-  mezclan bien armónicamente con las que ya están cargadas.
+  mezclan bien armónicamente con las que ya están cargadas. Cada pista tiene un botón **Borrar** (pide confirmación) que
+  elimina la pista y su audio: sirve para liberar espacio al terminar una sesión; las grabaciones de mezclas se conservan.
+  Una pista cargada en un deck no se puede borrar.
 - **Decks**: reproducir/pausar, punto cue, pitch de ±8 %, volumen, EQ de tres bandas, forma de onda (clic para saltar) y
   **Sync** para igualar el tempo del otro deck y, si los dos suenan y tienen rejilla, poner sus pulsos en fase. Cada deck
   indica cómo de fiable es el **primer tiempo** de la pista (detectado con su confianza, incierto o fijado a mano) y

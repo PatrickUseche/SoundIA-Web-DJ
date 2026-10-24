@@ -32,6 +32,11 @@ export class TrackApiService {
     return this.http.post<Track>(`${this.baseUrl}/analyze`, body);
   }
 
+  /** Borra la pista y su audio. Las grabaciones de mezclas que la usaron se conservan. */
+  delete(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/${id}`);
+  }
+
   /**
    * El DJ senala un instante (segundos) que es un "1" del compas: el motor lo ajusta al pulso mas cercano de la
    * rejilla y lo guarda como primer tiempo. Devuelve la pista actualizada.

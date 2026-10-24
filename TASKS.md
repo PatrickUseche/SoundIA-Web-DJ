@@ -98,4 +98,4 @@ Acordado con el usuario (2026-10-24, con la skill ui-ux-pro-max): tema oscuro pa
 
 - [x] feat(ui): base visual: paleta oscura de contraste comprobado, colores de deck, cifras tabulares, estilos de las clases que no tenían ninguno (pistas compatibles, avisos, chapa Camelot) [11.1]
 - [x] feat(ui): consola de DJ: deck A y B con su color, faders verticales, Play grande, BPM y tonalidad destacados, forma de onda más alta [11.2]
-- [ ] feat(ui): consola fija arriba, paneles secundarios plegables y buscador con orden por BPM y tonalidad en la biblioteca [11.3]
+- [x] feat(ui): biblioteca con buscador, orden por BPM y tonalidad y filtro de compatibles; el controlador MIDI en un bloque plegable (la consola no queda fija: ocuparía casi toda la pantalla de un portátil) [11.3]

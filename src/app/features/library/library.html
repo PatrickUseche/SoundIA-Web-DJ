@@ -34,6 +34,13 @@
         <p role="alert" class="cola-error alerta">{{ mensaje }}</p>
     }
 
+    @if (mensajeBorrado(); as mensaje) {
+        <p role="status" class="borrado-ok">{{ mensaje }}</p>
+    }
+    @if (errorBorrado(); as mensaje) {
+        <p role="alert" class="borrado-error alerta">{{ mensaje }}</p>
+    }
+
     @if (errorDeck(); as mensaje) {
         <p role="alert" class="deck-error alerta">{{ mensaje }}</p>
     }
@@ -94,6 +101,20 @@
                                 [attr.aria-label]="'Agregar ' + pista.title + ' a la cola'">
                                 A la cola
                             </button>
+                            @if (confirmandoBorrado() === pista.id) {
+                                <span class="confirmar-borrado" role="group" [attr.aria-label]="'Confirmar el borrado de ' + pista.title">
+                                    ¿Borrar tambien su audio?
+                                    <button type="button" (click)="borrar(pista)">Si, borrar</button>
+                                    <button type="button" (click)="cancelarBorrado()">No</button>
+                                </span>
+                            } @else {
+                                <button type="button" (click)="pedirBorrado(pista)"
+                                    [disabled]="enDeck(pista) || borrando() !== null"
+                                    [attr.title]="enDeck(pista) ? 'Descarga la pista del deck antes de borrarla' : null"
+                                    [attr.aria-label]="'Borrar ' + pista.title">
+                                    {{ borrando() === pista.id ? 'Borrando...' : 'Borrar' }}
+                                </button>
+                            }
                         </td>
                     </tr>
                 }

@@ -93,6 +93,17 @@ describe('TrackApiService', () => {
     expect((error as { status: number }).status).toBe(404);
   });
 
+  it('delete borra la pista con un DELETE', () => {
+    let terminado = false;
+
+    service.delete(7).subscribe({ complete: () => (terminado = true) });
+
+    const req = http.expectOne(`${BASE}/7`);
+    expect(req.request.method).toBe('DELETE');
+    req.flush(null, { status: 204, statusText: 'No Content' });
+    expect(terminado).toBe(true);
+  });
+
   it('setDownbeat envia el segundo con un PUT y devuelve la pista actualizada', () => {
     let recibida: Track | undefined;
 

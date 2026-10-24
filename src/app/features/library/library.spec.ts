@@ -27,10 +27,15 @@ describe('LibraryComponent', () => {
     Array.from(fila.querySelectorAll('button')).find((b) => b.textContent?.includes(nombre)) as HTMLButtonElement;
 
   // La logica de la cola se prueba en su propio spec: aqui solo se verifica que la biblioteca la use.
-  const colaDoble = { enqueue: vi.fn(async () => true), error: vi.fn(() => null as string | null) };
+  const colaDoble = {
+    enqueue: vi.fn(async () => true),
+    error: vi.fn(() => null as string | null),
+    refresh: vi.fn(async () => undefined),
+  };
 
   function crear(ctx: FakeAudioContext | null = new FakeAudioContext()) {
     colaDoble.enqueue.mockClear();
+    colaDoble.refresh.mockClear();
     colaDoble.enqueue.mockResolvedValue(true);
     colaDoble.error.mockReturnValue(null);
     TestBed.configureTestingModule({
@@ -236,6 +241,132 @@ describe('LibraryComponent', () => {
 
       expect(el().querySelector('.cola-ok')?.textContent).toContain('"Dos"');
       expect(el().querySelector('.cola-ok')?.textContent).not.toContain('"Uno"');
+    });
+  });
+
+  describe('borrar una pista', () => {
+    const confirmar = async () => {
+      botonEn(filas()[0], 'Si, borrar').click();
+      await esperar();
+    };
+
+    it('cada pista tiene un boton Borrar con una etiqueta accesible', async () => {
+      crear();
+      await responderLista([pista({ title: 'Tema uno' })]);
+
+      expect(botonEn(filas()[0], 'Borrar').getAttribute('aria-label')).toBe('Borrar Tema uno');
+    });
+
+    it('al pulsarlo pide confirmacion y todavia no borra nada', async () => {
+      crear();
+      await responderLista([pista({ id: 7 })]);
+
+      botonEn(filas()[0], 'Borrar').click();
+      await esperar();
+
+      expect(texto()).toContain('Borrar tambien su audio');
+      http.expectNone(`${TRACKS}/7`);
+    });
+
+    it('si se responde que no, la pista se queda y vuelve el boton', async () => {
+      crear();
+      await responderLista([pista({ id: 7 })]);
+      botonEn(filas()[0], 'Borrar').click();
+      await esperar();
+
+      botonEn(filas()[0], 'No').click();
+      await esperar();
+
+      expect(texto()).not.toContain('Borrar tambien su audio');
+      expect(filas().length).toBe(1);
+      expect(botonEn(filas()[0], 'Borrar')).toBeTruthy();
+    });
+
+    it('al confirmar borra la pista en el API, la quita de la lista y lo avisa', async () => {
+      crear();
+      await responderLista([pista({ id: 7, title: 'Tema siete' }), pista({ id: 8, title: 'Tema ocho' })]);
+      botonEn(filas()[0], 'Borrar').click();
+      await esperar();
+
+      await confirmar();
+      const peticion = http.expectOne(`${TRACKS}/7`);
+      expect(peticion.request.method).toBe('DELETE');
+      peticion.flush(null, { status: 204, statusText: 'No Content' });
+      await esperar();
+
+      expect(filas().length).toBe(1);
+      expect(filas()[0].textContent).toContain('Tema ocho');
+      expect(el().querySelector('.borrado-ok')?.textContent).toContain('"Tema siete" borrada.');
+    });
+
+    it('al borrar vuelve a leer la cola, porque el API quita la pista de ella', async () => {
+      crear();
+      await responderLista([pista({ id: 7 })]);
+      botonEn(filas()[0], 'Borrar').click();
+      await esperar();
+
+      await confirmar();
+      http.expectOne(`${TRACKS}/7`).flush(null, { status: 204, statusText: 'No Content' });
+      await esperar();
+
+      expect(colaDoble.refresh).toHaveBeenCalledTimes(1);
+    });
+
+    it('mientras borra muestra Borrando y bloquea los demas botones Borrar', async () => {
+      crear();
+      await responderLista([pista({ id: 7 }), pista({ id: 8, title: 'Tema ocho' })]);
+      botonEn(filas()[0], 'Borrar').click();
+      await esperar();
+
+      await confirmar();
+
+      expect(botonEn(filas()[0], 'Borrando').textContent).toContain('Borrando');
+      expect(botonEn(filas()[1], 'Borrar').disabled).toBe(true);
+      http.expectOne(`${TRACKS}/7`).flush(null, { status: 204, statusText: 'No Content' });
+      await esperar();
+    });
+
+    it('si falla muestra el motivo y la pista se conserva', async () => {
+      crear();
+      await responderLista([pista({ id: 7, title: 'Tema siete' })]);
+      botonEn(filas()[0], 'Borrar').click();
+      await esperar();
+
+      await confirmar();
+      http.expectOne(`${TRACKS}/7`).flush({ error: 'El motor de IA no esta disponible' }, { status: 502, statusText: 'Bad Gateway' });
+      await esperar();
+
+      expect(el().querySelector('.borrado-error')?.textContent).toContain('El motor de IA no esta disponible');
+      expect(filas().length).toBe(1);
+      expect(colaDoble.refresh).not.toHaveBeenCalled();
+    });
+
+    it('una pista cargada en un deck no se puede borrar', async () => {
+      crear();
+      await responderLista([pista({ id: 7 })]);
+      botonEn(filas()[0], 'Deck A').click();
+      http.expectOne(`${TRACKS}/7/audio`).flush(new Uint8Array([1, 2, 3]).buffer);
+      await esperar();
+
+      const boton = botonEn(filas()[0], 'Borrar');
+
+      expect(boton.disabled).toBe(true);
+      expect(boton.getAttribute('title')).toContain('Descarga la pista del deck');
+    });
+
+    it('un aviso de borrado nuevo reemplaza al anterior', async () => {
+      crear();
+      await responderLista([pista({ id: 7, title: 'Uno' }), pista({ id: 8, title: 'Dos' })]);
+      botonEn(filas()[0], 'Borrar').click();
+      await esperar();
+      await confirmar();
+      http.expectOne(`${TRACKS}/7`).flush(null, { status: 204, statusText: 'No Content' });
+      await esperar();
+
+      botonEn(filas()[0], 'Borrar').click();
+      await esperar();
+
+      expect(el().querySelector('.borrado-ok')).toBeNull();
     });
   });
 

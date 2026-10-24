@@ -40,6 +40,12 @@ export class LibraryComponent implements OnInit {
   readonly mensajeCola = signal<string | null>(null);
   readonly errorCola = signal<string | null>(null);
 
+  /** Pista cuyo borrado espera confirmacion, y pista que se esta borrando. */
+  readonly confirmandoBorrado = signal<number | null>(null);
+  readonly borrando = signal<number | null>(null);
+  readonly mensajeBorrado = signal<string | null>(null);
+  readonly errorBorrado = signal<string | null>(null);
+
   /** Deck cuyo audio se esta descargando (para deshabilitar sus botones). */
   readonly cargandoDeck = signal<DeckId | null>(null);
   readonly errorDeck = signal<string | null>(null);
@@ -162,6 +168,39 @@ export class LibraryComponent implements OnInit {
     } else {
       this.errorCola.set(this.queue.error() ?? 'No se pudo agregar la pista a la cola.');
     }
+  }
+
+  /** Pide confirmacion antes de borrar: es irreversible (se borra tambien el audio). */
+  pedirBorrado(track: Track): void {
+    this.mensajeBorrado.set(null);
+    this.errorBorrado.set(null);
+    this.confirmandoBorrado.set(track.id);
+  }
+
+  cancelarBorrado(): void {
+    this.confirmandoBorrado.set(null);
+  }
+
+  /** Borra la pista y su audio. Una pista cargada en un deck no se puede borrar: primero hay que descargarla. */
+  borrar(track: Track): void {
+    this.confirmandoBorrado.set(null);
+    this.borrando.set(track.id);
+    this.api
+      .delete(track.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.tracks.update((actuales) => actuales.filter((t) => t.id !== track.id));
+          this.mensajeBorrado.set(`"${track.title}" borrada.`);
+          this.borrando.set(null);
+          // El API la quita de las colas: se vuelve a leer la de la sesion para que no muestre pistas borradas.
+          void this.queue.refresh();
+        },
+        error: (err) => {
+          this.errorBorrado.set(httpErrorMessage(err, `No se pudo borrar "${track.title}".`));
+          this.borrando.set(null);
+        },
+      });
   }
 
   alElegirArchivo(evento: Event): void {

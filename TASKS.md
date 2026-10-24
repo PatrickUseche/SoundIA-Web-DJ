@@ -84,3 +84,10 @@ Arquitectura acordada con el usuario (2026-10-24): este frontend en Cloudflare P
 
 - [x] feat(config): la URL del API se puede definir en tiempo de ejecucion con `config.js` (`window.__SOUNDIA__.apiUrl`), para servir el frontend aparte del API [9.1]
 - [x] chore(deploy): script de build para Cloudflare Pages (`index.html`, `_redirects`, `config.js` con `SOUNDIA_API_URL`) y cabeceras de seguridad [9.2]
+
+## Fase 10 — Aprender desde la nube con el repertorio del DJ (en curso)
+
+Acordado con el usuario (2026-10-24): el DJ usa la versión de la nube, por sesiones (sube las pistas de la sesión, mezcla con el modo aprendizaje y borra las pistas al terminar; las grabaciones se conservan). El almacenamiento gratuito de Supabase es de 1 GB.
+
+- [x] feat(library): botón para borrar una pista y su audio, con confirmación [10.1]
+- [ ] feat(library): subir varias pistas de una vez, en cola y de una en una [10.2]

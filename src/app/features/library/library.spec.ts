@@ -363,6 +363,112 @@ describe('LibraryComponent', () => {
     });
   });
 
+  describe('genero de la pista', () => {
+    const campo = (fila: Element) => fila.querySelector('input.genero') as HTMLInputElement;
+    const escribir = async (fila: Element, valor: string) => {
+      const input = campo(fila);
+      input.value = valor;
+      input.dispatchEvent(new Event('change'));
+      await esperar();
+    };
+
+    it('cada pista tiene su campo de genero, con una etiqueta accesible y sugerencias', async () => {
+      crear();
+      await responderLista([pista({ id: 1, title: 'Tema uno', genre: 'salsa' })]);
+
+      expect(campo(filas()[0]).value).toBe('salsa');
+      expect(campo(filas()[0]).getAttribute('aria-label')).toBe('Genero de Tema uno');
+      expect(el().querySelectorAll('#generos-sugeridos option').length).toBeGreaterThan(4);
+    });
+
+    it('una pista sin genero deja el campo vacio', async () => {
+      crear();
+      await responderLista([pista({ id: 1 })]);
+
+      expect(campo(filas()[0]).value).toBe('');
+    });
+
+    it('al cambiarlo lo guarda en el API y actualiza la fila', async () => {
+      crear();
+      await responderLista([pista({ id: 7 })]);
+
+      await escribir(filas()[0], '  Bachata ');
+      const req = http.expectOne(`${TRACKS}/7`);
+      expect(req.request.method).toBe('PUT');
+      expect(req.request.body).toEqual({ genre: 'bachata' });
+      req.flush(pista({ id: 7, genre: 'bachata' }));
+      await esperar();
+
+      expect(campo(filas()[0]).value).toBe('bachata');
+    });
+
+    it('un genero vacio lo quita', async () => {
+      crear();
+      await responderLista([pista({ id: 7, genre: 'salsa' })]);
+
+      await escribir(filas()[0], '');
+      const req = http.expectOne(`${TRACKS}/7`);
+      expect(req.request.body).toEqual({ genre: '' });
+      req.flush(pista({ id: 7, genre: '' }));
+      await esperar();
+
+      expect(campo(filas()[0]).value).toBe('');
+    });
+
+    it('si no cambia nada no llama al API', async () => {
+      crear();
+      await responderLista([pista({ id: 7, genre: 'salsa' })]);
+
+      await escribir(filas()[0], ' SALSA ');
+
+      http.expectNone(`${TRACKS}/7`);
+    });
+
+    it('si falla vuelve al genero anterior y explica el motivo', async () => {
+      crear();
+      await responderLista([pista({ id: 7, title: 'Tema siete', genre: 'salsa' })]);
+
+      await escribir(filas()[0], 'merengue');
+      http.expectOne(`${TRACKS}/7`).flush({ error: "'genre' no puede pasar de 40 caracteres." }, { status: 400, statusText: 'Bad Request' });
+      await esperar();
+
+      expect(campo(filas()[0]).value).toBe('salsa');
+      expect(el().querySelector('.genero-error')?.textContent).toContain('no puede pasar de 40');
+    });
+
+    it('la busqueda tambien encuentra por genero', async () => {
+      crear();
+      await responderLista([
+        pista({ id: 1, title: 'Uno', genre: 'salsa' }),
+        pista({ id: 2, title: 'Dos', genre: 'bachata' }),
+      ]);
+      const caja = el().querySelector('input[aria-label="Buscar pista"]') as HTMLInputElement;
+
+      caja.value = 'bach';
+      caja.dispatchEvent(new Event('input'));
+      await esperar();
+
+      expect(filas().length).toBe(1);
+      expect(filas()[0].textContent).toContain('Dos');
+    });
+
+    it('ordenar por genero deja al final las pistas sin genero', async () => {
+      crear();
+      await responderLista([
+        pista({ id: 1, title: 'Sin', genre: '' }),
+        pista({ id: 2, title: 'Salsera', genre: 'salsa' }),
+        pista({ id: 3, title: 'Bachatera', genre: 'bachata' }),
+      ]);
+      const select = el().querySelector('select[aria-label="Ordenar pistas"]') as HTMLSelectElement;
+
+      select.value = 'genero';
+      select.dispatchEvent(new Event('change'));
+      await esperar();
+
+      expect(filas().map((f) => f.querySelector('td')?.childNodes[0]?.textContent?.trim())).toEqual(['Bachatera', 'Salsera', 'Sin']);
+    });
+  });
+
   describe('borrar una pista', () => {
     const confirmar = async () => {
       botonEn(filas()[0], 'Si, borrar').click();

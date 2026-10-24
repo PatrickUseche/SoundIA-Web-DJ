@@ -244,6 +244,125 @@ describe('LibraryComponent', () => {
     });
   });
 
+  describe('buscar y ordenar', () => {
+    const titulos = () => filas().map((f) => f.querySelector('td')?.childNodes[0]?.textContent?.trim());
+    const escribir = async (texto: string) => {
+      const caja = el().querySelector('input[aria-label="Buscar pista"]') as HTMLInputElement;
+      caja.value = texto;
+      caja.dispatchEvent(new Event('input'));
+      await esperar();
+    };
+    const ordenar = async (valor: string) => {
+      const select = el().querySelector('select[aria-label="Ordenar pistas"]') as HTMLSelectElement;
+      select.value = valor;
+      select.dispatchEvent(new Event('change'));
+      await esperar();
+    };
+    const tres = () => [
+      pista({ id: 1, title: 'Cumbia', bpm: 100, camelot: '8B' }),
+      pista({ id: 2, title: 'Bachata', bpm: 130, camelot: '2A' }),
+      pista({ id: 3, title: 'Salsa', bpm: 115, camelot: '8A' }),
+    ];
+
+    it('sin lista no muestra los filtros', async () => {
+      crear();
+      await responderLista([]);
+
+      expect(el().querySelector('[role="search"]')).toBeNull();
+    });
+
+    it('por defecto respeta el orden del API (mas recientes primero)', async () => {
+      crear();
+      await responderLista(tres());
+
+      expect(titulos()).toEqual(['Cumbia', 'Bachata', 'Salsa']);
+    });
+
+    it('busca por el titulo sin distinguir mayusculas', async () => {
+      crear();
+      await responderLista(tres());
+
+      await escribir('ACH');
+
+      expect(titulos()).toEqual(['Bachata']);
+    });
+
+    it('si nada coincide lo dice', async () => {
+      crear();
+      await responderLista(tres());
+
+      await escribir('zzz');
+
+      expect(filas().length).toBe(0);
+      expect(texto()).toContain('Ninguna pista coincide con el filtro');
+    });
+
+    it('ordena por BPM de menor a mayor y de mayor a menor', async () => {
+      crear();
+      await responderLista(tres());
+
+      await ordenar('bpm-asc');
+      expect(titulos()).toEqual(['Cumbia', 'Salsa', 'Bachata']);
+
+      await ordenar('bpm-desc');
+      expect(titulos()).toEqual(['Bachata', 'Salsa', 'Cumbia']);
+    });
+
+    it('ordena por tonalidad segun la rueda Camelot (2A, 8A, 8B)', async () => {
+      crear();
+      await responderLista(tres());
+
+      await ordenar('camelot');
+
+      expect(titulos()).toEqual(['Bachata', 'Salsa', 'Cumbia']);
+    });
+
+    it('ordena por titulo', async () => {
+      crear();
+      await responderLista(tres());
+
+      await ordenar('titulo');
+
+      expect(titulos()).toEqual(['Bachata', 'Cumbia', 'Salsa']);
+    });
+
+    it('buscar y ordenar se combinan', async () => {
+      crear();
+      await responderLista(tres());
+
+      await escribir('a');
+      await ordenar('bpm-desc');
+
+      expect(titulos()).toEqual(['Bachata', 'Salsa', 'Cumbia']);
+    });
+
+    it('solo compatibles esta desactivado mientras no haya una pista en un deck', async () => {
+      crear();
+      await responderLista(tres());
+
+      const caja = el().querySelector('input[aria-label="Solo compatibles"]') as HTMLInputElement;
+
+      expect(caja.disabled).toBe(true);
+    });
+
+    it('con una pista en un deck, solo compatibles deja las que mezclan bien con ella', async () => {
+      crear();
+      await responderLista([pista({ id: 1, title: 'Cargada', camelot: '8A' }), ...tres().slice(1)]);
+      botonEn(filas()[0], 'Deck A').click();
+      http.expectOne(`${TRACKS}/1/audio`).flush(new Uint8Array([1, 2, 3]).buffer);
+      await esperar();
+
+      const caja = el().querySelector('input[aria-label="Solo compatibles"]') as HTMLInputElement;
+      expect(caja.disabled).toBe(false);
+      caja.checked = true;
+      caja.dispatchEvent(new Event('change'));
+      await esperar();
+
+      // 8A es compatible con 8A (la propia), 8B (mismo numero) y 7A/9A; Bachata (2A) no, Salsa (8A) si.
+      expect(titulos()).toEqual(['Cargada', 'Salsa']);
+    });
+  });
+
   describe('borrar una pista', () => {
     const confirmar = async () => {
       botonEn(filas()[0], 'Si, borrar').click();

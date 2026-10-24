@@ -52,6 +52,29 @@
     } @else if (tracks().length === 0) {
         <p>Todavia no hay pistas. Sube una para analizarla.</p>
     } @else {
+        <div class="filtros" role="search">
+            <label>
+                Buscar
+                <input type="search" [value]="busqueda()" (input)="alBuscarTexto($event)" placeholder="Titulo de la pista"
+                    aria-label="Buscar pista" />
+            </label>
+            <label>
+                Ordenar por
+                <select (change)="alOrdenar($event)" aria-label="Ordenar pistas">
+                    @for (opcion of ordenes; track opcion.valor) {
+                        <option [value]="opcion.valor" [selected]="orden() === opcion.valor">{{ opcion.texto }}</option>
+                    }
+                </select>
+            </label>
+            <label class="solo-compatibles">
+                <input type="checkbox" [checked]="soloCompatibles()" (change)="alFiltrarCompatibles($event)"
+                    [disabled]="!hayDecksCargados()" aria-label="Solo compatibles" />
+                Solo las que mezclan bien con los decks
+            </label>
+        </div>
+        @if (visibles().length === 0) {
+            <p class="sin-resultados" role="status">Ninguna pista coincide con el filtro.</p>
+        }
         <div class="tabla-scroll"><table>
             <caption>Pistas analizadas</caption>
             <thead>
@@ -66,7 +89,7 @@
                 </tr>
             </thead>
             <tbody>
-                @for (pista of tracks(); track pista.id) {
+                @for (pista of visibles(); track pista.id) {
                     <tr [class.compatible]="compatible(pista)" [class.en-deck]="enDeck(pista)">
                         <td>
                             {{ pista.title }}

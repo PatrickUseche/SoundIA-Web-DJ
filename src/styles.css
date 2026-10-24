@@ -394,6 +394,61 @@ caption {
   padding-bottom: 4px;
 }
 
+/* Filtros de la biblioteca: buscar, ordenar y quedarse con lo que mezcla bien. */
+.filtros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 8px 16px;
+  margin: 8px 0;
+}
+
+.filtros label {
+  margin: 0;
+}
+
+.filtros input[type='search'],
+.filtros select {
+  display: block;
+  min-width: 12rem;
+}
+
+.filtros .solo-compatibles {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+}
+
+.sin-resultados {
+  color: var(--texto-suave);
+}
+
+/* Bloque plegable (controlador MIDI): cerrado hasta que se necesita. */
+.plegable {
+  margin: 8px 0;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+}
+
+.plegable > summary {
+  padding: 10px var(--espacio);
+  cursor: pointer;
+  color: var(--texto-suave);
+  font-size: 0.8rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.plegable[open] > summary {
+  border-bottom: 1px solid var(--borde);
+}
+
+.plegable > :not(summary) {
+  margin: var(--espacio);
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     animation: none !important;

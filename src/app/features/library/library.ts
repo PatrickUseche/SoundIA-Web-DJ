@@ -13,6 +13,23 @@ import { TrackApiService } from '../../core/services/tracks';
 /** Cada cuanto se vuelve a pedir la lista mientras alguna pista tiene la voz en analisis. */
 export const REFRESCO_VOZ_MS = 5000;
 
+/** Formas de ordenar la lista: la del API (mas recientes primero), por tempo, por tonalidad o por titulo. */
+export type OrdenBiblioteca = 'recientes' | 'bpm-asc' | 'bpm-desc' | 'camelot' | 'titulo';
+
+export const ORDENES: { valor: OrdenBiblioteca; texto: string }[] = [
+  { valor: 'recientes', texto: 'Mas recientes' },
+  { valor: 'bpm-asc', texto: 'BPM de menor a mayor' },
+  { valor: 'bpm-desc', texto: 'BPM de mayor a menor' },
+  { valor: 'camelot', texto: 'Tonalidad (Camelot)' },
+  { valor: 'titulo', texto: 'Titulo' },
+];
+
+/** Posicion de un codigo Camelot en la rueda (1A, 1B, 2A...); los codigos no validos van al final. */
+export function claveCamelot(codigo: string): number {
+  const partes = /^(\d{1,2})([AB])$/i.exec(codigo.trim());
+  return partes ? Number(partes[1]) * 2 + (partes[2].toUpperCase() === 'B' ? 1 : 0) : Number.MAX_SAFE_INTEGER;
+}
+
 /** Biblioteca de pistas analizadas: se cargan en un deck o se sube un archivo nuevo para analizarlo. */
 @Component({
   selector: 'app-library',
@@ -58,6 +75,36 @@ export class LibraryComponent implements OnInit {
     return (['A', 'B'] as DeckId[])
       .map((id) => this.mixer.deck(id).track()?.camelot)
       .filter((codigo): codigo is string => !!codigo);
+  });
+
+  /** Filtros de la lista: texto del titulo, orden y solo las que mezclan bien con lo que hay en los decks. */
+  readonly busqueda = signal('');
+  readonly orden = signal<OrdenBiblioteca>('recientes');
+  readonly soloCompatibles = signal(false);
+  protected readonly ordenes = ORDENES;
+
+  /** Hay alguna pista cargada en un deck: solo entonces tiene sentido filtrar por compatibles. */
+  readonly hayDecksCargados = computed(() => this.camelotsEnDecks().length > 0);
+
+  /** Las pistas que se muestran: la lista filtrada y ordenada. */
+  readonly visibles = computed(() => {
+    const texto = this.busqueda().trim().toLowerCase();
+    let lista = this.tracks();
+    if (texto !== '') {
+      lista = lista.filter((t) => t.title.toLowerCase().includes(texto));
+    }
+    if (this.soloCompatibles() && this.hayDecksCargados()) {
+      lista = lista.filter((t) => this.compatible(t));
+    }
+    const criterio: Record<OrdenBiblioteca, ((a: Track, b: Track) => number) | null> = {
+      recientes: null,
+      'bpm-asc': (a, b) => a.bpm - b.bpm,
+      'bpm-desc': (a, b) => b.bpm - a.bpm,
+      camelot: (a, b) => claveCamelot(a.camelot) - claveCamelot(b.camelot) || a.bpm - b.bpm,
+      titulo: (a, b) => a.title.localeCompare(b.title, 'es'),
+    };
+    const comparar = criterio[this.orden()];
+    return comparar ? [...lista].sort(comparar) : lista;
   });
 
   /** Pistas que se analizaron antes de guardar el audio: no se pueden cargar y hay que volver a subirlas. */
@@ -168,6 +215,18 @@ export class LibraryComponent implements OnInit {
     } else {
       this.errorCola.set(this.queue.error() ?? 'No se pudo agregar la pista a la cola.');
     }
+  }
+
+  alBuscarTexto(evento: Event): void {
+    this.busqueda.set((evento.target as HTMLInputElement).value);
+  }
+
+  alOrdenar(evento: Event): void {
+    this.orden.set((evento.target as HTMLSelectElement).value as OrdenBiblioteca);
+  }
+
+  alFiltrarCompatibles(evento: Event): void {
+    this.soloCompatibles.set((evento.target as HTMLInputElement).checked);
   }
 
   /** Pide confirmacion antes de borrar: es irreversible (se borra tambien el audio). */

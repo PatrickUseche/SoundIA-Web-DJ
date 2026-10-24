@@ -71,6 +71,11 @@ src/app/
 
 ## Pantalla de DJ (`/dj`)
 
+- **Grabaciones** (`/grabaciones`): revisa las mezclas que grabó el modo aprendizaje. Para cada una muestra de qué pista a cuál
+  fue, el género, los compases de solape, cómo movió el crossfader, el cambio de graves y el desfase de pulsos; se marca como
+  *Buena*, *Descartar* o *Sin revisar* (solo las buenas deberían usarse para entrenar), con una nota opcional, y se puede filtrar
+  por revisión y borrar. **Descargar copia** baja todas las grabaciones a un archivo JSON y **Restaurar una copia** las devuelve
+  (sin duplicar las que ya están).
 - **Aviso de servidores dormidos**: si una petición al API tarda más de 8 s (en la nube gratuita los servidores se duermen y
   tardan hasta uno o dos minutos en despertar) aparece un aviso bajo el menú, y se quita solo cuando llega la respuesta.
 - **Biblioteca**: lista las pistas analizadas (BPM, tonalidad, código Camelot, energía). Se pueden cargar en el deck A o B

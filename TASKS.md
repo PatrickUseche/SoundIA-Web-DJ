@@ -66,7 +66,7 @@ Al terminarla se marca `[x]` en ese mismo commit.
 ## Fase 8 — Aprender el estilo de un DJ profesional (en curso)
 
 - [x] feat(learning): modo aprendizaje que graba las mezclas hechas a mano (detector de transiciones, servicio y panel) [8.4]
-- [ ] feat(learning): pantalla para revisar las grabaciones (buenas / descartar / notas) [8.5]
+- [x] feat(learning): pantalla para revisar las grabaciones (buenas / descartar / notas), con copia de seguridad [8.5]
 - [ ] feat(learning): género de cada pista [8.6]
 
 ## Fase 7 — Despliegue en el navegador (pendiente)

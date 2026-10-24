@@ -15,6 +15,21 @@ test('la navegación principal lleva a la pantalla de DJ y a la telemetría', as
   await expect(page.getByRole('link', { name: 'DJ' })).toHaveAttribute('aria-current', 'page');
 });
 
+test('si el API tarda en responder (servidores dormidos) avisa y lo quita al llegar la respuesta', async ({ page }) => {
+  // Un servidor que se esta despertando: la lista de pistas tarda mas que el limite del aviso (8 s).
+  await page.route('**/api/v1/tracks', async (route) => {
+    await new Promise((resolver) => setTimeout(resolver, 9500));
+    await route.fallback();
+  });
+  await page.goto('/dj');
+
+  const aviso = page.getByText('Esto esta tardando mas de lo normal');
+  await expect(aviso).toBeVisible({ timeout: 12_000 });
+  await page.screenshot({ path: process.env['CAPTURA_AVISO'] ?? 'test-results/aviso.png' });
+  await expect(page.getByRole('table', { name: 'Pistas analizadas' })).toBeVisible({ timeout: 12_000 });
+  await expect(aviso).toBeHidden();
+});
+
 test('la biblioteca lista las pistas y marca las que no tienen audio', async ({ page }) => {
   await page.goto('/dj');
 

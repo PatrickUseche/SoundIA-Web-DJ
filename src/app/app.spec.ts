@@ -6,6 +6,7 @@ import { routes } from './app.routes';
 import { App } from './app';
 import { AUTH_STORAGE, AUTH_STORAGE_KEY, AuthService } from './core/services/auth';
 import { authGuard } from './core/services/auth-guard';
+import { WakeNoticeService } from './core/services/wake-notice';
 import { environment } from '../environments/environment';
 
 describe('App', () => {
@@ -36,6 +37,25 @@ describe('App', () => {
 
     expect(enlaces.map((a) => a.textContent?.trim())).toEqual(['DJ', 'Telemetria']);
     expect(enlaces.map((a) => a.getAttribute('href'))).toEqual(['/dj', '/dashboard']);
+  });
+
+  it('avisa de que los servidores pueden estar despertando solo cuando una peticion tarda', async () => {
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const aviso = TestBed.inject(WakeNoticeService);
+    const html = fixture.nativeElement as HTMLElement;
+    expect(html.querySelector('.aviso-despertando')).toBeNull();
+
+    aviso.slow.set(true);
+    fixture.detectChanges();
+
+    expect(html.querySelector('.aviso-despertando')?.textContent).toContain('servidores');
+    expect(html.querySelector('.aviso-despertando')?.getAttribute('role')).toBe('status');
+
+    aviso.slow.set(false);
+    fixture.detectChanges();
+
+    expect(html.querySelector('.aviso-despertando')).toBeNull();
   });
 
   it('la navegacion esta etiquetada para lectores de pantalla', async () => {

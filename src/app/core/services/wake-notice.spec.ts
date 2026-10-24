@@ -138,6 +138,44 @@ describe('wakeNoticeInterceptor', () => {
     backend.expectOne(`${API}/tracks`);
   });
 
+  it('al responder el API queda marcado como alcanzable', () => {
+    expect(aviso.reachable()).toBeNull();
+
+    http.get(`${API}/tracks`).subscribe();
+    backend.expectOne(`${API}/tracks`).flush({});
+
+    expect(aviso.reachable()).toBe(true);
+  });
+
+  it('un 401 o un 404 tambien son respuestas del servidor: esta alcanzable', () => {
+    for (const status of [401, 404, 422]) {
+      http.get(`${API}/tracks`).subscribe({ error: () => undefined });
+      backend.expectOne(`${API}/tracks`).flush('x', { status, statusText: 'x' });
+
+      expect(aviso.reachable(), `codigo ${status}`).toBe(true);
+    }
+  });
+
+  it('un 502, 503, 504 o la falta de conexion lo marcan como no alcanzable', () => {
+    for (const status of [502, 503, 504, 0]) {
+      http.get(`${API}/tracks`).subscribe({ error: () => undefined });
+      backend.expectOne(`${API}/tracks`).flush('x', { status, statusText: 'x' });
+
+      expect(aviso.reachable(), `codigo ${status}`).toBe(false);
+    }
+  });
+
+  it('vuelve a alcanzable en cuanto responde otra vez', () => {
+    http.get(`${API}/tracks`).subscribe({ error: () => undefined });
+    backend.expectOne(`${API}/tracks`).flush('x', { status: 502, statusText: 'Bad Gateway' });
+    expect(aviso.reachable()).toBe(false);
+
+    http.get(`${API}/tracks`).subscribe();
+    backend.expectOne(`${API}/tracks`).flush({});
+
+    expect(aviso.reachable()).toBe(true);
+  });
+
   it('ignora las peticiones que no son del API', () => {
     http.get('https://otro-servidor.example/dato').subscribe();
     vi.advanceTimersByTime(ESPERA * 2);

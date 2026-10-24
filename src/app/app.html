@@ -3,6 +3,11 @@
   <a routerLink="/dj" routerLinkActive="activo" ariaCurrentWhenActive="page">DJ</a>
   <a routerLink="/grabaciones" routerLinkActive="activo" ariaCurrentWhenActive="page">Grabaciones</a>
   <a routerLink="/dashboard" routerLinkActive="activo" ariaCurrentWhenActive="page">Telemetria</a>
+  @if (aviso.reachable() !== null) {
+    <span class="estado-servidor" [attr.data-estado]="aviso.reachable() ? 'listo' : 'caido'" role="status">
+      {{ aviso.reachable() ? 'Servidores listos' : 'Sin respuesta del servidor' }}
+    </span>
+  }
   @if (auth.enabled() && auth.authenticated()) {
     <button type="button" class="cerrar-sesion" (click)="cerrarSesion()">Cerrar sesion</button>
   }

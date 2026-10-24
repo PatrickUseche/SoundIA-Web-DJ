@@ -6,6 +6,7 @@ import { routes } from './app.routes';
 import { App } from './app';
 import { AUTH_STORAGE, AUTH_STORAGE_KEY, AuthService } from './core/services/auth';
 import { authGuard } from './core/services/auth-guard';
+import { KeepAliveService } from './core/services/keep-alive';
 import { WakeNoticeService } from './core/services/wake-notice';
 import { environment } from '../environments/environment';
 
@@ -56,6 +57,32 @@ describe('App', () => {
     fixture.detectChanges();
 
     expect(html.querySelector('.aviso-despertando')).toBeNull();
+  });
+
+  it('muestra si los servidores responden, con texto ademas del color', async () => {
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const aviso = TestBed.inject(WakeNoticeService);
+    const html = fixture.nativeElement as HTMLElement;
+    expect(html.querySelector('.estado-servidor')).toBeNull();
+
+    aviso.reachable.set(true);
+    fixture.detectChanges();
+    expect(html.querySelector('.estado-servidor')?.textContent?.trim()).toBe('Servidores listos');
+    expect(html.querySelector('.estado-servidor')?.getAttribute('data-estado')).toBe('listo');
+
+    aviso.reachable.set(false);
+    fixture.detectChanges();
+    expect(html.querySelector('.estado-servidor')?.textContent?.trim()).toBe('Sin respuesta del servidor');
+    expect(html.querySelector('.estado-servidor')?.getAttribute('data-estado')).toBe('caido');
+  });
+
+  it('empieza a mantener despiertos los servidores al abrirse', () => {
+    const empezar = vi.spyOn(TestBed.inject(KeepAliveService), 'start');
+
+    TestBed.createComponent(App);
+
+    expect(empezar).toHaveBeenCalled();
   });
 
   it('la navegacion esta etiquetada para lectores de pantalla', async () => {

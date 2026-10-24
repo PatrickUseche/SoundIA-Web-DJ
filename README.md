@@ -79,6 +79,9 @@ src/app/
   *Buena*, *Descartar* o *Sin revisar* (solo las buenas deberían usarse para entrenar), con una nota opcional, y se puede filtrar
   por revisión y borrar. **Descargar copia** baja todas las grabaciones a un archivo JSON y **Restaurar una copia** las devuelve
   (sin duplicar las que ya están).
+- **Servidores despiertos**: mientras la página esté abierta y alguien la use, cada 4 minutos se hace una consulta ligera a la lista
+  de pistas (llega al API y al motor) para que el plan gratuito no los duerma; si nadie toca la página en 2 horas deja de hacerlo, para
+  no gastar las horas mensuales gratuitas. En el menú, un indicador dice «Servidores listos» o «Sin respuesta del servidor».
 - **Aviso de servidores dormidos**: si una petición al API tarda más de 8 s (en la nube gratuita los servidores se duermen y
   tardan hasta uno o dos minutos en despertar) aparece un aviso bajo el menú, y se quita solo cuando llega la respuesta.
 - **Biblioteca**: lista las pistas analizadas (BPM, tonalidad, código Camelot, energía). Se pueden cargar en el deck A o B

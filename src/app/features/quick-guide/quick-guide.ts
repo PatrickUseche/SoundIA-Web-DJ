@@ -37,7 +37,7 @@ export const QUICK_GUIDE_STORAGE = new InjectionToken<Pick<Storage, 'getItem' | 
           <strong>Revisa tus mezclas</strong> en Grabaciones: marca las buenas, descarta las malas y descarga la copia.
         </li>
         <li>
-          Si algo tarda, los servidores gratuitos estan despertando: <strong>espera, no recargues</strong>. Con las
+          Si algo tarda, los servidores gratuitos estan despertando (hasta 3 minutos): <strong>espera, no recargues</strong>. Con las
           canciones ya cargadas en los decks puedes seguir mezclando.
         </li>
       </ol>

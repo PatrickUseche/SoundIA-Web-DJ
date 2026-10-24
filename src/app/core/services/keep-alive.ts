@@ -25,7 +25,7 @@ const ACTIVITY_EVENTS = ['pointerdown', 'keydown'] as const;
 
 /**
  * Mantiene despiertos el API y el motor de IA mientras la aplicacion esta abierta y alguien la usa. En la nube gratuita
- * los servidores se duermen tras 15 minutos sin trafico y tardan hasta un minuto o dos en despertar: en plena sesion
+ * los servidores se duermen tras 15 minutos sin trafico y tardan hasta tres minutos en despertar: en plena sesion
  * eso significaria perder el acceso a la biblioteca o a guardar mezclas. Una consulta a la lista de pistas (que pasa
  * por el API hasta el motor) cada pocos minutos lo evita.
  *

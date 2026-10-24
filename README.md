@@ -89,7 +89,7 @@ src/app/
   de pistas (llega al API y al motor) para que el plan gratuito no los duerma; si nadie toca la página en 2 horas deja de hacerlo, para
   no gastar las horas mensuales gratuitas. En el menú, un indicador dice «Servidores listos» o «Sin respuesta del servidor».
 - **Aviso de servidores dormidos**: si una petición al API tarda más de 8 s (en la nube gratuita los servidores se duermen y
-  tardan hasta uno o dos minutos en despertar) aparece un aviso bajo el menú, y se quita solo cuando llega la respuesta.
+  tardan hasta tres minutos en despertar) aparece un aviso bajo el menú, y se quita solo cuando llega la respuesta.
 - **Biblioteca**: lista las pistas analizadas (BPM, tonalidad, código Camelot, energía). Se pueden cargar en el deck A o B
   (se descarga su audio del servidor), agregar a la cola, o subir un archivo nuevo para analizarlo. Resalta las pistas que
   mezclan bien armónicamente con las que ya están cargadas. Se pueden elegir **varios archivos a la vez**: se analizan de uno en uno (el servidor gratuito tiene poca memoria), con el avance

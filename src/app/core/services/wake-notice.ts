@@ -8,7 +8,7 @@ export const WAKE_NOTICE_DELAY_MS = new InjectionToken<number>('WAKE_NOTICE_DELA
 
 /**
  * Avisa de que el API esta tardando mas de lo normal. En la nube gratuita los servidores se duermen tras unos minutos
- * sin uso y tardan hasta uno o dos minutos en despertar: sin este aviso la pantalla parece colgada.
+ * sin uso y tardan hasta tres minutos en despertar: sin este aviso la pantalla parece colgada.
  *
  * Cuenta las peticiones en curso; si la primera lleva `WAKE_NOTICE_DELAY_MS` sin terminar, `slow` pasa a verdadero, y
  * vuelve a falso en cuanto no queda ninguna en curso.

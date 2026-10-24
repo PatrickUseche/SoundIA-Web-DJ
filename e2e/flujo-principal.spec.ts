@@ -7,7 +7,7 @@ test.beforeEach(async ({ page }) => {
 
 test('la navegación principal lleva a la pantalla de DJ y a la telemetría', async ({ page }) => {
   await page.goto('/dashboard');
-  await expect(page.getByRole('heading', { name: 'Panel de Telemetria DJ AI' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Panel de Telemetría DJ AI' })).toBeVisible();
 
   await page.getByRole('link', { name: 'DJ' }).click();
   await expect(page).toHaveURL(/\/dj$/);

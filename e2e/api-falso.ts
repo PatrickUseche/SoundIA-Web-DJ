@@ -89,7 +89,7 @@ export async function simularApi(page: Page, opciones: { pistas?: unknown[]; con
         const enviado = route.request().postDataJSON() as { username?: string; password?: string };
         return enviado.username === CREDENCIALES.username && enviado.password === CREDENCIALES.password
           ? route.fulfill({ json: { token: TOKEN_FALSO, expiresAt: '2999-01-01T00:00:00Z' }, headers: cors })
-          : route.fulfill({ status: 401, json: { error: 'Usuario o contrasena incorrectos' }, headers: cors });
+          : route.fulfill({ status: 401, json: { error: 'Usuario o contraseña incorrectos' }, headers: cors });
       }
       const esElStream = ruta === '/midi/stream' && url.searchParams.get('ticket') === 'ticket-falso';
       if (!esElStream && route.request().headers()['authorization'] !== `Bearer ${TOKEN_FALSO}`) {

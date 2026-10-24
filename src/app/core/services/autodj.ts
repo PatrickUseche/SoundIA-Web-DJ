@@ -89,7 +89,7 @@ export class AutoDjService {
       const session = active ?? (await firstValueFrom(this.sessions.start('Auto-DJ')));
       this.sessionId.set(session.id);
     } catch (error) {
-      this.fail(httpErrorMessage(error, 'No se pudo abrir la sesion del Auto-DJ.'));
+      this.fail(httpErrorMessage(error, 'No se pudo abrir la sesión del Auto-DJ.'));
       return;
     }
 

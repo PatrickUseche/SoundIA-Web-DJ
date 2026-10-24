@@ -75,7 +75,7 @@ describe('LoginComponent', () => {
 
     it('pide usuario y contrasena con etiquetas y el autocompletado correcto', () => {
       expect(el().querySelector('label[for="login-usuario"]')?.textContent).toContain('Usuario');
-      expect(el().querySelector('label[for="login-contrasena"]')?.textContent).toContain('Contrasena');
+      expect(el().querySelector('label[for="login-contrasena"]')?.textContent).toContain('Contraseña');
       expect(campo('login-usuario').autocomplete).toBe('username');
       expect(campo('login-contrasena').type).toBe('password');
       expect(campo('login-contrasena').autocomplete).toBe('current-password');
@@ -151,10 +151,10 @@ describe('LoginComponent', () => {
       escribir('dj', 'mala');
 
       enviar();
-      backend.expectOne(`${BASE}/login`).flush({ error: 'Usuario o contrasena incorrectos' }, { status: 401, statusText: 'Unauthorized' });
+      backend.expectOne(`${BASE}/login`).flush({ error: 'Usuario o contraseña incorrectos' }, { status: 401, statusText: 'Unauthorized' });
       fixture.detectChanges();
 
-      expect(el().querySelector('[role="alert"]')?.textContent).toContain('Usuario o contrasena incorrectos');
+      expect(el().querySelector('[role="alert"]')?.textContent).toContain('Usuario o contraseña incorrectos');
       expect(campo('login-contrasena').value).toBe('');
       expect(campo('login-usuario').value).toBe('dj');
       expect(router.navigateByUrl).not.toHaveBeenCalled();

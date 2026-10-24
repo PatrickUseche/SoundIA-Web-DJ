@@ -106,3 +106,4 @@ Acordado con el usuario (2026-10-24, con la skill ui-ux-pro-max): tema oscuro pa
 - [x] feat(ui): para la sesión en vivo: confirmación al cerrar o recargar con música sonando, panel de Aprendizaje justo bajo los decks y guía rápida plegable de cinco pasos [11.8]
 - [x] feat(ui): con el login encendido y sin sesión iniciada el menú no ofrece las pantallas (no se podrían abrir) [11.9]
 - [x] feat(ui): etiqueta del deck en la biblioteca, tiempo restante resaltado en cada deck y aviso al subir archivos de más de 20 MB [11.10]
+- [x] fix(ui): tildes y ñ en los textos más visibles (login, menú, cerrar sesión, telemetría, cola de la sesión y avisos de sesión) [11.12]. Queda pendiente revisar el resto de textos de la aplicación, que siguen sin tildes

@@ -317,7 +317,7 @@ describe('MixRecorderService', () => {
 
       expect(create).toHaveBeenCalledTimes(1);
       expect(recorder.pendingCount()).toBe(1);
-      expect(recorder.message()?.text).toContain('sesion caduco');
+      expect(recorder.message()?.text).toContain('sesión caducó');
     });
 
     it('avisa antes de cerrar la pagina si hay mezclas sin guardar', () => {

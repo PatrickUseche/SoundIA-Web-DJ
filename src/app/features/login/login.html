@@ -1,11 +1,11 @@
 <section aria-labelledby="titulo-login" class="panel login">
-    <h2 id="titulo-login">Iniciar sesion</h2>
+    <h2 id="titulo-login">Iniciar sesión</h2>
     <form (submit)="alEnviar($event)" novalidate>
         <label for="login-usuario">Usuario</label>
         <input id="login-usuario" name="usuario" type="text" autocomplete="username" maxlength="200" required
             [value]="username()" (input)="alEscribir('username', $event)" />
 
-        <label for="login-contrasena">Contrasena</label>
+        <label for="login-contrasena">Contraseña</label>
         <input id="login-contrasena" name="contrasena" type="password" autocomplete="current-password" maxlength="200"
             required [value]="password()" (input)="alEscribir('password', $event)" />
 

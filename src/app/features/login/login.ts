@@ -57,7 +57,7 @@ export class LoginComponent implements OnInit {
   private mensajeDe(err: unknown): string {
     if (err instanceof HttpErrorResponse) {
       if (err.status === 401) {
-        return 'Usuario o contrasena incorrectos.';
+        return 'Usuario o contraseña incorrectos.';
       }
       if (err.status === 429) {
         const segundos = Number(err.headers.get('Retry-After'));
@@ -66,7 +66,7 @@ export class LoginComponent implements OnInit {
           : 'Demasiados intentos fallidos. Espera unos segundos e intenta de nuevo.';
       }
     }
-    return httpErrorMessage(err, 'No se pudo iniciar sesion.');
+    return httpErrorMessage(err, 'No se pudo iniciar sesión.');
   }
 
   /** A donde ir al terminar: la pantalla que se pedia, solo si es una ruta interna (nunca otro sitio). */

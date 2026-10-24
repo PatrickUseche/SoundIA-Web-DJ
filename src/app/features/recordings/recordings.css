@@ -1,0 +1,66 @@
+.resumen {
+  margin: 8px 0;
+  color: var(--texto-suave);
+  font-variant-numeric: tabular-nums;
+}
+
+.filtros-grabaciones,
+.copia {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin: 8px 0;
+}
+
+.restaurar {
+  margin: 0;
+}
+
+/* Lo ya revisado se distingue de un vistazo (y ademas lleva el texto del boton marcado). */
+tr[data-calidad='good'] td:first-child {
+  box-shadow: inset 3px 0 0 var(--exito);
+}
+
+tr[data-calidad='discard'] {
+  opacity: 0.6;
+}
+
+tr[data-calidad='discard'] td:first-child {
+  box-shadow: inset 3px 0 0 var(--peligro);
+}
+
+.revision {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.revision .buena[aria-pressed='true'] {
+  background: var(--exito);
+  border-color: var(--exito);
+  color: var(--fondo);
+}
+
+.revision .descartada[aria-pressed='true'] {
+  background: var(--peligro);
+  border-color: var(--peligro);
+  color: var(--fondo);
+}
+
+.notas {
+  width: 14rem;
+}
+
+.grabaciones-ok {
+  color: var(--exito);
+}
+
+.etiqueta-autodj {
+  margin-left: 6px;
+  padding: 0 6px;
+  font-size: 0.75rem;
+  color: var(--aviso);
+  border: 1px solid currentColor;
+  border-radius: 999px;
+}

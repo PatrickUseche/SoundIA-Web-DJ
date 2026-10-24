@@ -1,0 +1,116 @@
+<section aria-labelledby="titulo-grabaciones" class="panel">
+    <h2 id="titulo-grabaciones">Grabaciones de mezclas</h2>
+    <p class="ayuda">
+        Las mezclas que hiciste a mano con el modo aprendizaje encendido. Marca las buenas y descarta las que salieron
+        mal: solo las buenas deberian usarse para que el sistema aprenda tu estilo.
+    </p>
+
+    <div class="resumen" role="status">
+        Total: {{ counts().total }} | Sin revisar: {{ counts().unreviewed }} | Buenas: {{ counts().good }} |
+        Descartadas: {{ counts().discard }}
+    </div>
+
+    <div class="filtros-grabaciones" role="group" aria-label="Filtrar por revision">
+        @for (opcion of filtros; track opcion.valor) {
+            <button type="button" (click)="elegirFiltro(opcion.valor)" [attr.aria-pressed]="filtro() === opcion.valor">
+                {{ opcion.texto }}
+            </button>
+        }
+        <button type="button" (click)="cargar()" [disabled]="cargando()">Actualizar</button>
+    </div>
+
+    <div class="copia">
+        <button type="button" (click)="descargarCopia()" [disabled]="trabajando() || !hayGrabaciones()">
+            Descargar copia
+        </button>
+        <label class="restaurar">
+            Restaurar una copia:
+            <input type="file" accept="application/json,.json" (change)="restaurarCopia($event)"
+                [disabled]="trabajando()" aria-label="Archivo de copia de grabaciones" />
+        </label>
+    </div>
+
+    @if (mensaje(); as texto) {
+        <p role="status" class="grabaciones-ok">{{ texto }}</p>
+    }
+    @if (errorAccion(); as texto) {
+        <p role="alert" class="grabaciones-error alerta">{{ texto }}</p>
+    }
+
+    @if (error(); as texto) {
+        <p role="alert" class="lista-error alerta">{{ texto }}</p>
+    } @else if (cargando() && recordings().length === 0) {
+        <p>Cargando grabaciones...</p>
+    } @else if (recordings().length === 0) {
+        <p class="sin-grabaciones">
+            @if (hayGrabaciones()) {
+                Ninguna grabacion coincide con el filtro.
+            } @else {
+                Todavia no hay grabaciones. Enciende el modo aprendizaje en la pantalla de DJ y mezcla a mano.
+            }
+        </p>
+    } @else {
+        <div class="tabla-scroll"><table>
+            <caption>Mezclas grabadas</caption>
+            <thead>
+                <tr>
+                    <th scope="col">Fecha</th>
+                    <th scope="col">Pistas</th>
+                    <th scope="col">Genero</th>
+                    <th scope="col">Solape</th>
+                    <th scope="col">Crossfader</th>
+                    <th scope="col">Graves</th>
+                    <th scope="col">Desfase</th>
+                    <th scope="col">Revision</th>
+                    <th scope="col">Notas</th>
+                    <th scope="col">Borrar</th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (r of recordings(); track r.id) {
+                    <tr [attr.data-calidad]="r.quality">
+                        <td>
+                            {{ r.createdAt | date: 'dd/MM/yy HH:mm' }}
+                            @if (r.source === 'autodj') {
+                                <span class="etiqueta-autodj" title="La hizo el Auto-DJ, no tu">Auto-DJ</span>
+                            }
+                        </td>
+                        <td>{{ pistas(r) }}</td>
+                        <td>{{ genero(r) }}</td>
+                        <td>{{ r.features.overlapBars }} compases</td>
+                        <td>{{ forma(r) }}</td>
+                        <td>{{ cambioDeGraves(r) }}</td>
+                        <td>{{ desfase(r) }}</td>
+                        <td>
+                            <div class="revision" role="group" [attr.aria-label]="'Revision de la mezcla ' + r.id">
+                                <button type="button" class="buena" (click)="marcar(r, 'good')"
+                                    [attr.aria-pressed]="r.quality === 'good'">Buena</button>
+                                <button type="button" class="descartada" (click)="marcar(r, 'discard')"
+                                    [attr.aria-pressed]="r.quality === 'discard'">Descartar</button>
+                                <button type="button" (click)="marcar(r, 'unreviewed')"
+                                    [attr.aria-pressed]="r.quality === 'unreviewed'">Sin revisar</button>
+                            </div>
+                        </td>
+                        <td>
+                            <input type="text" class="notas" maxlength="500" [value]="r.notes"
+                                (change)="guardarNotas(r, $event)" placeholder="Por que si o por que no"
+                                [attr.aria-label]="'Notas de la mezcla ' + r.id" />
+                        </td>
+                        <td>
+                            @if (confirmandoBorrado() === r.id) {
+                                <span class="confirmar-borrado" role="group" [attr.aria-label]="'Confirmar el borrado de la mezcla ' + r.id">
+                                    ¿Seguro?
+                                    <button type="button" (click)="borrar(r)">Si, borrar</button>
+                                    <button type="button" (click)="cancelarBorrado()">No</button>
+                                </span>
+                            } @else {
+                                <button type="button" (click)="pedirBorrado(r)"
+                                    [attr.aria-label]="'Borrar la mezcla ' + r.id">Borrar</button>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table></div>
+    }
+</section>

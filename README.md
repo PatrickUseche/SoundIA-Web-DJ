@@ -77,7 +77,8 @@ src/app/
   (se descarga su audio del servidor), agregar a la cola, o subir un archivo nuevo para analizarlo. Resalta las pistas que
   mezclan bien armónicamente con las que ya están cargadas. Se pueden elegir **varios archivos a la vez**: se analizan de uno en uno (el servidor gratuito tiene poca memoria), con el avance
   «pista 2 de 5», y un archivo que falla no detiene a los demás; al final se resume cuáles salieron bien y por qué fallaron los otros.
-  Los de más de 50 MB ni se envían. Cada pista tiene un botón **Borrar** (pide confirmación) que
+  Los de más de 50 MB ni se envían. Cada pista tiene un campo de **género** (merengue, bachata, salsa, despecho, discobar... con sugerencias; se puede escribir otro) que se
+  guarda al salir del campo, y la búsqueda y el orden también lo usan: es contexto para aprender el estilo del DJ. Cada pista tiene un botón **Borrar** (pide confirmación) que
   elimina la pista y su audio: sirve para liberar espacio al terminar una sesión; las grabaciones de mezclas se conservan.
   Una pista cargada en un deck no se puede borrar.
 - **Decks**: reproducir/pausar, punto cue, pitch de ±8 %, volumen, EQ de tres bandas, forma de onda (clic para saltar) y

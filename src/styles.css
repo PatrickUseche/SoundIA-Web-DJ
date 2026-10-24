@@ -463,6 +463,13 @@ progress {
   font-size: 0.9rem;
 }
 
+/* Campo de genero de cada pista en la biblioteca. */
+input.genero {
+  width: 9rem;
+  min-height: 30px;
+  padding: 2px 6px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     animation: none !important;

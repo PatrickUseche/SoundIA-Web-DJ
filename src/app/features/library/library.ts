@@ -18,7 +18,7 @@ export const TAMANO_MAXIMO_BYTES = 50 * 1024 * 1024;
 export const REFRESCO_VOZ_MS = 5000;
 
 /** Formas de ordenar la lista: la del API (mas recientes primero), por tempo, por tonalidad o por titulo. */
-export type OrdenBiblioteca = 'recientes' | 'bpm-asc' | 'bpm-desc' | 'camelot' | 'titulo';
+export type OrdenBiblioteca = 'recientes' | 'bpm-asc' | 'bpm-desc' | 'camelot' | 'titulo' | 'genero';
 
 export const ORDENES: { valor: OrdenBiblioteca; texto: string }[] = [
   { valor: 'recientes', texto: 'Mas recientes' },
@@ -26,6 +26,12 @@ export const ORDENES: { valor: OrdenBiblioteca; texto: string }[] = [
   { valor: 'bpm-desc', texto: 'BPM de mayor a menor' },
   { valor: 'camelot', texto: 'Tonalidad (Camelot)' },
   { valor: 'titulo', texto: 'Titulo' },
+  { valor: 'genero', texto: 'Genero' },
+];
+
+/** Generos que se sugieren al escribir (se puede poner cualquier otro). */
+export const GENEROS_SUGERIDOS = [
+  'merengue', 'bachata', 'salsa', 'despecho', 'discobar', 'reggaeton', 'vallenato', 'cumbia', 'champeta', 'popular',
 ];
 
 /** Posicion de un codigo Camelot en la rueda (1A, 1B, 2A...); los codigos no validos van al final. */
@@ -91,6 +97,8 @@ export class LibraryComponent implements OnInit {
   readonly orden = signal<OrdenBiblioteca>('recientes');
   readonly soloCompatibles = signal(false);
   protected readonly ordenes = ORDENES;
+  protected readonly generos = GENEROS_SUGERIDOS;
+  readonly errorGenero = signal<string | null>(null);
 
   /** Hay alguna pista cargada en un deck: solo entonces tiene sentido filtrar por compatibles. */
   readonly hayDecksCargados = computed(() => this.camelotsEnDecks().length > 0);
@@ -100,7 +108,7 @@ export class LibraryComponent implements OnInit {
     const texto = this.busqueda().trim().toLowerCase();
     let lista = this.tracks();
     if (texto !== '') {
-      lista = lista.filter((t) => t.title.toLowerCase().includes(texto));
+      lista = lista.filter((t) => t.title.toLowerCase().includes(texto) || (t.genre ?? '').includes(texto));
     }
     if (this.soloCompatibles() && this.hayDecksCargados()) {
       lista = lista.filter((t) => this.compatible(t));
@@ -111,6 +119,8 @@ export class LibraryComponent implements OnInit {
       'bpm-desc': (a, b) => b.bpm - a.bpm,
       camelot: (a, b) => claveCamelot(a.camelot) - claveCamelot(b.camelot) || a.bpm - b.bpm,
       titulo: (a, b) => a.title.localeCompare(b.title, 'es'),
+      // Las que no tienen genero van al final.
+      genero: (a, b) => Number(!a.genre) - Number(!b.genre) || (a.genre ?? '').localeCompare(b.genre ?? '', 'es') || a.title.localeCompare(b.title, 'es'),
     };
     const comparar = criterio[this.orden()];
     return comparar ? [...lista].sort(comparar) : lista;
@@ -239,6 +249,30 @@ export class LibraryComponent implements OnInit {
 
   alFiltrarCompatibles(evento: Event): void {
     this.soloCompatibles.set((evento.target as HTMLInputElement).checked);
+  }
+
+  /** Guarda el genero que el DJ escribio en la fila; si no se pudo, vuelve a mostrar el anterior y explica por que. */
+  cambiarGenero(track: Track, evento: Event): void {
+    const campo = evento.target as HTMLInputElement;
+    const nuevo = campo.value.trim().toLowerCase().replace(/\s+/g, ' ');
+    this.errorGenero.set(null);
+    if (nuevo === (track.genre ?? '')) {
+      campo.value = track.genre ?? '';
+      return;
+    }
+    this.api
+      .setGenre(track.id, nuevo)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (actualizada) => {
+          this.tracks.update((lista) => lista.map((t) => (t.id === actualizada.id ? actualizada : t)));
+          campo.value = actualizada.genre ?? '';
+        },
+        error: (err) => {
+          this.errorGenero.set(httpErrorMessage(err, `No se pudo guardar el genero de "${track.title}".`));
+          campo.value = track.genre ?? '';
+        },
+      });
   }
 
   /** Pide confirmacion antes de borrar: es irreversible (se borra tambien el audio). */

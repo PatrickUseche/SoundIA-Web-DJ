@@ -32,6 +32,11 @@ export class TrackApiService {
     return this.http.post<Track>(`${this.baseUrl}/analyze`, body);
   }
 
+  /** Pone el genero de la pista (vacio lo quita). Devuelve la pista actualizada. */
+  setGenre(id: number, genre: string): Observable<Track> {
+    return this.http.put<Track>(`${this.baseUrl}/${id}`, { genre });
+  }
+
   /** Borra la pista y su audio. Las grabaciones de mezclas que la usaron se conservan. */
   delete(id: number): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/${id}`);

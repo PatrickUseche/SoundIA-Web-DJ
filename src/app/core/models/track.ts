@@ -26,6 +26,8 @@ export interface Track {
    * tiempo a mano (entonces `confidence` es 1).
    */
   grid?: { offset: number; downbeat: number; confidence: number; manual?: boolean } | null;
+  /** Genero de la pista (merengue, bachata, salsa...), en minusculas; vacio si no se ha puesto. */
+  genre?: string;
   /** Si el backend guardo el audio original (las pistas analizadas antes de guardarlo no lo tienen). */
   hasAudio: boolean;
   createdAt: string;

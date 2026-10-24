@@ -52,6 +52,15 @@
         <p role="alert" class="cola-error alerta">{{ mensaje }}</p>
     }
 
+    @if (errorGenero(); as mensaje) {
+        <p role="alert" class="genero-error alerta">{{ mensaje }}</p>
+    }
+    <datalist id="generos-sugeridos">
+        @for (genero of generos; track genero) {
+            <option [value]="genero"></option>
+        }
+    </datalist>
+
     @if (mensajeBorrado(); as mensaje) {
         <p role="status" class="borrado-ok">{{ mensaje }}</p>
     }
@@ -101,6 +110,7 @@
                     <th scope="col">BPM</th>
                     <th scope="col">Tonalidad</th>
                     <th scope="col">Camelot</th>
+                    <th scope="col">Genero</th>
                     <th scope="col">Energia</th>
                     <th scope="col">Duracion</th>
                     <th scope="col">Cargar</th>
@@ -121,6 +131,11 @@
                         <td>{{ formatBpm(pista.bpm) }}</td>
                         <td>{{ pista.key }}</td>
                         <td>{{ pista.camelot }}</td>
+                        <td>
+                            <input type="text" class="genero" list="generos-sugeridos" maxlength="40"
+                                [value]="pista.genre ?? ''" (change)="cambiarGenero(pista, $event)"
+                                [attr.aria-label]="'Genero de ' + pista.title" placeholder="sin genero" />
+                        </td>
                         <td>
                             <meter min="0" max="1" [value]="pista.energy" [attr.aria-label]="'Energia de ' + pista.title">
                                 {{ pista.energy }}

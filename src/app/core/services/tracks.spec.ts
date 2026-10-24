@@ -93,6 +93,18 @@ describe('TrackApiService', () => {
     expect((error as { status: number }).status).toBe(404);
   });
 
+  it('setGenre envia el genero con un PUT y devuelve la pista actualizada', () => {
+    let recibida: Track | undefined;
+
+    service.setGenre(7, 'salsa').subscribe((t) => (recibida = t));
+
+    const req = http.expectOne(`${BASE}/7`);
+    expect(req.request.method).toBe('PUT');
+    expect(req.request.body).toEqual({ genre: 'salsa' });
+    req.flush(pista({ id: 7, genre: 'salsa' }));
+    expect(recibida?.genre).toBe('salsa');
+  });
+
   it('delete borra la pista con un DELETE', () => {
     let terminado = false;
 

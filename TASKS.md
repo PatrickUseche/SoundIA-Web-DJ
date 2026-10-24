@@ -100,3 +100,4 @@ Acordado con el usuario (2026-10-24, con la skill ui-ux-pro-max): tema oscuro pa
 - [x] feat(ui): consola de DJ: deck A y B con su color, faders verticales, Play grande, BPM y tonalidad destacados, forma de onda más alta [11.2]
 - [x] feat(ui): biblioteca con buscador, orden por BPM y tonalidad y filtro de compatibles; el controlador MIDI en un bloque plegable (la consola no queda fija: ocuparía casi toda la pantalla de un portátil) [11.3]
 - [x] feat(ui): aviso de que los servidores pueden estar despertando cuando una petición al API tarda más de 8 s [11.4]
+- [x] feat(library): género de cada pista, editable en la biblioteca, con sugerencias, búsqueda y orden por género [8.6]

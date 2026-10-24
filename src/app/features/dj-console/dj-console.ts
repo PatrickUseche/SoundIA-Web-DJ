@@ -1,4 +1,6 @@
-import { Component, inject } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
+import { Component, DestroyRef, PLATFORM_ID, inject } from '@angular/core';
+import { DeckId } from '../../core/audio/deck';
 import { MixerService } from '../../core/services/mixer';
 import { DeckComponent } from '../deck/deck';
 
@@ -11,6 +13,21 @@ import { DeckComponent } from '../deck/deck';
 })
 export class DjConsoleComponent {
   protected readonly mixer = inject(MixerService);
+
+  constructor() {
+    if (isPlatformBrowser(inject(PLATFORM_ID))) {
+      // Recargar o cerrar la pestana sin querer en pleno set cortaria la musica: el navegador pide confirmacion.
+      const advertir = (evento: BeforeUnloadEvent) => {
+        const sonando = this.mixer.supported && (['A', 'B'] as DeckId[]).some((id) => this.mixer.deck(id).playing());
+        if (sonando) {
+          evento.preventDefault();
+          evento.returnValue = '';
+        }
+      };
+      window.addEventListener('beforeunload', advertir);
+      inject(DestroyRef).onDestroy(() => window.removeEventListener('beforeunload', advertir));
+    }
+  }
 
   alMoverCrossfader(evento: Event): void {
     this.mixer.setCrossfader(Number((evento.target as HTMLInputElement).value));

@@ -26,6 +26,14 @@
   border-bottom-color: var(--acento);
 }
 
+.aviso-despertando {
+  margin: 0;
+  padding: 8px 20px;
+  color: var(--aviso);
+  background: rgba(251, 191, 36, 0.1);
+  border-bottom: 1px solid var(--aviso);
+}
+
 .contenido {
   display: block;
   padding: 12px 20px;

@@ -32,6 +32,9 @@ jobs:
       - name: Ejecutar las pruebas unitarias
         run: npx ng test --watch=false
 
+      - name: Pruebas de los scripts de despliegue
+        run: npm run test:scripts
+
       - name: Build de produccion
         run: npx ng build
 

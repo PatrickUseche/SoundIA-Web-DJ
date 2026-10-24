@@ -83,4 +83,4 @@ Encontrado al probar el sistema completo en un navegador real (2026-10-22); nada
 Arquitectura acordada con el usuario (2026-10-24): este frontend en Cloudflare Pages, el API y el motor de IA en Render (gratis, se duermen y su disco se borra), base de datos en Neon y audios en Supabase Storage. Nada de esto se ha probado contra las plataformas reales.
 
 - [x] feat(config): la URL del API se puede definir en tiempo de ejecucion con `config.js` (`window.__SOUNDIA__.apiUrl`), para servir el frontend aparte del API [9.1]
-- [ ] chore(deploy): script de build para Cloudflare Pages (`index.html`, `_redirects`, `config.js` con `SOUNDIA_API_URL`) y cabeceras de seguridad [9.2]
+- [x] chore(deploy): script de build para Cloudflare Pages (`index.html`, `_redirects`, `config.js` con `SOUNDIA_API_URL`) y cabeceras de seguridad [9.2]

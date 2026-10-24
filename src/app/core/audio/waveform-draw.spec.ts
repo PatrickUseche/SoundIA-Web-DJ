@@ -1,4 +1,4 @@
-import { Canvas2D, DEFAULT_WAVEFORM_COLORS, drawWaveform } from './waveform-draw';
+import { Canvas2D, DECK_WAVEFORM_COLORS, DEFAULT_WAVEFORM_COLORS, drawWaveform } from './waveform-draw';
 
 /** Contexto 2D de mentira que registra lo que se pinta con cada color. */
 class FakeCanvas2D implements Canvas2D {
@@ -131,5 +131,24 @@ describe('drawWaveform', () => {
     drawWaveform(ctx, new Float32Array([1]), 10, 0, 0.5);
 
     expect(ctx.rects).toEqual([]);
+  });
+});
+
+describe('DECK_WAVEFORM_COLORS', () => {
+  it('cada deck tiene un color distinto para la parte reproducida', () => {
+    expect(DECK_WAVEFORM_COLORS.A.played).not.toBe(DECK_WAVEFORM_COLORS.B.played);
+  });
+
+  it('el color de cada deck coincide con el de styles.css (--deck-a y --deck-b)', () => {
+    expect(DECK_WAVEFORM_COLORS.A.played).toBe('#22d3ee');
+    expect(DECK_WAVEFORM_COLORS.B.played).toBe('#f472b6');
+  });
+
+  it('dibuja lo reproducido con el color de su deck', () => {
+    const ctx = new FakeCanvas2D();
+
+    drawWaveform(ctx, new Float32Array([1]), 10, 40, 1, [], DECK_WAVEFORM_COLORS.B);
+
+    expect(ctx.porColor(DECK_WAVEFORM_COLORS.B.played).length).toBe(10);
   });
 });

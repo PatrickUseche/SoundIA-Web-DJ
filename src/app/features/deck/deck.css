@@ -1,0 +1,118 @@
+/* Cada deck lleva su color (el mismo de la onda) para distinguir A de B de un vistazo con poca luz. */
+.deck {
+  --deck-color: var(--acento);
+  border-top: 3px solid var(--deck-color);
+}
+
+.deck[data-deck='A'] {
+  --deck-color: var(--deck-a);
+}
+
+.deck[data-deck='B'] {
+  --deck-color: var(--deck-b);
+}
+
+h3 {
+  color: var(--deck-color);
+  font-size: 1rem;
+}
+
+/* BPM en grande y con cifras de ancho fijo. */
+.datos {
+  margin: 2px 0 6px;
+  color: var(--texto-suave);
+}
+
+.bpm {
+  font-family: var(--fuente-datos);
+  font-size: 1.7rem;
+  font-weight: 700;
+  color: var(--texto);
+}
+
+.primer-tiempo {
+  margin: 0 0 6px;
+  color: var(--texto-suave);
+  font-size: 0.9rem;
+}
+
+/* Transporte: Play es el boton principal. */
+.transporte .play {
+  min-width: 96px;
+  min-height: 44px;
+  font-size: 1.05rem;
+  border-color: var(--deck-color);
+}
+
+.transporte .sync {
+  border-color: var(--deck-color);
+}
+
+/* Volumen y ecualizador como faders verticales, uno junto a otro, como en una mesa de mezclas. */
+.canal-fader {
+  padding: 8px 4px;
+}
+
+.faders {
+  display: flex;
+  justify-content: space-around;
+  gap: 4px;
+}
+
+.faders label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  font-size: 0.8rem;
+}
+
+.fader {
+  writing-mode: vertical-lr;
+  direction: rtl;
+  width: 28px;
+  height: 130px;
+  accent-color: var(--deck-color);
+}
+
+.fader::-webkit-slider-runnable-track {
+  width: 6px;
+  height: 100%;
+}
+
+.fader::-moz-range-track {
+  width: 6px;
+  height: 100%;
+}
+
+.fader::-webkit-slider-thumb {
+  margin-top: 0;
+  margin-left: -9px;
+  border-color: var(--deck-color);
+}
+
+.fader::-moz-range-thumb {
+  border-color: var(--deck-color);
+}
+
+.fader-volumen::-webkit-slider-thumb {
+  background: var(--deck-color);
+}
+
+.fader-volumen::-moz-range-thumb {
+  background: var(--deck-color);
+}
+
+/* El pitch tambien lleva el color del deck. */
+.deck input[type='range']:not(.fader) {
+  accent-color: var(--deck-color);
+}
+
+.deck input[type='range']:not(.fader)::-webkit-slider-thumb {
+  border-color: var(--deck-color);
+}
+
+.deck input[type='range']:not(.fader)::-moz-range-thumb {
+  border-color: var(--deck-color);
+}

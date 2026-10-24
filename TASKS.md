@@ -97,5 +97,5 @@ Acordado con el usuario (2026-10-24): el DJ usa la versión de la nube, por sesi
 Acordado con el usuario (2026-10-24, con la skill ui-ux-pro-max): tema oscuro para cabina, deck A en cian y deck B en magenta, Play en verde, mejoras en tres PRs.
 
 - [x] feat(ui): base visual: paleta oscura de contraste comprobado, colores de deck, cifras tabulares, estilos de las clases que no tenían ninguno (pistas compatibles, avisos, chapa Camelot) [11.1]
-- [ ] feat(ui): consola de DJ: deck A y B con su color, faders verticales, Play grande, BPM y tonalidad destacados, forma de onda más alta [11.2]
+- [x] feat(ui): consola de DJ: deck A y B con su color, faders verticales, Play grande, BPM y tonalidad destacados, forma de onda más alta [11.2]
 - [ ] feat(ui): consola fija arriba, paneles secundarios plegables y buscador con orden por BPM y tonalidad en la biblioteca [11.3]

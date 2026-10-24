@@ -31,6 +31,18 @@ describe('WaveformComponent', () => {
   const poner = (nombre: string, valor: unknown) => fixture.componentRef.setInput(nombre, valor);
   const canvas = () => (fixture.nativeElement as HTMLElement).querySelector('canvas') as HTMLCanvasElement;
 
+  it('dibuja con los colores recibidos', () => {
+    const { rects } = espiarCanvas();
+    crear();
+    poner('peaks', new Float32Array([1]));
+    poner('width', 10);
+    poner('progress', 1);
+    poner('colors', { played: '#123456', remaining: '#654321', playhead: '#ffffff', cue: '#ffb300' });
+    fixture.detectChanges();
+
+    expect(rects.some((r) => r.color === '#123456')).toBe(true);
+  });
+
   it('crea un canvas con el tamano pedido y una etiqueta accesible', () => {
     espiarCanvas();
     crear();

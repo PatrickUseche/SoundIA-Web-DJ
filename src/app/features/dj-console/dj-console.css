@@ -11,6 +11,34 @@
   top: 8px;
 }
 
+/* El crossfader va del color del deck A al del deck B. */
+.crossfader::-webkit-slider-runnable-track {
+  height: 8px;
+  background: linear-gradient(90deg, var(--deck-a), var(--deck-b));
+  border: 0;
+}
+
+.crossfader::-moz-range-track {
+  height: 8px;
+  background: linear-gradient(90deg, var(--deck-a), var(--deck-b));
+  border: 0;
+}
+
+.crossfader::-webkit-slider-thumb {
+  width: 14px;
+  height: 30px;
+  margin-top: -11px;
+  border-radius: 3px;
+  border: 2px solid var(--fondo);
+}
+
+.crossfader::-moz-range-thumb {
+  width: 10px;
+  height: 26px;
+  border-radius: 3px;
+  border: 2px solid var(--fondo);
+}
+
 @media (max-width: 1000px) {
   .consola {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);

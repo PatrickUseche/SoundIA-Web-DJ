@@ -16,6 +16,15 @@ export const DEFAULT_WAVEFORM_COLORS: WaveformColors = {
   cue: '#ffb300',
 };
 
+/**
+ * Colores de la onda de cada deck: la parte reproducida lleva el color del deck (el mismo que --deck-a y --deck-b de
+ * styles.css, que un canvas no puede leer) para distinguir A de B de un vistazo con poca luz.
+ */
+export const DECK_WAVEFORM_COLORS: Record<'A' | 'B', WaveformColors> = {
+  A: { played: '#22d3ee', remaining: '#4b5169', playhead: '#ffffff', cue: '#fbbf24' },
+  B: { played: '#f472b6', remaining: '#4b5169', playhead: '#ffffff', cue: '#fbbf24' },
+};
+
 /** Parte del contexto 2D que usa el dibujo (permite probarlo con un contexto falso). */
 export type Canvas2D = Pick<CanvasRenderingContext2D, 'clearRect' | 'fillRect' | 'fillStyle'>;
 

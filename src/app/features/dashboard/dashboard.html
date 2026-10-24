@@ -1,5 +1,5 @@
 <div class="telemetria">
-    <h2>Panel de Telemetria DJ AI</h2>
+    <h2>Panel de Telemetría DJ AI</h2>
     <p role="status" [attr.data-estado]="estadoConexion()">{{ textoEstado(estadoConexion()) }}</p>
     <button (click)="simularMezclaAutomatica()" [disabled]="calculandoMezcla()">
         {{ calculandoMezcla() ? 'Calculando...' : 'Disparar Evento MIDI' }}

@@ -4,7 +4,7 @@
   @if (auth.enabled() !== true || auth.authenticated()) {
     <a routerLink="/dj" routerLinkActive="activo" ariaCurrentWhenActive="page">DJ</a>
     <a routerLink="/grabaciones" routerLinkActive="activo" ariaCurrentWhenActive="page">Grabaciones</a>
-    <a routerLink="/dashboard" routerLinkActive="activo" ariaCurrentWhenActive="page">Telemetria</a>
+    <a routerLink="/dashboard" routerLinkActive="activo" ariaCurrentWhenActive="page">Telemetría</a>
   }
   @if (aviso.reachable() !== null) {
     <span class="estado-servidor" [attr.data-estado]="aviso.reachable() ? 'listo' : 'caido'" role="status">
@@ -12,7 +12,7 @@
     </span>
   }
   @if (auth.enabled() && auth.authenticated()) {
-    <button type="button" class="cerrar-sesion" (click)="cerrarSesion()">Cerrar sesion</button>
+    <button type="button" class="cerrar-sesion" (click)="cerrarSesion()">Cerrar sesión</button>
   }
 </nav>
 @if (aviso.slow()) {

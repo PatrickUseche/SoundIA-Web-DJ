@@ -117,7 +117,7 @@ describe('AuthService', () => {
       let error: unknown;
 
       auth.login('dj', 'mala').subscribe({ error: (e) => (error = e) });
-      http.expectOne(`${BASE}/login`).flush({ error: 'Usuario o contrasena incorrectos' }, { status: 401, statusText: 'Unauthorized' });
+      http.expectOne(`${BASE}/login`).flush({ error: 'Usuario o contraseña incorrectos' }, { status: 401, statusText: 'Unauthorized' });
 
       expect(error).toBeDefined();
       expect(auth.authenticated()).toBe(false);

@@ -252,7 +252,7 @@ export class MixRecorderService {
         } else if (status === 401) {
           // La sesion caduco: se conservan las mezclas y se guardaran al volver a iniciar sesion.
           this._message.set({
-            text: 'La sesion caduco: inicia sesion de nuevo y las mezclas pendientes se guardaran.',
+            text: 'La sesión caducó: inicia sesión de nuevo y las mezclas pendientes se guardarán.',
             error: true,
           });
         } else {

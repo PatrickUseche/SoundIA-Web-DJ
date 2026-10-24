@@ -62,7 +62,7 @@ describe('LearningPanelComponent', () => {
     recorder.message.set({ text: 'No se pudo guardar la mezcla.', error: true });
     fixture.detectChanges();
 
-    expect(texto()).toContain('Mezclas grabadas en esta sesion: 3');
+    expect(texto()).toContain('Mezclas grabadas en esta sesión: 3');
     const alerta = (fixture.nativeElement as HTMLElement).querySelector('[role=alert]');
     expect(alerta?.textContent).toContain('No se pudo guardar la mezcla.');
   });

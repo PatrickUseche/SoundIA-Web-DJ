@@ -36,7 +36,7 @@ describe('App', () => {
     await fixture.whenStable();
     const enlaces = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('nav a'));
 
-    expect(enlaces.map((a) => a.textContent?.trim())).toEqual(['DJ', 'Grabaciones', 'Telemetria']);
+    expect(enlaces.map((a) => a.textContent?.trim())).toEqual(['DJ', 'Grabaciones', 'Telemetría']);
     expect(enlaces.map((a) => a.getAttribute('href'))).toEqual(['/dj', '/grabaciones', '/dashboard']);
   });
 
@@ -106,7 +106,7 @@ describe('App', () => {
       await fixture.whenStable();
       fixture.detectChanges();
 
-      expect(enlaces(fixture)).toEqual(['DJ', 'Grabaciones', 'Telemetria']);
+      expect(enlaces(fixture)).toEqual(['DJ', 'Grabaciones', 'Telemetría']);
     });
 
     it('con el login apagado las ofrece siempre', async () => {
@@ -115,7 +115,7 @@ describe('App', () => {
       await fixture.whenStable();
       fixture.detectChanges();
 
-      expect(enlaces(fixture)).toEqual(['DJ', 'Grabaciones', 'Telemetria']);
+      expect(enlaces(fixture)).toEqual(['DJ', 'Grabaciones', 'Telemetría']);
     });
   });
 
@@ -195,7 +195,7 @@ describe('cerrar sesion', () => {
   it('con login exigido y sesion iniciada ofrece cerrar sesion', () => {
     const { fixture } = crear({ exige: true, sesion: true });
 
-    expect(boton(fixture)?.textContent?.trim()).toBe('Cerrar sesion');
+    expect(boton(fixture)?.textContent?.trim()).toBe('Cerrar sesión');
   });
 
   it('sin login exigido no muestra el boton', () => {

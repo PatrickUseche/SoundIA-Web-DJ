@@ -32,24 +32,33 @@ describe('DjPageComponent', () => {
     expect(el.querySelector('app-library')).not.toBeNull();
   });
 
+  it('muestra la guia rapida arriba del todo, antes de la consola', () => {
+    const { el } = crear();
+
+    const guia = el.querySelector('app-quick-guide');
+    expect(guia).not.toBeNull();
+    expect(guia!.compareDocumentPosition(el.querySelector('app-dj-console')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it('agrupa el controlador MIDI en un bloque plegable cerrado, para acortar la pagina', () => {
     const { el } = crear();
 
-    const plegable = el.querySelector('details.plegable') as HTMLDetailsElement;
+    const plegable = el.querySelector('details.plegable:not(.guia-rapida)') as HTMLDetailsElement;
     expect(plegable.open).toBe(false);
     expect(plegable.querySelector('summary')?.textContent).toContain('Controlador MIDI');
     expect(plegable.querySelector('app-midi-panel')).not.toBeNull();
     expect(plegable.querySelector('app-midi-mapping')).not.toBeNull();
   });
 
-  it('deja la biblioteca antes del modo aprendizaje y fuera del bloque plegable', () => {
+  it('deja el modo aprendizaje justo debajo de la consola, antes de la biblioteca y fuera del bloque plegable', () => {
     const { el } = crear();
 
     const biblioteca = el.querySelector('app-library')!;
     const aprendizaje = el.querySelector('app-learning-panel')!;
     expect(biblioteca.closest('details')).toBeNull();
     expect(aprendizaje.closest('details')).toBeNull();
-    expect(biblioteca.compareDocumentPosition(aprendizaje) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(aprendizaje.compareDocumentPosition(biblioteca) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(el.querySelector('app-dj-console')!.compareDocumentPosition(aprendizaje) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it('incluye la conexion del controlador MIDI y la asignacion de sus controles', () => {

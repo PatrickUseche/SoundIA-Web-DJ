@@ -80,6 +80,45 @@ describe('DjConsoleComponent', () => {
       expect(mixer.masterVolume()).toBeCloseTo(0.25);
     });
 
+    describe('al cerrar o recargar la pagina', () => {
+      const intentarCerrar = () => {
+        const evento = new Event('beforeunload', { cancelable: true });
+        window.dispatchEvent(evento);
+        return evento.defaultPrevented;
+      };
+
+      it('no avisa si no suena nada', () => {
+        expect(intentarCerrar()).toBe(false);
+      });
+
+      it('avisa si suena el deck A', () => {
+        mixer.deck('A').playing.set(true);
+
+        expect(intentarCerrar()).toBe(true);
+      });
+
+      it('avisa si suena el deck B', () => {
+        mixer.deck('B').playing.set(true);
+
+        expect(intentarCerrar()).toBe(true);
+      });
+
+      it('deja de avisar cuando se pausa todo', () => {
+        mixer.deck('A').playing.set(true);
+        mixer.deck('A').playing.set(false);
+
+        expect(intentarCerrar()).toBe(false);
+      });
+
+      it('al destruir la consola ya no avisa', () => {
+        mixer.deck('A').playing.set(true);
+
+        fixture.destroy();
+
+        expect(intentarCerrar()).toBe(false);
+      });
+    });
+
     it('el contexto de audio recibe el cambio del crossfader', () => {
       mover(slider('Crossfader'), 0);
 

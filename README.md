@@ -71,6 +71,9 @@ src/app/
 
 ## Pantalla de DJ (`/dj`)
 
+- **Pantalla de DJ** (`/dj`): guía rápida plegable arriba (abierta la primera vez), los dos decks, el panel de Aprendizaje justo
+  debajo, la biblioteca, el Auto-DJ y el controlador MIDI plegado. Si hay música sonando, el navegador pide confirmación antes de
+  recargar o cerrar la pestaña, para no cortar el set por error.
 - **Modo aprendizaje**: si el servidor no responde al guardar una mezcla (dormido o reiniciándose en la nube gratuita), la mezcla
   **no se pierde**: queda pendiente, se guarda también en el navegador y se reintenta sola (5, 10, 20 y 30 s); el panel dice cuántas
   esperan y, si intentas cerrar la página con mezclas sin enviar, el navegador avisa.

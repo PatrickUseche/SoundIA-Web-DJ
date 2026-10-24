@@ -101,3 +101,4 @@ Acordado con el usuario (2026-10-24, con la skill ui-ux-pro-max): tema oscuro pa
 - [x] feat(ui): biblioteca con buscador, orden por BPM y tonalidad y filtro de compatibles; el controlador MIDI en un bloque plegable (la consola no queda fija: ocuparía casi toda la pantalla de un portátil) [11.3]
 - [x] feat(ui): aviso de que los servidores pueden estar despertando cuando una petición al API tarda más de 8 s [11.4]
 - [x] feat(library): género de cada pista, editable en la biblioteca, con sugerencias, búsqueda y orden por género [8.6]
+- [x] fix(learning): las mezclas grabadas no se pierden si el servidor está dormido o reiniciándose: quedan pendientes (también en el navegador), se reintentan solas y se avisa antes de cerrar la página [11.5]

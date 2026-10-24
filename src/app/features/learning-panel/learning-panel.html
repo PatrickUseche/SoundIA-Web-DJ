@@ -18,6 +18,12 @@
     @if (recorder.saved() > 0) {
         <p class="contador">Mezclas grabadas en esta sesion: {{ recorder.saved() }}</p>
     }
+    @if (recorder.pendingCount() > 0) {
+        <p role="status" class="pendientes aviso">
+            {{ recorder.pendingCount() }} mezcla(s) esperan a guardarse porque el servidor no responde. Se reintenta solo:
+            no cierres la pagina.
+        </p>
+    }
     @if (recorder.message(); as mensaje) {
         <p [attr.role]="mensaje.error ? 'alert' : 'status'" class="mensaje-aprendizaje" [class.alerta]="mensaje.error">
             {{ mensaje.text }}

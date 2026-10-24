@@ -1,19 +1,29 @@
-/* Sistema de estilos de SoundIA: tema oscuro con variables, base tipografica y piezas reutilizables. */
+/* Sistema de estilos de SoundIA: tema oscuro para cabina (poca luz), con variables, base tipografica y piezas reutilizables.
+   Contrastes comprobados >= 4.5:1 sobre --fondo y --superficie (texto, acentos y colores de estado). */
 :root {
   color-scheme: dark;
-  --fondo: #14161b;
-  --superficie: #1d2027;
-  --superficie-alta: #262a33;
-  --borde: #3a3f4b;
-  --texto: #e8eaed;
-  --texto-suave: #9aa0ac;
-  --acento: #5b9cff;
-  --acento-fuerte: #82b4ff;
-  --exito: #4caf7d;
-  --peligro: #ff6b6b;
+  --fondo: #0a0a14;
+  --superficie: #14142a;
+  --superficie-alta: #1f1f3a;
+  --borde: #3a3a63;
+  --texto: #f1f5f9;
+  --texto-suave: #a3aec2;
+  --acento: #8b93ff;
+  --acento-fuerte: #b4baff;
+  --exito: #4ade80;
+  --peligro: #f87171;
+  --aviso: #fbbf24;
+  /* Cada deck tiene su color para distinguirlos de un vistazo con poca luz. */
+  --deck-a: #22d3ee;
+  --deck-b: #f472b6;
+  /* Reproducir. */
+  --play: #22c55e;
+  --on-play: #052e16;
   --radio: 8px;
   --espacio: 12px;
   --fuente: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  /* Cifras de ancho fijo para BPM, tiempos y contadores: no bailan al cambiar. */
+  --fuente-datos: ui-monospace, 'Cascadia Mono', 'SF Mono', Consolas, monospace;
 }
 
 *,
@@ -37,6 +47,13 @@ h3 {
   line-height: 1.25;
 }
 
+h3 {
+  font-size: 0.8rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--texto-suave);
+}
+
 a {
   color: var(--acento);
 }
@@ -50,21 +67,35 @@ button {
   padding: 6px 12px;
   min-height: 36px;
   cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s;
 }
 
 button:hover:not(:disabled) {
   border-color: var(--acento);
+  background: #2a2a4d;
+}
+
+button:active:not(:disabled) {
+  background: #34345e;
 }
 
 button[aria-pressed='true'] {
   background: var(--acento);
   border-color: var(--acento);
-  color: #0b1220;
+  color: var(--fondo);
 }
 
 button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* Con pantalla tactil (tablet en la cabina) los botones son mas grandes. */
+@media (pointer: coarse) {
+  button {
+    min-height: 44px;
+    padding: 8px 16px;
+  }
 }
 
 input,
@@ -78,22 +109,82 @@ select {
   max-width: 100%;
 }
 
+/* Controles deslizantes: pista fina y pulgar grande, faciles de agarrar. */
 input[type='range'] {
   display: block;
   width: 100%;
   padding: 0;
+  height: 28px;
+  background: transparent;
+  border: 0;
   accent-color: var(--acento);
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+}
+
+input[type='range']::-webkit-slider-runnable-track {
+  height: 6px;
+  background: var(--superficie-alta);
+  border: 1px solid var(--borde);
+  border-radius: 3px;
+}
+
+input[type='range']::-moz-range-track {
+  height: 6px;
+  background: var(--superficie-alta);
+  border: 1px solid var(--borde);
+  border-radius: 3px;
+}
+
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  margin-top: -9px;
+  background: var(--texto);
+  border: 2px solid var(--acento);
+  border-radius: 50%;
+}
+
+input[type='range']::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  background: var(--texto);
+  border: 2px solid var(--acento);
+  border-radius: 50%;
+}
+
+/* Boton nativo de elegir archivo: con los mismos colores que los demas botones. */
+input[type='file']::file-selector-button {
+  font: inherit;
+  color: var(--texto);
+  background: var(--superficie-alta);
+  border: 1px solid var(--borde);
+  border-radius: 6px;
+  padding: 4px 10px;
+  margin-right: 8px;
+  cursor: pointer;
 }
 
 label {
   display: block;
   margin: 6px 0;
+  color: var(--texto-suave);
 }
 
 fieldset {
   border: 1px solid var(--borde);
   border-radius: var(--radio);
   margin: var(--espacio) 0 0;
+}
+
+legend {
+  color: var(--texto-suave);
+  font-size: 0.8rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
 
 :focus-visible {
@@ -113,6 +204,149 @@ fieldset {
 /* Mensajes de error y de aviso. */
 .alerta {
   color: var(--peligro);
+}
+
+/* Mensajes de que algo salio bien. */
+.subida-ok,
+.cola-ok,
+.borrado-ok,
+.gracias,
+.mensaje-sync,
+.mensaje-uno:not(.alerta),
+.mensaje-aprendizaje:not(.alerta) {
+  color: var(--exito);
+}
+
+/* Texto de apoyo y avisos que no son errores. */
+.ayuda,
+.cola-vacia,
+.sin-aparato,
+.adelanto {
+  color: var(--texto-suave);
+  font-size: 0.9rem;
+}
+
+.aviso-sin-audio,
+.aprendiendo {
+  color: var(--aviso);
+}
+
+/* Cifras (BPM, tiempos, contadores): ancho fijo para que no salten. */
+.reloj,
+.cuenta-atras,
+.contador,
+td,
+.datos {
+  font-variant-numeric: tabular-nums;
+}
+
+.reloj,
+.cuenta-atras {
+  font-family: var(--fuente-datos);
+  font-size: 1.25rem;
+  margin: 4px 0;
+}
+
+/* Nombre de la pista: no desborda el deck con titulos largos. */
+.titulo {
+  margin: 4px 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Codigo Camelot: una chapa para leerlo de un vistazo. */
+.camelot {
+  display: inline-block;
+  min-width: 2.6em;
+  padding: 0 6px;
+  text-align: center;
+  font-weight: 700;
+  color: var(--fondo);
+  background: var(--acento);
+  border-radius: 4px;
+}
+
+/* Transporte: Play (reproduciendo) en verde, el resto neutro. */
+.transporte {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0;
+}
+
+.transporte button[aria-pressed='true'] {
+  background: var(--play);
+  border-color: var(--play);
+  color: var(--on-play);
+  font-weight: 700;
+}
+
+/* Auto-DJ. */
+.mezclar-ahora {
+  border-color: var(--acento);
+  font-weight: 700;
+}
+
+.me-gusto {
+  border-color: var(--exito);
+}
+
+.no-me-gusto {
+  border-color: var(--peligro);
+}
+
+.estado[data-estado='open'],
+[data-grabando='true'] {
+  color: var(--exito);
+}
+
+/* Biblioteca: pista cargada en un deck y pistas que mezclan bien con lo que suena. */
+tbody tr:hover {
+  background: var(--superficie-alta);
+}
+
+tr.compatible td:first-child {
+  box-shadow: inset 3px 0 0 var(--exito);
+}
+
+tr.compatible {
+  background: rgba(74, 222, 128, 0.07);
+}
+
+tr.en-deck {
+  background: rgba(139, 147, 255, 0.12);
+}
+
+.etiqueta-compatible,
+.analizando-voz,
+.sin-audio {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 6px;
+  font-size: 0.75rem;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+}
+
+.etiqueta-compatible {
+  color: var(--exito);
+}
+
+.analizando-voz {
+  color: var(--aviso);
+}
+
+.sin-audio {
+  color: var(--texto-suave);
+}
+
+.confirmar-borrado {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  color: var(--aviso);
 }
 
 /* Pantalla de inicio de sesion. */
@@ -145,6 +379,19 @@ td {
   padding: 6px 8px;
   text-align: left;
   border-bottom: 1px solid var(--borde);
+}
+
+th {
+  color: var(--texto-suave);
+  font-size: 0.8rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+caption {
+  text-align: left;
+  color: var(--texto-suave);
+  padding-bottom: 4px;
 }
 
 @media (prefers-reduced-motion: reduce) {

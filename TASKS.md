@@ -103,3 +103,4 @@ Acordado con el usuario (2026-10-24, con la skill ui-ux-pro-max): tema oscuro pa
 - [x] feat(library): género de cada pista, editable en la biblioteca, con sugerencias, búsqueda y orden por género [8.6]
 - [x] fix(learning): las mezclas grabadas no se pierden si el servidor está dormido o reiniciándose: quedan pendientes (también en el navegador), se reintentan solas y se avisa antes de cerrar la página [11.5]
 - [x] feat(ui): mantener despiertos los servidores mientras se usa la app (consulta cada 4 min, con tope de inactividad de 2 h) e indicador «Servidores listos» en el menú [11.6]
+- [x] feat(ui): para la sesión en vivo: confirmación al cerrar o recargar con música sonando, panel de Aprendizaje justo bajo los decks y guía rápida plegable de cinco pasos [11.8]

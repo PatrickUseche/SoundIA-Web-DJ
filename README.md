@@ -82,6 +82,9 @@ src/app/
   *Buena*, *Descartar* o *Sin revisar* (solo las buenas deberían usarse para entrenar), con una nota opcional, y se puede filtrar
   por revisión y borrar. **Descargar copia** baja todas las grabaciones a un archivo JSON y **Restaurar una copia** las devuelve
   (sin duplicar las que ya están).
+- **Biblioteca y decks más claros**: cada pista cargada lleva una etiqueta «Deck A» o «Deck B» (con el color del deck); cada deck dice
+  cuánto le queda a la pista («Quedan 1:23») y lo resalta cuando quedan 30 s o menos y está sonando, para preparar la siguiente
+  mezcla; y al subir un archivo de más de 20 MB avisa de que el servidor gratuito puede no aguantarlo (se intenta igual).
 - **Servidores despiertos**: mientras la página esté abierta y alguien la use, cada 4 minutos se hace una consulta ligera a la lista
   de pistas (llega al API y al motor) para que el plan gratuito no los duerma; si nadie toca la página en 2 horas deja de hacerlo, para
   no gastar las horas mensuales gratuitas. En el menú, un indicador dice «Servidores listos» o «Sin respuesta del servidor».

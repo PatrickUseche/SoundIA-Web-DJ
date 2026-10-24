@@ -10,6 +10,9 @@ import { httpErrorMessage } from '../../core/http-error-message';
 import { MIN_DOWNBEAT_CONFIDENCE } from '../../core/audio/beatgrid';
 import { TrackApiService } from '../../core/services/tracks';
 
+/** Cuando quedan estos segundos o menos de una pista que suena, el contador se resalta. */
+export const QUEDA_POCO_SEGUNDOS = 30;
+
 // Cada cuanto se lee la posicion de reproduccion para refrescar el reloj y la forma de onda.
 const POSITION_REFRESH_MS = 50;
 
@@ -48,6 +51,10 @@ export class DeckComponent {
     const duration = this.deck().duration;
     return duration > 0 ? this.position() / duration : 0;
   });
+
+  /** Segundos que le quedan a la pista; con poco tiempo se resalta para avisar de que hay que preparar la siguiente. */
+  protected readonly queda = computed(() => Math.max(0, this.deck().duration - this.position()));
+  protected readonly quedaPoco = computed(() => this.deck().playing() && this.queda() <= QUEDA_POCO_SEGUNDOS);
 
   protected readonly marcasCue = computed(() => {
     const duration = this.deck().duration;

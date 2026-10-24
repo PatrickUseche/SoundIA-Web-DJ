@@ -21,6 +21,13 @@
                 }
             }
         }
+        @if (avisosSubida().length > 0) {
+            <ul class="subida-avisos" role="status">
+                @for (aviso of avisosSubida(); track $index) {
+                    <li>{{ aviso }}</li>
+                }
+            </ul>
+        }
         @if (mensajeSubida(); as mensaje) {
             <p role="status" class="subida-ok">{{ mensaje }}</p>
         }
@@ -123,6 +130,9 @@
                             {{ pista.title }}
                             @if (analizandoVoz(pista)) {
                                 <span class="analizando-voz" title="Se esta analizando donde acaba la voz para no cortar la letra al mezclar">analizando voz</span>
+                            }
+                            @if (deckDe(pista); as deck) {
+                                <span class="etiqueta-deck" [attr.data-deck]="deck" [title]="'Cargada en el deck ' + deck">Deck {{ deck }}</span>
                             }
                             @if (compatible(pista) && !enDeck(pista)) {
                                 <span class="etiqueta-compatible" title="Mezcla bien con una pista cargada">compatible</span>

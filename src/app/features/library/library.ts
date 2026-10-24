@@ -14,6 +14,9 @@ import { TrackApiService } from '../../core/services/tracks';
 /** Tamano maximo de un archivo de audio que acepta el API (50 MB). */
 export const TAMANO_MAXIMO_BYTES = 50 * 1024 * 1024;
 
+/** Por encima de esto el servidor gratuito (poca memoria) puede fallar al analizar: se avisa, pero se intenta igual. */
+export const TAMANO_DE_AVISO_BYTES = 20 * 1024 * 1024;
+
 /** Cada cuanto se vuelve a pedir la lista mientras alguna pista tiene la voz en analisis. */
 export const REFRESCO_VOZ_MS = 5000;
 
@@ -64,6 +67,8 @@ export class LibraryComponent implements OnInit {
   readonly errorSubida = signal<string | null>(null);
   /** Cuando se suben varios archivos, el motivo del fallo de cada uno. */
   readonly erroresSubida = signal<string[]>([]);
+  /** Avisos de una subida en curso (por ejemplo archivos grandes que podrian fallar); no impiden subir. */
+  readonly avisosSubida = signal<string[]>([]);
   /** Archivo que se esta analizando y cuantos hay en total (null si no hay una subida en curso). */
   readonly progresoSubida = signal<{ actual: number; total: number; nombre: string } | null>(null);
   private destruido = false;
@@ -211,9 +216,17 @@ export class LibraryComponent implements OnInit {
     return track.vocals?.status === 'pending' || track.vocals?.status === 'running';
   }
 
+  /** El deck en que esta cargada la pista (A o B), o null si no esta en ninguno. */
+  deckDe(track: Track): DeckId | null {
+    if (!this.mixer.supported) {
+      return null;
+    }
+    return (['A', 'B'] as DeckId[]).find((id) => this.mixer.deck(id).track()?.id === track.id) ?? null;
+  }
+
   /** La pista ya esta cargada en algun deck. */
   enDeck(track: Track): boolean {
-    return this.mixer.supported && (['A', 'B'] as DeckId[]).some((id) => this.mixer.deck(id).track()?.id === track.id);
+    return this.deckDe(track) !== null;
   }
 
   async cargarEnDeck(deck: DeckId, track: Track): Promise<void> {
@@ -326,6 +339,11 @@ export class LibraryComponent implements OnInit {
     this.mensajeSubida.set(null);
     this.errorSubida.set(null);
     this.erroresSubida.set([]);
+    this.avisosSubida.set(
+      archivos
+        .filter((a) => a.size > TAMANO_DE_AVISO_BYTES && a.size <= TAMANO_MAXIMO_BYTES)
+        .map((a) => `${a.name} pesa ${Math.round(a.size / (1024 * 1024))} MB: el servidor gratuito puede no aguantarlo; si falla, prueba con un MP3 mas liviano.`),
+    );
     const total = archivos.length;
     const fallos: string[] = [];
     let correctas = 0;
@@ -351,6 +369,7 @@ export class LibraryComponent implements OnInit {
 
     this.progresoSubida.set(null);
     this.subiendo.set(false);
+    this.avisosSubida.set([]);
     if (this.destruido) {
       return;
     }

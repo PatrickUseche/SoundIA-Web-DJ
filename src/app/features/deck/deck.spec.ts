@@ -164,6 +164,51 @@ describe('DeckComponent', () => {
     });
   });
 
+  describe('tiempo restante', () => {
+    it('no se muestra con el deck vacio', () => {
+      crear();
+
+      expect(el().querySelector('.restante')).toBeNull();
+    });
+
+    it('con una pista cargada dice cuanto le queda', async () => {
+      crear();
+      mixer.loadBuffer('A', buffer(100), pista());
+      await refrescar();
+
+      expect(el().querySelector('.restante')?.textContent).toContain('Quedan 1:40');
+    });
+
+    it('baja mientras suena y se resalta cuando quedan 30 segundos o menos', async () => {
+      vi.useFakeTimers();
+      crear();
+      mixer.loadBuffer('A', buffer(100), pista());
+      fixture.detectChanges();
+      boton('Play').click();
+      await vi.advanceTimersByTimeAsync(0);
+
+      ctx.currentTime = 40;
+      await vi.advanceTimersByTimeAsync(100);
+      fixture.detectChanges();
+      expect(el().querySelector('.restante')?.textContent).toContain('Quedan 1:00');
+      expect(el().querySelector('.restante')?.getAttribute('data-poco')).toBe('false');
+
+      ctx.currentTime = 70;
+      await vi.advanceTimersByTimeAsync(100);
+      fixture.detectChanges();
+      expect(el().querySelector('.restante')?.textContent).toContain('Quedan 0:30');
+      expect(el().querySelector('.restante')?.getAttribute('data-poco')).toBe('true');
+    });
+
+    it('en pausa no se resalta aunque quede poco', async () => {
+      crear();
+      mixer.loadBuffer('A', buffer(20), pista({ duration: 20 }));
+      await refrescar();
+
+      expect(el().querySelector('.restante')?.getAttribute('data-poco')).toBe('false');
+    });
+  });
+
   describe('reloj', () => {
     it('avanza mientras suena', async () => {
       // Los timers falsos se activan antes de crear el componente: su temporizador debe ser el falso.

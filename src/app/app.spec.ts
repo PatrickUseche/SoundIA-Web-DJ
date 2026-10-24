@@ -85,6 +85,40 @@ describe('App', () => {
     expect(empezar).toHaveBeenCalled();
   });
 
+  describe('con el login encendido', () => {
+    const enlaces = (fixture: { nativeElement: unknown }) =>
+      Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('nav a')).map((a) => a.textContent?.trim());
+
+    it('sin sesion no ofrece las pantallas, que no se podrian abrir', async () => {
+      const fixture = TestBed.createComponent(App);
+      TestBed.inject(AuthService)['_enabled'].set(true);
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(enlaces(fixture)).toEqual([]);
+    });
+
+    it('con sesion iniciada vuelve a ofrecerlas', async () => {
+      const auth = TestBed.inject(AuthService);
+      auth['_enabled'].set(true);
+      vi.spyOn(auth, 'authenticated').mockReturnValue(true);
+      const fixture = TestBed.createComponent(App);
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(enlaces(fixture)).toEqual(['DJ', 'Grabaciones', 'Telemetria']);
+    });
+
+    it('con el login apagado las ofrece siempre', async () => {
+      const fixture = TestBed.createComponent(App);
+      TestBed.inject(AuthService)['_enabled'].set(false);
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(enlaces(fixture)).toEqual(['DJ', 'Grabaciones', 'Telemetria']);
+    });
+  });
+
   it('la navegacion esta etiquetada para lectores de pantalla', async () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();

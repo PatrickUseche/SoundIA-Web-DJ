@@ -73,7 +73,7 @@ Al terminarla se marca `[x]` en ese mismo commit.
 
 Encontrado al probar el sistema completo en un navegador real (2026-10-22); nada de esto se ha hecho todavía.
 
-- [ ] chore(config): hacer configurable la URL del API: hoy se fija al compilar (`src/environments/environment.ts` apunta a `http://localhost:8080`), así que con otro dominio hay que cambiarla y reconstruir. Lo más simple es usar rutas relativas (`/api/v1`) con un proxy en el mismo origen, o leer la configuración al arrancar [7.1]
+- [x] chore(config): hacer configurable la URL del API: hoy se fija al compilar (`src/environments/environment.ts` apunta a `http://localhost:8080`), así que con otro dominio hay que cambiarla y reconstruir. Lo más simple es usar rutas relativas (`/api/v1`) con un proxy en el mismo origen, o leer la configuración al arrancar [7.1]
 - [ ] chore(nginx): si nginx hace de proxy del API: sin búfer para el stream en vivo (`proxy_buffering off` y un `proxy_read_timeout` largo, o el stream se corta o llega a golpes), `client_max_body_size` de 55 MB o más para subir audio, y cabeceras de seguridad (HSTS, CSP, X-Frame-Options) [7.2]
 - [ ] chore(security): servir todo por HTTPS (el token y la contraseña viajan en cada petición) y definir una CSP estricta; no cargar scripts de terceros, porque el token vive en `sessionStorage` [7.3]
 - [ ] test(deploy): construir y probar la imagen Docker (nunca se construyó) y el flujo completo con login detrás de HTTPS [7.4]

@@ -35,8 +35,8 @@ describe('App', () => {
     await fixture.whenStable();
     const enlaces = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('nav a'));
 
-    expect(enlaces.map((a) => a.textContent?.trim())).toEqual(['DJ', 'Telemetria']);
-    expect(enlaces.map((a) => a.getAttribute('href'))).toEqual(['/dj', '/dashboard']);
+    expect(enlaces.map((a) => a.textContent?.trim())).toEqual(['DJ', 'Grabaciones', 'Telemetria']);
+    expect(enlaces.map((a) => a.getAttribute('href'))).toEqual(['/dj', '/grabaciones', '/dashboard']);
   });
 
   it('avisa de que los servidores pueden estar despertando solo cuando una peticion tarda', async () => {
@@ -69,8 +69,9 @@ describe('App', () => {
 describe('rutas de la aplicacion', () => {
   const rutas = () => routes.map((r) => r.path);
 
-  it('tiene la pantalla de DJ y la de telemetria', () => {
+  it('tiene la pantalla de DJ, la de grabaciones y la de telemetria', () => {
     expect(rutas()).toContain('dj');
+    expect(rutas()).toContain('grabaciones');
     expect(rutas()).toContain('dashboard');
   });
 
@@ -81,8 +82,8 @@ describe('rutas de la aplicacion', () => {
     expect(login?.canActivate).toBeUndefined();
   });
 
-  it('las pantallas de DJ y de telemetria pasan por el guard de login', () => {
-    for (const ruta of ['dj', 'dashboard']) {
+  it('las pantallas de DJ, de grabaciones y de telemetria pasan por el guard de login', () => {
+    for (const ruta of ['dj', 'grabaciones', 'dashboard']) {
       expect(routes.find((r) => r.path === ruta)?.canActivate, ruta).toEqual([authGuard]);
     }
   });

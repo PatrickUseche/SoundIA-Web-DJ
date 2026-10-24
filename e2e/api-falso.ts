@@ -15,6 +15,19 @@ export const PISTAS = [
   },
 ];
 
+export const GRABACIONES = [
+  {
+    id: 1, fromTrackId: 1, toTrackId: 2, source: 'manual', dj: 'dj', mixOutAt: 1.5, mixInAt: 0.1, overlapSeconds: 1,
+    genreA: 'salsa', genreB: 'salsa', quality: 'unreviewed', notes: '', createdAt: '2026-10-24T20:30:00+00:00',
+    features: { overlapBars: 2, crossfaderShape: 'gradual', bassSwapAt: 0.5, phaseErrorMs: 12 },
+  },
+  {
+    id: 2, fromTrackId: 2, toTrackId: 1, source: 'manual', dj: 'dj', mixOutAt: 1.2, mixInAt: 0.2, overlapSeconds: 1,
+    genreA: 'bachata', genreB: 'salsa', quality: 'good', notes: 'entro justo', createdAt: '2026-10-24T20:40:00+00:00',
+    features: { overlapBars: 2, crossfaderShape: 'corte', bassSwapAt: null, phaseErrorMs: null },
+  },
+];
+
 export const LOGS = [
   { id: 1, controlId: 7, value: 64, action: 'CROSSFADE', createdIn: '2026-10-21T20:00:00Z' },
   { id: 2, controlId: 12, value: 100, action: null, createdIn: '2026-10-21T20:01:00Z' },
@@ -55,6 +68,7 @@ export async function simularApi(page: Page, opciones: { pistas?: unknown[]; con
   // Copia: una subida simulada agrega pistas a la lista de ESTA prueba, no a la de las demas.
   const pistas = [...(opciones.pistas ?? PISTAS)];
   let siguienteId = 100;
+  const grabaciones = GRABACIONES.map((g) => ({ ...g }));
   const wav = crearWav();
 
   await page.route('**/api/v1/**', async (route) => {
@@ -87,6 +101,27 @@ export async function simularApi(page: Page, opciones: { pistas?: unknown[]; con
     }
     if (ruta === '/tracks' && metodo === 'GET') {
       return route.fulfill({ json: { tracks: pistas }, headers: cors });
+    }
+    if (ruta === '/recordings' && metodo === 'GET') {
+      const filtro = url.searchParams.get('quality');
+      const lista = filtro ? grabaciones.filter((g) => g.quality === filtro) : grabaciones;
+      const contar = (calidad: string) => grabaciones.filter((g) => g.quality === calidad).length;
+      return route.fulfill({
+        json: {
+          recordings: lista,
+          counts: { unreviewed: contar('unreviewed'), good: contar('good'), discard: contar('discard'), total: grabaciones.length },
+        },
+        headers: cors,
+      });
+    }
+    const revision = /^\/recordings\/(\d+)$/.exec(ruta);
+    if (revision && metodo === 'PUT') {
+      const grabacion = grabaciones.find((g) => g.id === Number(revision[1]));
+      if (!grabacion) {
+        return route.fulfill({ status: 404, json: { error: 'Grabacion no encontrada' }, headers: cors });
+      }
+      Object.assign(grabacion, route.request().postDataJSON());
+      return route.fulfill({ json: grabacion, headers: cors });
     }
     if (ruta === '/tracks/analyze' && metodo === 'POST') {
       // Subida de una pista: el nombre del archivo va dentro del cuerpo multipart.

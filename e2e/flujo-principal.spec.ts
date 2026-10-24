@@ -30,6 +30,22 @@ test('si el API tarda en responder (servidores dormidos) avisa y lo quita al lle
   await expect(aviso).toBeHidden();
 });
 
+test('la pantalla de grabaciones lista las mezclas y permite marcarlas como buenas', async ({ page }) => {
+  await page.goto('/dj');
+  await page.getByRole('link', { name: 'Grabaciones' }).click();
+  await expect(page).toHaveURL(/\/grabaciones$/);
+
+  const tabla = page.getByRole('table', { name: 'Mezclas grabadas' });
+  await expect(tabla.getByRole('row')).toHaveCount(3); // cabecera + 2 grabaciones
+  await expect(tabla.getByText('Noche de verano → Amanecer')).toBeVisible();
+  await expect(page.getByRole('status').filter({ hasText: 'Total: 2' })).toBeVisible();
+
+  await page.getByRole('group', { name: 'Revision de la mezcla 1' }).getByRole('button', { name: 'Buena' }).click();
+  await expect(page.getByRole('group', { name: 'Revision de la mezcla 1' }).getByRole('button', { name: 'Buena' }))
+    .toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByRole('status').filter({ hasText: 'Buenas: 2' })).toBeVisible();
+});
+
 test('se pueden subir varias pistas de una vez y aparecen en la biblioteca', async ({ page }) => {
   await page.goto('/dj');
   const tabla = page.getByRole('table', { name: 'Pistas analizadas' });

@@ -43,7 +43,7 @@ export function crearWav(segundos = 2, frecuencia = 8000): Buffer {
   return Buffer.concat([cabecera, datos]);
 }
 
-/** Simula el API Gateway (localhost:8080) con datos fijos; todo lo no previsto responde 404. */
+/** Simula el API Gateway (/api/v1) con datos fijos; todo lo no previsto responde 404. */
 export const TOKEN_FALSO = 'token-falso';
 export const CREDENCIALES = { username: 'dj', password: 'clave-de-prueba' };
 
@@ -55,7 +55,7 @@ export async function simularApi(page: Page, opciones: { pistas?: unknown[]; con
   const pistas = opciones.pistas ?? PISTAS;
   const wav = crearWav();
 
-  await page.route('http://localhost:8080/**', async (route) => {
+  await page.route('**/api/v1/**', async (route) => {
     const url = new URL(route.request().url());
     const metodo = route.request().method();
     const ruta = url.pathname.replace('/api/v1', '');

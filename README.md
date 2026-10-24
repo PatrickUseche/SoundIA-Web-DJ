@@ -12,7 +12,7 @@ El frontend habla **solo** con el API Gateway (Spring Boot), nunca directamente 
 ## Requisitos
 
 - Node.js y npm
-- El API Gateway corriendo en `http://localhost:8080` (ver `SoundIA-API-Core`)
+- El API Gateway corriendo en `http://localhost:8080` (ver `SoundIA-API-Core`). El front llama a `/api/v1` en su propio origen: en desarrollo `ng serve` lo reenvía a ese puerto con `proxy.conf.json`, y en producción lo hace nginx (`nginx.conf`, al servicio `api` del compose)
 
 ## Comandos
 

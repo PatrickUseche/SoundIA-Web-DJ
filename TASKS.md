@@ -77,3 +77,10 @@ Encontrado al probar el sistema completo en un navegador real (2026-10-22); nada
 - [x] chore(nginx): si nginx hace de proxy del API: sin búfer para el stream en vivo (`proxy_buffering off` y un `proxy_read_timeout` largo, o el stream se corta o llega a golpes), `client_max_body_size` de 55 MB o más para subir audio, y cabeceras de seguridad (HSTS, CSP, X-Frame-Options) [7.2]
 - [ ] chore(security): servir todo por HTTPS (el token y la contraseña viajan en cada petición) y definir una CSP estricta; no cargar scripts de terceros, porque el token vive en `sessionStorage` [7.3]
 - [ ] test(deploy): construir y probar la imagen Docker (nunca se construyó) y el flujo completo con login detrás de HTTPS [7.4]
+
+## Fase 9 — Nube gratuita sin tarjeta (en curso)
+
+Arquitectura acordada con el usuario (2026-10-24): este frontend en Cloudflare Pages, el API y el motor de IA en Render (gratis, se duermen y su disco se borra), base de datos en Neon y audios en Supabase Storage. Nada de esto se ha probado contra las plataformas reales.
+
+- [x] feat(config): la URL del API se puede definir en tiempo de ejecucion con `config.js` (`window.__SOUNDIA__.apiUrl`), para servir el frontend aparte del API [9.1]
+- [x] chore(deploy): script de build para Cloudflare Pages (`index.html`, `_redirects`, `config.js` con `SOUNDIA_API_URL`) y cabeceras de seguridad [9.2]

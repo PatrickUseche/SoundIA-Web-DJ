@@ -22,7 +22,22 @@ npm start          # ng serve en http://localhost:4200
 npm test           # pruebas unitarias (Vitest)
 npm run build      # build de producción en dist/
 npm run e2e        # pruebas end-to-end (Playwright)
+npm run build:pages  # build para Cloudflare Pages (necesita SOUNDIA_API_URL)
 ```
+
+### Frontend aparte del API (Cloudflare Pages)
+
+Por defecto el front llama a `/api/v1` en su propio origen (nginx o el proxy de `ng serve` lo reenvían al API). Para
+publicarlo aparte, por ejemplo en Cloudflare Pages, la URL del API se define al desplegar:
+
+```bash
+SOUNDIA_API_URL=https://soundia-api.onrender.com/api/v1 npm run build:pages
+```
+
+El script (`scripts/build-pages.mjs`) copia `index.csr.html` a `index.html`, crea `_redirects` (las rutas de la SPA),
+`config.js` (la URL del API en tiempo de ejecución) y `_headers` (CSP abierta solo al origen del API). En Cloudflare Pages:
+comando de build `npm ci && npm run build:pages`, carpeta de salida `dist/soundia-web-dj/browser` y la variable
+`SOUNDIA_API_URL`. El API debe permitir ese dominio en `SOUNDIA_CORS_ALLOWED_ORIGINS`.
 
 ### Pruebas end-to-end
 

@@ -3,18 +3,36 @@
 
     <div class="subida">
         <label>
-            Analizar una pista nueva (WAV, MP3, FLAC u OGG):
-            <input type="file" accept="audio/*,.wav,.mp3,.flac,.ogg" (change)="alElegirArchivo($event)"
+            Analizar pistas nuevas (WAV, MP3, FLAC u OGG; puedes elegir varias):
+            <input type="file" multiple accept="audio/*,.wav,.mp3,.flac,.ogg" (change)="alElegirArchivo($event)"
                 [disabled]="subiendo()" aria-label="Archivo de audio" />
         </label>
         @if (subiendo()) {
-            <p role="status">Analizando la pista... puede tardar unos segundos.</p>
+            @if (progresoSubida(); as progreso) {
+                @if (progreso.total > 1) {
+                    <p role="status" class="progreso-subida">
+                        Analizando la pista {{ progreso.actual }} de {{ progreso.total }} ({{ progreso.nombre }})...
+                        puede tardar unos segundos cada una.
+                    </p>
+                    <progress [value]="progreso.actual - 1" [max]="progreso.total"
+                        [attr.aria-label]="'Pistas analizadas: ' + (progreso.actual - 1) + ' de ' + progreso.total"></progress>
+                } @else {
+                    <p role="status">Analizando la pista... puede tardar unos segundos.</p>
+                }
+            }
         }
         @if (mensajeSubida(); as mensaje) {
             <p role="status" class="subida-ok">{{ mensaje }}</p>
         }
         @if (errorSubida(); as mensaje) {
             <p role="alert" class="subida-error alerta">{{ mensaje }}</p>
+            @if (erroresSubida().length > 0) {
+                <ul class="subida-errores alerta">
+                    @for (motivo of erroresSubida(); track $index) {
+                        <li>{{ motivo }}</li>
+                    }
+                </ul>
+            }
         }
     </div>
 

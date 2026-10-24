@@ -52,7 +52,9 @@ export const CREDENCIALES = { username: 'dj', password: 'clave-de-prueba' };
  * responden 401 sin el y el stream pide un ticket.
  */
 export async function simularApi(page: Page, opciones: { pistas?: unknown[]; conLogin?: boolean } = {}): Promise<void> {
-  const pistas = opciones.pistas ?? PISTAS;
+  // Copia: una subida simulada agrega pistas a la lista de ESTA prueba, no a la de las demas.
+  const pistas = [...(opciones.pistas ?? PISTAS)];
+  let siguienteId = 100;
   const wav = crearWav();
 
   await page.route('**/api/v1/**', async (route) => {
@@ -85,6 +87,16 @@ export async function simularApi(page: Page, opciones: { pistas?: unknown[]; con
     }
     if (ruta === '/tracks' && metodo === 'GET') {
       return route.fulfill({ json: { tracks: pistas }, headers: cors });
+    }
+    if (ruta === '/tracks/analyze' && metodo === 'POST') {
+      // Subida de una pista: el nombre del archivo va dentro del cuerpo multipart.
+      const nombre = /filename="([^"]+)"/.exec(route.request().postData() ?? '')?.[1] ?? 'subida.wav';
+      const nueva = {
+        id: siguienteId++, title: nombre, duration: 2, bpm: 122, key: 'D minor', camelot: '7A',
+        energy: 0.6, cuePoints: [0.5], hasAudio: true, createdAt: '2026-10-24T12:00:00Z',
+      };
+      pistas.unshift(nueva);
+      return route.fulfill({ status: 201, json: nueva, headers: cors });
     }
     if (/^\/tracks\/\d+\/audio$/.test(ruta)) {
       return route.fulfill({ body: wav, contentType: 'audio/wav', headers: cors });

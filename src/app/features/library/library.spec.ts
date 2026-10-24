@@ -610,6 +610,135 @@ describe('LibraryComponent', () => {
     });
   });
 
+  describe('subir varias pistas', () => {
+    const elegirVarios = (archivos: File[]) => {
+      const input = el().querySelector('input[type="file"]') as HTMLInputElement;
+      Object.defineProperty(input, 'files', { value: archivos, configurable: true });
+      input.dispatchEvent(new Event('change'));
+    };
+    const archivo = (nombre: string) => new File(['x'], nombre, { type: 'audio/mpeg' });
+    /** Responde a la subida en curso y deja que arranque la siguiente. */
+    const responder = async (cuerpo: Track | { error: string }, status = 200) => {
+      const req = http.expectOne(`${TRACKS}/analyze`);
+      if (status === 200) {
+        req.flush(cuerpo);
+      } else {
+        req.flush(cuerpo, { status, statusText: 'Error' });
+      }
+      await esperar();
+    };
+
+    it('el campo de archivo permite elegir varios', async () => {
+      crear();
+      await responderLista([]);
+
+      expect((el().querySelector('input[type="file"]') as HTMLInputElement).multiple).toBe(true);
+    });
+
+    it('las sube de una en una: la siguiente no sale hasta que termina la anterior', async () => {
+      crear();
+      await responderLista([]);
+
+      elegirVarios([archivo('uno.mp3'), archivo('dos.mp3'), archivo('tres.mp3')]);
+      const primera = http.expectOne(`${TRACKS}/analyze`);
+      expect(((primera.request.body as FormData).get('file') as File).name).toBe('uno.mp3');
+      http.expectNone(`${TRACKS}/analyze`);
+
+      primera.flush(pista({ id: 1, title: 'uno.mp3' }));
+      await esperar();
+      const segunda = http.expectOne(`${TRACKS}/analyze`);
+      expect(((segunda.request.body as FormData).get('file') as File).name).toBe('dos.mp3');
+      segunda.flush(pista({ id: 2, title: 'dos.mp3' }));
+      await esperar();
+      await responder(pista({ id: 3, title: 'tres.mp3' }));
+    });
+
+    it('muestra en cual va y deshabilita el campo mientras sube', async () => {
+      crear();
+      await responderLista([]);
+
+      elegirVarios([archivo('uno.mp3'), archivo('dos.mp3')]);
+      fixture.detectChanges();
+
+      expect(el().querySelector('.progreso-subida')?.textContent).toContain('Analizando la pista 1 de 2 (uno.mp3)');
+      expect((el().querySelector('input[type="file"]') as HTMLInputElement).disabled).toBe(true);
+      expect(el().querySelector('progress')).not.toBeNull();
+      await responder(pista({ id: 1 }));
+      expect(el().querySelector('.progreso-subida')?.textContent).toContain('2 de 2 (dos.mp3)');
+      await responder(pista({ id: 2 }));
+    });
+
+    it('al terminar resume cuantas se analizaron y agrega todas a la lista', async () => {
+      crear();
+      await responderLista([]);
+
+      elegirVarios([archivo('uno.mp3'), archivo('dos.mp3'), archivo('tres.mp3')]);
+      await responder(pista({ id: 1, title: 'uno.mp3' }));
+      await responder(pista({ id: 2, title: 'dos.mp3' }));
+      await responder(pista({ id: 3, title: 'tres.mp3' }));
+
+      expect(el().querySelector('.subida-ok')?.textContent).toContain('3 pistas analizadas.');
+      expect(el().querySelector('.subida-error')).toBeNull();
+      expect(filas().length).toBe(3);
+      expect(el().querySelector('.progreso-subida')).toBeNull();
+      expect((el().querySelector('input[type="file"]') as HTMLInputElement).disabled).toBe(false);
+    });
+
+    it('un archivo que falla no detiene a los demas y se explica por que fallo', async () => {
+      crear();
+      await responderLista([]);
+
+      elegirVarios([archivo('uno.mp3'), archivo('silencio.wav'), archivo('tres.mp3')]);
+      await responder(pista({ id: 1, title: 'uno.mp3' }));
+      await responder({ error: 'El audio es silencio; no hay nada que analizar.' }, 422);
+      await responder(pista({ id: 3, title: 'tres.mp3' }));
+
+      expect(el().querySelector('.subida-ok')?.textContent).toContain('2 de 3 pistas analizadas.');
+      expect(el().querySelector('.subida-error')?.textContent).toContain('No se pudieron analizar 1 de 3 archivos');
+      expect(el().querySelector('.subida-errores')?.textContent).toContain('silencio.wav: El audio es silencio');
+      expect(filas().length).toBe(2);
+    });
+
+    it('si todas fallan no dice que se analizo alguna', async () => {
+      crear();
+      await responderLista([]);
+
+      elegirVarios([archivo('a.wav'), archivo('b.wav')]);
+      await responder({ error: 'mal' }, 400);
+      await responder({ error: 'mal' }, 400);
+
+      expect(el().querySelector('.subida-ok')).toBeNull();
+      expect(el().querySelectorAll('.subida-errores li').length).toBe(2);
+    });
+
+    it('un archivo de mas de 50 MB no se envia y se avisa', async () => {
+      crear();
+      await responderLista([]);
+      const grande = archivo('enorme.wav');
+      Object.defineProperty(grande, 'size', { value: 60 * 1024 * 1024 });
+
+      elegirVarios([grande, archivo('normal.mp3')]);
+      await esperar();
+      await responder(pista({ id: 1, title: 'normal.mp3' }));
+
+      expect(el().querySelector('.subida-errores')?.textContent).toContain('enorme.wav: supera el maximo de 50 MB');
+      expect(el().querySelector('.subida-ok')?.textContent).toContain('1 de 2 pistas analizadas.');
+    });
+
+    it('un solo archivo de mas de 50 MB tampoco se envia', async () => {
+      crear();
+      await responderLista([]);
+      const grande = archivo('enorme.wav');
+      Object.defineProperty(grande, 'size', { value: 60 * 1024 * 1024 });
+
+      elegirVarios([grande]);
+      await esperar();
+
+      http.expectNone(`${TRACKS}/analyze`);
+      expect(el().querySelector('.subida-error')?.textContent).toContain('supera el maximo de 50 MB');
+    });
+  });
+
   describe('analisis de voz en segundo plano', () => {
     const voz = (status: 'pending' | 'running' | 'done') => ({ status, lastEnd: status === 'done' ? 200 : null });
 

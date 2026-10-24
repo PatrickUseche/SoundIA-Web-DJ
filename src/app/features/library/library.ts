@@ -1,4 +1,5 @@
 import { Component, OnInit, computed, effect, inject, signal } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DestroyRef } from '@angular/core';
 import { areCompatible } from '../../core/audio/camelot';
@@ -9,6 +10,9 @@ import { Track } from '../../core/models/track';
 import { MixerService } from '../../core/services/mixer';
 import { QueueService } from '../../core/services/queue';
 import { TrackApiService } from '../../core/services/tracks';
+
+/** Tamano maximo de un archivo de audio que acepta el API (50 MB). */
+export const TAMANO_MAXIMO_BYTES = 50 * 1024 * 1024;
 
 /** Cada cuanto se vuelve a pedir la lista mientras alguna pista tiene la voz en analisis. */
 export const REFRESCO_VOZ_MS = 5000;
@@ -52,6 +56,11 @@ export class LibraryComponent implements OnInit {
   readonly subiendo = signal(false);
   readonly mensajeSubida = signal<string | null>(null);
   readonly errorSubida = signal<string | null>(null);
+  /** Cuando se suben varios archivos, el motivo del fallo de cada uno. */
+  readonly erroresSubida = signal<string[]>([]);
+  /** Archivo que se esta analizando y cuantos hay en total (null si no hay una subida en curso). */
+  readonly progresoSubida = signal<{ actual: number; total: number; nombre: string } | null>(null);
+  private destruido = false;
 
   /** Aviso tras agregar una pista a la cola del Auto-DJ (o el motivo por el que no se pudo). */
   readonly mensajeCola = signal<string | null>(null);
@@ -123,7 +132,10 @@ export class LibraryComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.destroyRef.onDestroy(() => this.cancelarRefrescoVoz());
+    this.destroyRef.onDestroy(() => {
+      this.destruido = true;
+      this.cancelarRefrescoVoz();
+    });
     this.recargar();
   }
 
@@ -264,31 +276,71 @@ export class LibraryComponent implements OnInit {
 
   alElegirArchivo(evento: Event): void {
     const input = evento.target as HTMLInputElement;
-    const archivo = input.files?.[0];
-    if (archivo) {
-      this.subir(archivo);
-    }
+    const archivos = Array.from(input.files ?? []); // se copia antes de vaciar el campo
     input.value = ''; // permite volver a elegir el mismo archivo
+    if (archivos.length > 0 && !this.subiendo()) {
+      void this.subirVarios(archivos);
+    }
   }
 
-  private subir(archivo: File): void {
+  /**
+   * Analiza los archivos de uno en uno (el servidor gratuito tiene poca memoria: en paralelo se ahogaria). Un archivo
+   * que falla no detiene a los demas; al final se resume cuantos salieron bien y por que fallaron los otros.
+   */
+  private async subirVarios(archivos: File[]): Promise<void> {
     this.subiendo.set(true);
     this.mensajeSubida.set(null);
     this.errorSubida.set(null);
-    this.api
-      .analyze(archivo)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (track) => {
-          this.tracks.update((actuales) => [track, ...actuales.filter((t) => t.id !== track.id)]);
-          this.mensajeSubida.set(`"${track.title}" analizada: ${formatBpm(track.bpm)} BPM, ${track.key} (${track.camelot}).`);
-          this.subiendo.set(false);
-          this.programarRefrescoVoz();
-        },
-        error: (err) => {
-          this.errorSubida.set(httpErrorMessage(err, 'No se pudo analizar el archivo.'));
-          this.subiendo.set(false);
-        },
-      });
+    this.erroresSubida.set([]);
+    const total = archivos.length;
+    const fallos: string[] = [];
+    let correctas = 0;
+    let ultima: Track | null = null;
+
+    for (let i = 0; i < total && !this.destruido; i++) {
+      const archivo = archivos[i];
+      this.progresoSubida.set({ actual: i + 1, total, nombre: archivo.name });
+      if (archivo.size > TAMANO_MAXIMO_BYTES) {
+        fallos.push(this.motivo(archivo, total, `supera el maximo de ${TAMANO_MAXIMO_BYTES / (1024 * 1024)} MB.`));
+        continue;
+      }
+      try {
+        const track = await firstValueFrom(this.api.analyze(archivo));
+        this.tracks.update((actuales) => [track, ...actuales.filter((t) => t.id !== track.id)]);
+        correctas++;
+        ultima = track;
+        this.programarRefrescoVoz();
+      } catch (err) {
+        fallos.push(this.motivo(archivo, total, httpErrorMessage(err, 'No se pudo analizar el archivo.')));
+      }
+    }
+
+    this.progresoSubida.set(null);
+    this.subiendo.set(false);
+    if (this.destruido) {
+      return;
+    }
+    if (total === 1) {
+      // Un solo archivo: los mismos mensajes de siempre.
+      if (ultima) {
+        this.mensajeSubida.set(`"${ultima.title}" analizada: ${formatBpm(ultima.bpm)} BPM, ${ultima.key} (${ultima.camelot}).`);
+      } else {
+        this.errorSubida.set(fallos[0]);
+      }
+      return;
+    }
+    if (correctas > 0) {
+      this.mensajeSubida.set(
+        correctas === total ? `${total} pistas analizadas.` : `${correctas} de ${total} pistas analizadas.`);
+    }
+    if (fallos.length > 0) {
+      this.errorSubida.set(`No se pudieron analizar ${fallos.length} de ${total} archivos:`);
+      this.erroresSubida.set(fallos);
+    }
+  }
+
+  /** Con varios archivos el mensaje de error dice a cual se refiere; con uno basta el motivo. */
+  private motivo(archivo: File, total: number, texto: string): string {
+    return total === 1 ? texto : `${archivo.name}: ${texto}`;
   }
 }

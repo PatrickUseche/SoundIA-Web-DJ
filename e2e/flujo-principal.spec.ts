@@ -30,6 +30,22 @@ test('si el API tarda en responder (servidores dormidos) avisa y lo quita al lle
   await expect(aviso).toBeHidden();
 });
 
+test('se pueden subir varias pistas de una vez y aparecen en la biblioteca', async ({ page }) => {
+  await page.goto('/dj');
+  const tabla = page.getByRole('table', { name: 'Pistas analizadas' });
+  await expect(tabla.getByRole('row')).toHaveCount(4); // cabecera + 3 pistas
+
+  await page.getByLabel('Archivo de audio').setInputFiles([
+    { name: 'cumbia-uno.mp3', mimeType: 'audio/mpeg', buffer: Buffer.from('uno') },
+    { name: 'cumbia-dos.mp3', mimeType: 'audio/mpeg', buffer: Buffer.from('dos') },
+  ]);
+
+  await expect(page.getByText('2 pistas analizadas.')).toBeVisible();
+  await expect(tabla.getByRole('row')).toHaveCount(6);
+  await expect(tabla.getByText('cumbia-uno.mp3')).toBeVisible();
+  await expect(tabla.getByText('cumbia-dos.mp3')).toBeVisible();
+});
+
 test('la biblioteca lista las pistas y marca las que no tienen audio', async ({ page }) => {
   await page.goto('/dj');
 

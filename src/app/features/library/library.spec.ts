@@ -716,6 +716,48 @@ describe('LibraryComponent', () => {
     });
   });
 
+  describe('en que deck esta cada pista', () => {
+    const etiqueta = (fila: Element) => fila.querySelector('.etiqueta-deck');
+
+    it('una pista que no esta en ningun deck no lleva etiqueta', async () => {
+      crear();
+      await responderLista([pista({ id: 1 })]);
+
+      expect(etiqueta(filas()[0])).toBeNull();
+    });
+
+    it('una pista cargada en el deck A y otra en el B llevan su etiqueta con el nombre del deck', async () => {
+      crear();
+      await responderLista([pista({ id: 1, title: 'Uno' }), pista({ id: 2, title: 'Dos' })]);
+
+      botonEn(filas()[0], 'Deck A').click();
+      http.expectOne(`${TRACKS}/1/audio`).flush(new Uint8Array([1, 2, 3]).buffer);
+      await esperar();
+      botonEn(filas()[1], 'Deck B').click();
+      http.expectOne(`${TRACKS}/2/audio`).flush(new Uint8Array([1, 2, 3]).buffer);
+      await esperar();
+
+      expect(etiqueta(filas()[0])?.textContent?.trim()).toBe('Deck A');
+      expect(etiqueta(filas()[0])?.getAttribute('data-deck')).toBe('A');
+      expect(etiqueta(filas()[1])?.textContent?.trim()).toBe('Deck B');
+      expect(etiqueta(filas()[1])?.getAttribute('data-deck')).toBe('B');
+    });
+
+    it('al expulsar la pista del deck la etiqueta desaparece', async () => {
+      crear();
+      await responderLista([pista({ id: 1 })]);
+      botonEn(filas()[0], 'Deck A').click();
+      http.expectOne(`${TRACKS}/1/audio`).flush(new Uint8Array([1, 2, 3]).buffer);
+      await esperar();
+      expect(etiqueta(filas()[0])).not.toBeNull();
+
+      mixer.deck('A').eject();
+      await esperar();
+
+      expect(etiqueta(filas()[0])).toBeNull();
+    });
+  });
+
   describe('subir varias pistas', () => {
     const elegirVarios = (archivos: File[]) => {
       const input = el().querySelector('input[type="file"]') as HTMLInputElement;
@@ -733,6 +775,31 @@ describe('LibraryComponent', () => {
       }
       await esperar();
     };
+
+    it('un archivo de mas de 20 MB avisa de que el servidor gratuito puede no aguantarlo, pero lo intenta', async () => {
+      crear();
+      await responderLista([]);
+      const grande = archivo('pesado.wav');
+      Object.defineProperty(grande, 'size', { value: 30 * 1024 * 1024 });
+
+      elegirVarios([grande]);
+      fixture.detectChanges();
+
+      expect(el().querySelector('.subida-avisos')?.textContent).toContain('pesado.wav pesa 30 MB');
+      await responder(pista({ id: 1, title: 'pesado.wav' }));
+      expect(el().querySelector('.subida-avisos')).toBeNull();
+    });
+
+    it('un archivo normal no genera avisos', async () => {
+      crear();
+      await responderLista([]);
+
+      elegirVarios([archivo('normal.mp3')]);
+      fixture.detectChanges();
+
+      expect(el().querySelector('.subida-avisos')).toBeNull();
+      await responder(pista({ id: 1 }));
+    });
 
     it('el campo de archivo permite elegir varios', async () => {
       crear();

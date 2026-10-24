@@ -22,6 +22,12 @@ export class WakeNoticeService {
   /** Hay peticiones que llevan demasiado esperando respuesta. */
   readonly slow = signal(false);
 
+  /**
+   * Si el servidor contesto la ultima vez que se le hablo: verdadero (contesto, aunque fuera con un error de la
+   * aplicacion), falso (sin conexion o el proxy respondio 502, 503 o 504) o null si aun no se ha hablado con el.
+   */
+  readonly reachable = signal<boolean | null>(null);
+
   begin(): void {
     this.pending++;
     if (this.pending === 1) {

@@ -72,6 +72,20 @@ test('la biblioteca lista las pistas y marca las que no tienen audio', async ({ 
   await expect(page.getByRole('button', { name: 'Agregar Pista antigua a la cola' })).toBeDisabled();
 });
 
+test('al pulsar Play el audio arranca de verdad: el reloj del deck avanza con las reglas normales de autoplay', async ({ page }) => {
+  // Sin opciones que salten la politica de autoplay: el audio solo puede sonar si Play reanuda el contexto de audio
+  // dentro del clic. Si no lo hiciera, el boton diria "Pausa" pero el reloj se quedaria en 0:00.
+  await page.goto('/dj');
+  await page.getByRole('row', { name: /Noche de verano/ }).getByRole('button', { name: 'Deck A' }).click();
+  const deck = page.getByRole('region', { name: 'Deck A' });
+  await expect(deck.getByText('Noche de verano')).toBeVisible();
+  await expect(deck.locator('.reloj')).toHaveText(/^0:00 \/ 0:02/);
+
+  await deck.getByRole('button', { name: 'Play' }).click();
+
+  await expect(deck.locator('.reloj')).not.toHaveText(/^0:00 \//, { timeout: 5000 });
+});
+
 test('una pista de la biblioteca se carga en el deck A y se puede reproducir', async ({ page }) => {
   await page.goto('/dj');
 

@@ -1,0 +1,180 @@
+import { isPlatformBrowser } from '@angular/common';
+import { DestroyRef, Injectable, InjectionToken, PLATFORM_ID, inject, signal } from '@angular/core';
+import { DeckId } from '../audio/deck';
+import { crossfaderGains } from '../audio/crossfader';
+import { httpErrorMessage } from '../http-error-message';
+import { DeckSample, MixSample, RecordedTransition, TransitionDetector } from '../learning/transition-detector';
+import { RecordingRequest } from '../models/recording';
+import { MixerService } from './mixer';
+import { RecordingApiService } from './recordings';
+import { TransitionRunnerService } from './transition-runner';
+
+/** Cada cuanto se mira el mezclador (ms): 20 veces por segundo bastan para seguir un fader. */
+export const RECORDER_SAMPLE_MS = 50;
+export const RECORDER_STORAGE_KEY = 'soundia.recorder';
+/** Alias con el que se guardan las mezclas (nunca el nombre real del DJ). */
+export const RECORDER_DJ_ALIAS = 'dj';
+
+/** Reloj en segundos que solo avanza; se puede reemplazar en las pruebas. */
+export const RECORDER_CLOCK = new InjectionToken<() => number>('RECORDER_CLOCK', {
+  providedIn: 'root',
+  factory: () => () => performance.now() / 1000,
+});
+
+/** Donde se recuerda si el grabador esta encendido (localStorage); null si no hay. */
+export const RECORDER_STORAGE = new InjectionToken<Pick<Storage, 'getItem' | 'setItem'> | null>('RECORDER_STORAGE', {
+  providedIn: 'root',
+  factory: () => {
+    try {
+      return typeof localStorage !== 'undefined' ? localStorage : null;
+    } catch {
+      return null; // algunos navegadores lanzan al acceder al almacenamiento cuando esta bloqueado
+    }
+  },
+});
+
+/**
+ * Modo aprendizaje: mientras esta encendido mira el mezclador y, cada vez que el DJ hace una transicion a mano entre
+ * dos pistas de la biblioteca, la envia al API Gateway para que el sistema aprenda su estilo. Es opt-in (viene
+ * apagado). Las transiciones del Auto-DJ no se graban: se aprende de lo que hace el DJ, no de lo que hace la maquina.
+ */
+@Injectable({ providedIn: 'root' })
+export class MixRecorderService {
+  private readonly mixer = inject(MixerService);
+  private readonly runner = inject(TransitionRunnerService);
+  private readonly api = inject(RecordingApiService);
+  private readonly clock = inject(RECORDER_CLOCK);
+  private readonly storage = inject(RECORDER_STORAGE);
+  private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
+  private readonly detector = new TransitionDetector();
+
+  private timer: ReturnType<typeof setInterval> | null = null;
+
+  private readonly _enabled = signal(false);
+  private readonly _recording = signal(false);
+  private readonly _saved = signal(0);
+  private readonly _failed = signal(0);
+  private readonly _message = signal<{ text: string; error: boolean } | null>(null);
+
+  /** El modo aprendizaje esta encendido. */
+  readonly enabled = this._enabled.asReadonly();
+  /** Hay una mezcla en curso que se esta siguiendo. */
+  readonly recording = this._recording.asReadonly();
+  /** Mezclas guardadas en esta sesion de la pagina. */
+  readonly saved = this._saved.asReadonly();
+  readonly failed = this._failed.asReadonly();
+  /** Resultado de la ultima mezcla, para mostrarlo. */
+  readonly message = this._message.asReadonly();
+
+  /** El navegador tiene Web Audio, que es lo que hace falta para mezclar y, por tanto, para grabar. */
+  get supported(): boolean {
+    return this.isBrowser && this.mixer.supported;
+  }
+
+  constructor() {
+    try {
+      if (this.storage?.getItem(RECORDER_STORAGE_KEY) === '1') {
+        this.setEnabled(true, false);
+      }
+    } catch {
+      // almacenamiento bloqueado: arranca apagado
+    }
+    inject(DestroyRef).onDestroy(() => this.stop());
+  }
+
+  setEnabled(enabled: boolean, remember = true): void {
+    if (enabled && !this.supported) {
+      return;
+    }
+    this._enabled.set(enabled);
+    if (remember) {
+      try {
+        this.storage?.setItem(RECORDER_STORAGE_KEY, enabled ? '1' : '0');
+      } catch {
+        // sin espacio o bloqueado: solo no se recordara tras recargar la pagina
+      }
+    }
+    if (enabled) {
+      this.start();
+    } else {
+      this.stop();
+    }
+  }
+
+  private start(): void {
+    if (this.timer !== null) {
+      return;
+    }
+    this.detector.reset();
+    this.timer = setInterval(() => this.tick(), RECORDER_SAMPLE_MS);
+  }
+
+  private stop(): void {
+    if (this.timer !== null) {
+      clearInterval(this.timer);
+      this.timer = null;
+    }
+    this.detector.reset();
+    this._recording.set(false);
+  }
+
+  private tick(): void {
+    // Las transiciones que hace el Auto-DJ no son del DJ: ni se graban ni se mezclan con las suyas.
+    if (this.runner.running()) {
+      this.detector.reset();
+      this._recording.set(false);
+      return;
+    }
+    const finished = this.detector.push(this.sample());
+    this._recording.set(this.detector.recording);
+    if (finished) {
+      this.save(finished);
+    }
+  }
+
+  private sample(): MixSample {
+    const crossfader = this.mixer.crossfader();
+    const gains = crossfaderGains(crossfader);
+    const read = (id: DeckId, gain: number): DeckSample => {
+      const deck = this.mixer.deck(id);
+      return {
+        trackId: deck.track()?.id ?? null,
+        playing: deck.playing(),
+        position: deck.position(),
+        pitch: deck.pitch(),
+        volume: deck.volume(),
+        gain,
+        eq: deck.eq(),
+      };
+    };
+    return { time: this.clock(), crossfader, decks: { A: read('A', gains.a), B: read('B', gains.b) } };
+  }
+
+  private save(mix: RecordedTransition): void {
+    const body: RecordingRequest = {
+      fromTrackId: mix.fromTrackId,
+      toTrackId: mix.toTrackId,
+      source: 'manual',
+      dj: RECORDER_DJ_ALIAS,
+      mixOutAt: mix.mixOutAt,
+      mixInAt: mix.mixInAt,
+      overlapSeconds: mix.overlapSeconds,
+      pitchA: mix.pitchA,
+      pitchB: mix.pitchB,
+      curves: mix.curves,
+    };
+    this.api.create(body).subscribe({
+      next: (saved) => {
+        this._saved.update((n) => n + 1);
+        this._message.set({
+          text: `Mezcla grabada: ${saved.features.overlapBars.toFixed(1)} compases de solape.`,
+          error: false,
+        });
+      },
+      error: (err: unknown) => {
+        this._failed.update((n) => n + 1);
+        this._message.set({ text: httpErrorMessage(err, 'No se pudo guardar la mezcla.'), error: true });
+      },
+    });
+  }
+}

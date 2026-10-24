@@ -70,6 +70,24 @@ describe('DeckComponent', () => {
 
       expect(el().querySelector('h3')?.textContent).toContain('Deck B');
     });
+
+    it('marca cada deck con su letra para darle su color', () => {
+      crear('A');
+      expect(el().querySelector('section')?.getAttribute('data-deck')).toBe('A');
+
+      TestBed.resetTestingModule();
+      crear('B');
+      expect(el().querySelector('section')?.getAttribute('data-deck')).toBe('B');
+    });
+
+    it('el boton Play es el principal y los volumenes y el EQ son faders', () => {
+      crear();
+
+      expect(boton('Play').classList.contains('play')).toBe(true);
+      for (const etiqueta of ['Volumen del deck', 'Graves', 'Medios', 'Agudos']) {
+        expect(slider(etiqueta).classList.contains('fader')).toBe(true);
+      }
+    });
   });
 
   describe('con una pista cargada', () => {

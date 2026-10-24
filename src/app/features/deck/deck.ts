@@ -5,6 +5,7 @@ import { DeckId } from '../../core/audio/deck';
 import { EQ_BANDS, EqBand } from '../../core/audio/eq';
 import { formatBpm, formatPitch, formatTime } from '../../core/audio/format';
 import { WaveformComponent } from '../../shared/waveform/waveform';
+import { DECK_WAVEFORM_COLORS } from '../../core/audio/waveform-draw';
 import { httpErrorMessage } from '../../core/http-error-message';
 import { MIN_DOWNBEAT_CONFIDENCE } from '../../core/audio/beatgrid';
 import { TrackApiService } from '../../core/services/tracks';
@@ -19,6 +20,7 @@ const NOMBRE_BANDA: Record<EqBand, string> = { low: 'Graves', mid: 'Medios', hig
   selector: 'app-deck',
   imports: [WaveformComponent],
   templateUrl: './deck.html',
+  styleUrl: './deck.css',
 })
 export class DeckComponent {
   readonly deckId = input.required<DeckId>();
@@ -27,6 +29,7 @@ export class DeckComponent {
   private readonly tracks = inject(TrackApiService);
   protected readonly deck = computed(() => this.mixer.deck(this.deckId()));
 
+  protected readonly colores = computed(() => DECK_WAVEFORM_COLORS[this.deckId()]);
   protected readonly bandas = EQ_BANDS;
   protected readonly nombreBanda = NOMBRE_BANDA;
   protected readonly formatTime = formatTime;

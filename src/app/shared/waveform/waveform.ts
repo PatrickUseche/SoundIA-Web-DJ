@@ -1,5 +1,5 @@
 import { Component, ElementRef, effect, input, output, viewChild } from '@angular/core';
-import { drawWaveform } from '../../core/audio/waveform-draw';
+import { DEFAULT_WAVEFORM_COLORS, WaveformColors, drawWaveform } from '../../core/audio/waveform-draw';
 
 /** Forma de onda de una pista dibujada en un canvas. Un clic emite la fraccion (0-1) donde se hizo. */
 @Component({
@@ -11,7 +11,7 @@ import { drawWaveform } from '../../core/audio/waveform-draw';
       [attr.height]="height()"
       role="img"
       [attr.aria-label]="etiqueta()"
-      style="width: 100%; cursor: pointer; background: #212121;"
+      style="width: 100%; cursor: pointer; background: var(--fondo, #0a0a14); border-radius: 6px;"
       (click)="alHacerClic($event)"
     ></canvas>
   `,
@@ -26,6 +26,8 @@ export class WaveformComponent {
   readonly width = input(600);
   readonly height = input(80);
   readonly etiqueta = input('Forma de onda');
+  /** Colores del dibujo; por defecto los neutros. */
+  readonly colors = input<WaveformColors>(DEFAULT_WAVEFORM_COLORS);
 
   /** Fraccion (0-1) de la pista en la que el usuario hizo clic. */
   readonly seek = output<number>();
@@ -37,7 +39,7 @@ export class WaveformComponent {
     effect(() => {
       const context = this.canvas().nativeElement.getContext('2d');
       if (context) {
-        drawWaveform(context, this.peaks(), this.width(), this.height(), this.progress(), this.cues());
+        drawWaveform(context, this.peaks(), this.width(), this.height(), this.progress(), this.cues(), this.colors());
       }
     });
   }

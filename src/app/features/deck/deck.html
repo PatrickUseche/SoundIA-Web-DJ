@@ -29,6 +29,9 @@
         (seek)="alBuscar($event)" />
 
     <p class="reloj" aria-live="off">{{ formatTime(position()) }} / {{ formatTime(deck().duration) }}</p>
+    @if (deck().loaded) {
+        <p class="restante" aria-live="off" [attr.data-poco]="quedaPoco()">Quedan {{ formatTime(queda()) }}</p>
+    }
 
     <div class="transporte">
         <button type="button" class="play" (click)="alternarReproduccion()" [disabled]="!deck().loaded"

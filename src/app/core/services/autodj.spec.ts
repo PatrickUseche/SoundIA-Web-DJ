@@ -3,6 +3,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Observable, of, throwError } from 'rxjs';
 import { AUTODJ_ALIGN_LOOKAHEAD_SECONDS, AUTODJ_RETRY_MS, AUTODJ_TICK_MS, AutoDjService } from './autodj';
 import { AutoDjApiService } from './autodj-api';
+import { ChoiceRecorderService } from './choice-recorder';
 import { MixerService } from './mixer';
 import { SessionsApiService } from './sessions-api';
 import { TrackApiService } from './tracks';
@@ -64,6 +65,7 @@ describe('AutoDjService', () => {
   };
   let sessionsApi: { active: ReturnType<typeof vi.fn>; start: ReturnType<typeof vi.fn>; pollNext: ReturnType<typeof vi.fn> };
   let tracksApi: { get: ReturnType<typeof vi.fn>; getAudio: ReturnType<typeof vi.fn> };
+  let recorder: { record: ReturnType<typeof vi.fn> };
 
   const buffer = () => new FakeAudioBuffer(200) as unknown as AudioBuffer;
 
@@ -89,9 +91,11 @@ describe('AutoDjService', () => {
       get: vi.fn((id: number) => of(pista(id))),
       getAudio: vi.fn(() => of(new Uint8Array([1, 2, 3]).buffer)),
     };
+    recorder = { record: vi.fn(async () => undefined) };
     TestBed.configureTestingModule({
       providers: [
         provideFakeAudio(contexto),
+        { provide: ChoiceRecorderService, useValue: recorder },
         { provide: AutoDjApiService, useValue: autodjApi },
         { provide: SessionsApiService, useValue: sessionsApi },
         { provide: TrackApiService, useValue: tracksApi },
@@ -209,6 +213,16 @@ describe('AutoDjService', () => {
       expect(autodjApi.nextTracks).not.toHaveBeenCalled();
     });
 
+    it('cuenta al motor que el DJ eligio esa pista de la cola, para que aprenda de la diferencia con la IA', async () => {
+      sessionsApi.pollNext.mockReturnValue(of(elemento(7)));
+
+      await service.tick();
+
+      expect(recorder.record).toHaveBeenCalledTimes(1);
+      const [actual, elegida, origen] = recorder.record.mock.calls[0];
+      expect([actual.id, elegida.id, origen]).toEqual([1, 7, 'queue']);
+    });
+
     it('pide el plan de transicion entre la pista actual y la elegida', async () => {
       sessionsApi.pollNext.mockReturnValue(of(elemento(7)));
 
@@ -237,6 +251,15 @@ describe('AutoDjService', () => {
 
       expect(autodjApi.nextTracks).toHaveBeenCalledWith(1, 10);
       expect(service.next()?.track.id).toBe(4);
+    });
+
+    it('con la cola vacia cuenta que el DJ acepto la propuesta de la IA', async () => {
+      autodjApi.nextTracks.mockReturnValue(of(sugerencias(4, 5)));
+
+      await service.tick();
+
+      const [, elegida, origen] = recorder.record.mock.calls[0];
+      expect([elegida.id, origen]).toEqual([4, 'ai']);
     });
 
     it('descarta las recomendaciones que ya sonaron y la pista actual', async () => {

@@ -22,6 +22,19 @@
                 }
             </ul>
         }
+        @if (siguiente(); as s) {
+            <p class="ayuda">
+                Qué pista sigue: aprende cada vez que eliges en la cola una pista distinta de la que propone la IA.
+                Correcciones: <strong>{{ s.correcciones }} de {{ s.necesarias }}</strong> necesarias.
+                @if (!s.lista) {
+                    Faltan {{ s.faltan }}.
+                } @else if (s.gana) {
+                    Con tus correcciones dejadas fuera habría acertado {{ s.aciertos }} %: ya gana a las reglas@if (s.enUso) { · en uso }.
+                } @else {
+                    Todavía no gana a las reglas ({{ s.aciertos }} % de aciertos).
+                }
+            </p>
+        }
         <div class="interruptor-modelo">
             <button type="button" (click)="alternar()" [attr.aria-pressed]="info.enabled" [disabled]="modelo.cambiando()">
                 Usar mi estilo: {{ info.enabled ? 'activado' : 'apagado' }}

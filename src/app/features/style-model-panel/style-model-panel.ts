@@ -52,6 +52,23 @@ export class StyleModelPanelComponent implements OnInit {
     ];
   });
 
+  protected readonly siguiente = computed(() => {
+    const parte = this.modelo.info()?.nextTrack;
+    if (!parte) {
+      return null;
+    }
+    const precision = parte.evaluation?.accuracy;
+    return {
+      correcciones: parte.corrections,
+      necesarias: parte.required,
+      faltan: Math.max(parte.required - parte.corrections, 0),
+      lista: parte.ready,
+      gana: parte.evaluation?.wins ?? false,
+      enUso: parte.inUse ?? false,
+      aciertos: precision === null || precision === undefined ? null : Math.round(precision * 100),
+    };
+  });
+
   ngOnInit(): void {
     this.modelo.load();
   }

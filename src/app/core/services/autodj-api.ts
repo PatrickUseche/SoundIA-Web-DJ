@@ -41,6 +41,18 @@ export class AutoDjApiService {
     return this.http.get<WeightsInfo>(`${this.baseUrl}/weights`);
   }
 
+  /**
+   * El DJ eligio `chosenTrackId` como siguiente pista tras `fromTrackId` y la IA habria propuesto `recommendedTrackId`
+   * (o la misma, si la acepto): de la diferencia el motor aprende que pista sigue.
+   */
+  submitChoice(fromTrackId: number, chosenTrackId: number, recommendedTrackId: number | null): Observable<unknown> {
+    const body: { fromTrackId: number; chosenTrackId: number; recommendedTrackId?: number } = { fromTrackId, chosenTrackId };
+    if (recommendedTrackId !== null) {
+      body.recommendedTrackId = recommendedTrackId;
+    }
+    return this.http.post(`${this.baseUrl}/choices`, body);
+  }
+
   /** El modelo del estilo del DJ: mezclas buenas que hay y que faltan, su evaluacion y si esta encendido. */
   styleModel(): Observable<StyleModelInfo> {
     return this.http.get<StyleModelInfo>(`${this.baseUrl}/style-model`);

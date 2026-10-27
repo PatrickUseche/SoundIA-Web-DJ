@@ -34,6 +34,11 @@
                 ({{ formatBpm(siguiente.bpm) }} BPM, {{ siguiente.camelot }})
             </p>
             <p>{{ siguiente.estilo }}, compatibilidad {{ siguiente.compatibilidad }}%</p>
+            @if (siguiente.conTuEstilo) {
+                <p class="adelanto">
+                    Esta mezcla usa tu estilo@if (siguiente.compasesAprendidos) { ({{ siguiente.compasesAprendidos }}, como sueles mezclar esta combinación) }.
+                </p>
+            }
             @if (siguiente.adelanto > 0) {
                 <p class="adelanto">Por lo que le has enseñado, la IA adelanta sus mezclas {{ siguiente.adelanto }} s.</p>
             }

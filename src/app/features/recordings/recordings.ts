@@ -7,7 +7,9 @@ import {
   RecordingCounts, RecordingQuality, RecordingSummary,
 } from '../../core/models/recording';
 import { RecordingApiService } from '../../core/services/recordings';
+import { StyleModelService } from '../../core/services/style-model';
 import { TrackApiService } from '../../core/services/tracks';
+import { StyleModelPanelComponent } from '../style-model-panel/style-model-panel';
 
 export type FiltroGrabaciones = 'todas' | RecordingQuality;
 
@@ -26,13 +28,14 @@ const FORMA_CROSSFADER: Record<string, string> = { corte: 'Corte', gradual: 'Gra
  */
 @Component({
   selector: 'app-recordings',
-  imports: [DatePipe],
+  imports: [DatePipe, StyleModelPanelComponent],
   templateUrl: './recordings.html',
   styleUrl: './recordings.css',
 })
 export class RecordingsComponent implements OnInit {
   private readonly api = inject(RecordingApiService);
   private readonly tracksApi = inject(TrackApiService);
+  private readonly styleModel = inject(StyleModelService);
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly filtros = FILTROS;
@@ -137,6 +140,10 @@ export class RecordingsComponent implements OnInit {
       .subscribe({
         next: (actualizada) => {
           this.cambiarConteo(r.quality, actualizada.quality);
+          // El modelo solo aprende de las buenas: si cambia cuantas hay, cambia lo que falta y su evaluacion.
+          if (r.quality === 'good' || actualizada.quality === 'good') {
+            this.styleModel.load();
+          }
           const filtro = this.filtro();
           // Con un filtro puesto, la que ya no encaja sale de la lista.
           if (filtro !== 'todas' && actualizada.quality !== filtro) {
@@ -190,6 +197,9 @@ export class RecordingsComponent implements OnInit {
           this.recordings.update((lista) => lista.filter((x) => x.id !== r.id));
           this.counts.update((c) => ({ ...c, [r.quality]: Math.max(0, c[r.quality] - 1), total: Math.max(0, c.total - 1) }));
           this.mensaje.set('Grabación borrada.');
+          if (r.quality === 'good') {
+            this.styleModel.load();
+          }
         },
         error: (err) => this.errorAccion.set(httpErrorMessage(err, 'No se pudo borrar la grabación.')),
       });

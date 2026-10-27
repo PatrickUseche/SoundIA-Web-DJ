@@ -79,6 +79,29 @@ export interface TransitionPlan {
   automation: AutomationPoint[];
   /** Segundos que el motor adelanto la salida porque el DJ suele pedir mezclar antes (0 si aun no aprendio). */
   mixOutAdvance?: number;
+  /** De donde salen los compases y el cambio de graves: "model" si se uso el estilo aprendido del DJ, "rules" si no. */
+  source?: 'model' | 'rules';
+  learnedBars?: boolean;
+  learnedBassSwap?: boolean;
+}
+
+/** Como le va al modelo del estilo del DJ frente a las reglas en un parametro (compases o cambio de graves). */
+export interface StyleModelTarget {
+  evaluated: number;
+  rulesError: number | null;
+  modelError: number | null;
+  wins: boolean;
+}
+
+/** Respuesta de GET y POST /autodj/style-model. */
+export interface StyleModelInfo {
+  goodRecordings: number;
+  required: number;
+  ready: boolean;
+  enabled: boolean;
+  evaluation?: { bars: StyleModelTarget; bassSwap: StyleModelTarget };
+  /** Que parametros se estan usando ahora (encendido y ganando a las reglas). */
+  inUse?: { bars: boolean; bassSwap: boolean };
 }
 
 /** Respuesta de POST /autodj/timing: lo que el motor lleva aprendido de cuando mezclar. */

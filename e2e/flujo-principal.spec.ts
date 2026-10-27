@@ -53,6 +53,15 @@ test('la pantalla de grabaciones lista las mezclas y permite marcarlas como buen
   await expect(page.getByRole('status').filter({ hasText: 'Buenas: 2' })).toBeVisible();
 });
 
+test('la pantalla de grabaciones dice cuánto lleva aprendido la IA del estilo del DJ', async ({ page }) => {
+  await page.goto('/grabaciones');
+
+  const panel = page.getByRole('region', { name: 'Modelo de tu estilo' });
+  await expect(panel).toContainText('1 de 20 necesarias');
+  await expect(panel).toContainText('Faltan 19 mezclas buenas');
+  await expect(panel.getByRole('button', { name: /Usar mi estilo: apagado/ })).toBeVisible();
+});
+
 test('se pueden subir varias pistas de una vez y aparecen en la biblioteca', async ({ page }) => {
   await page.goto('/dj');
   const tabla = page.getByRole('table', { name: 'Pistas analizadas' });

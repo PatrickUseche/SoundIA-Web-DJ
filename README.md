@@ -77,6 +77,7 @@ src/app/
 - **Modo aprendizaje**: si el servidor no responde al guardar una mezcla (dormido o reiniciándose en la nube gratuita), la mezcla
   **no se pierde**: queda pendiente, se guarda también en el navegador y se reintenta sola (5, 10, 20 y 30 s); el panel dice cuántas
   esperan y, si intentas cerrar la página con mezclas sin enviar, el navegador avisa.
+- **Modelo de tu estilo** (arriba de `/grabaciones`): la IA aprende solo de tus mezclas buenas, nunca de las de otros DJ. El panel dice cuántas lleva (de 20 necesarias), en qué parámetros (compases de solape y punto del cambio de graves) ya gana a las reglas y tiene el interruptor «Usar mi estilo», apagado por defecto: aunque lo actives solo cambia lo que gana a las reglas, y apagarlo vuelve a ellas al instante. Cuando una mezcla del Auto-DJ usa tu estilo, su panel lo avisa.
 - **Grabaciones** (`/grabaciones`): revisa las mezclas que grabó el modo aprendizaje. Para cada una muestra de qué pista a cuál
   fue, el género, los compases de solape, cómo movió el crossfader, el cambio de graves y el desfase de pulsos; se marca como
   *Buena*, *Descartar* o *Sin revisar* (solo las buenas deberían usarse para entrenar), con una nota opcional, y se puede filtrar

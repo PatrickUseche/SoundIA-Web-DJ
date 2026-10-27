@@ -8,6 +8,8 @@ import { environment } from '../../../environments/environment';
 
 const RECORDINGS = `${environment.apiRootUrl}/recordings`;
 const TRACKS = `${environment.apiRootUrl}/tracks`;
+const STYLE_MODEL = `${environment.apiRootUrl}/autodj/style-model`;
+const MODELO = { goodRecordings: 0, required: 20, ready: false, enabled: false };
 
 const grabacion = (cambios: Partial<RecordingSummary> = {}): RecordingSummary => ({
   id: 1, fromTrackId: 10, toTrackId: 11, source: 'manual', dj: 'dj', mixOutAt: 200, mixInAt: 0.5, overlapSeconds: 32,
@@ -49,6 +51,7 @@ describe('RecordingsComponent', () => {
     fixture.detectChanges();
     http.expectOne(RECORDINGS).flush(datos);
     http.expectOne(TRACKS).flush({ tracks: pistas });
+    http.expectOne(STYLE_MODEL).flush(MODELO);
     await esperar();
   }
 
@@ -64,6 +67,7 @@ describe('RecordingsComponent', () => {
 
       http.expectOne(RECORDINGS).flush(lista([]));
       http.expectOne(TRACKS).flush({ tracks: [] });
+      http.expectOne(STYLE_MODEL).flush(MODELO);
       await esperar();
 
       expect(texto()).toContain('Todavía no hay grabaciones');
@@ -117,6 +121,7 @@ describe('RecordingsComponent', () => {
 
       http.expectOne(RECORDINGS).flush({ error: 'El motor de IA no esta disponible' }, { status: 502, statusText: 'Bad Gateway' });
       http.expectOne(TRACKS).flush({ tracks: [] });
+      http.expectOne(STYLE_MODEL).flush(MODELO);
       await esperar();
 
       expect(el().querySelector('.lista-error')?.textContent).toContain('El motor de IA no esta disponible');
@@ -160,9 +165,12 @@ describe('RecordingsComponent', () => {
       expect(req.request.method).toBe('PUT');
       expect(req.request.body).toEqual({ quality: 'good' });
       req.flush(grabacion({ id: 4, quality: 'good' }));
+      // Ahora hay una buena mas: el modelo de estilo se vuelve a consultar.
+      http.expectOne(STYLE_MODEL).flush({ ...MODELO, goodRecordings: 1 });
       await esperar();
 
       expect(boton(filas()[0], 'Buena').getAttribute('aria-pressed')).toBe('true');
+      expect(texto()).toContain('1 de 20 necesarias');
       expect(filas()[0].getAttribute('data-calidad')).toBe('good');
       expect(el().querySelector('.resumen')?.textContent).toContain('Sin revisar: 1');
       expect(el().querySelector('.resumen')?.textContent).toContain('Buenas: 1');
@@ -197,6 +205,7 @@ describe('RecordingsComponent', () => {
 
       boton(filas()[0], 'Buena').click();
       http.expectOne(`${RECORDINGS}/4`).flush(grabacion({ id: 4, quality: 'good' }));
+      http.expectOne(STYLE_MODEL).flush(MODELO);
       await esperar();
 
       expect(filas().length).toBe(0);

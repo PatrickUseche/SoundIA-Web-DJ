@@ -99,6 +99,12 @@ export async function simularApi(page: Page, opciones: { pistas?: unknown[]; con
         return route.fulfill({ json: { ticket: 'ticket-falso', expiresAt: '2999-01-01T00:00:00Z' }, headers: cors });
       }
     }
+    if (ruta === '/engine/status') {
+      return route.fulfill({
+        json: { state: 'UP', consecutiveFailures: 0, lastSuccessAt: null, lastFailureAt: null, lastError: null },
+        headers: cors,
+      });
+    }
     if (ruta === '/tracks' && metodo === 'GET') {
       return route.fulfill({ json: { tracks: pistas }, headers: cors });
     }

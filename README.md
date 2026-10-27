@@ -87,7 +87,7 @@ src/app/
   mezcla; y al subir un archivo de más de 20 MB avisa de que el servidor gratuito puede no aguantarlo (se intenta igual).
 - **Servidores despiertos**: mientras la página esté abierta y alguien la use, cada 4 minutos se hace una consulta ligera a la lista
   de pistas (llega al API y al motor) para que el plan gratuito no los duerma; si nadie toca la página en 2 horas deja de hacerlo, para
-  no gastar las horas mensuales gratuitas. En el menú, un indicador dice «Servidores listos» o «Sin respuesta del servidor».
+  no gastar las horas mensuales gratuitas. En el menú, un indicador dice «Servidores listos» o «Sin respuesta del servidor». A su lado, otro dice «Motor IA activo», «Motor IA sin respuesta: puede estar despertando» o «Motor IA: sin datos todavía»: sale de `GET /engine/status` del API, que informa de lo último que pasó en las llamadas al motor (no lo despierta). Se consulta al abrir y cada 30 s, solo con la pestaña a la vista, y se oculta si el API no responde.
 - **Aviso de servidores dormidos**: si una petición al API tarda más de 8 s (en la nube gratuita los servidores se duermen y
   tardan hasta tres minutos en despertar) aparece un aviso bajo el menú, y se quita solo cuando llega la respuesta.
 - **Biblioteca**: lista las pistas analizadas (BPM, tonalidad, código Camelot, energía). Se pueden cargar en el deck A o B

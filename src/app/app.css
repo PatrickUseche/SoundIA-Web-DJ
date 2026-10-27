@@ -55,6 +55,32 @@
   background: var(--peligro);
 }
 
+/* Igual que el del servidor: punto de color mas texto. Sin estado conocido (UNKNOWN) queda en el color de aviso. */
+.estado-motor {
+  margin-left: 12px;
+  font-size: 0.85rem;
+  color: var(--texto-suave);
+}
+
+.estado-motor::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: var(--aviso);
+}
+
+.estado-motor[data-estado='UP']::before {
+  background: var(--exito);
+}
+
+.estado-motor[data-estado='DOWN'] {
+  color: var(--aviso);
+}
+
+.estado-motor + .cerrar-sesion,
 .estado-servidor + .cerrar-sesion {
   margin-left: 12px;
 }

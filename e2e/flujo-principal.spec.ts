@@ -15,6 +15,13 @@ test('la navegación principal lleva a la pantalla de DJ y a la telemetría', as
   await expect(page.getByRole('link', { name: 'DJ' })).toHaveAttribute('aria-current', 'page');
 });
 
+test('la barra dice si el motor de IA está activo', async ({ page }) => {
+  await page.goto('/dj');
+
+  await expect(page.locator('.estado-motor')).toHaveText('Motor IA activo');
+  await expect(page.locator('.estado-motor')).toHaveAttribute('data-estado', 'UP');
+});
+
 test('si el API tarda en responder (servidores dormidos) avisa y lo quita al llegar la respuesta', async ({ page }) => {
   // Un servidor que se esta despertando: la lista de pistas tarda mas que el limite del aviso (8 s).
   await page.route('**/api/v1/tracks', async (route) => {

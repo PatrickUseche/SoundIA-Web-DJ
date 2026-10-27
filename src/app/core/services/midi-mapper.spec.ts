@@ -150,7 +150,7 @@ describe('MidiMapperService', () => {
   describe('quitar asignaciones', () => {
     beforeEach(() => crear({ guardado: { 14: 'crossfader', 7: 'A.volume' } }));
 
-    it('clear quita solo la asignacion de ese control', () => {
+    it('clear quita solo la asignación de ese control', () => {
       mapper.clear('crossfader');
 
       expect(mapper.mapping()).toEqual({ 7: 'A.volume' });
@@ -436,7 +436,7 @@ describe('MidiMapperService', () => {
       expect(mapper.assignedTo('A.volume')).toEqual({ channel: null, controlId: 7 });
     });
 
-    it('la asignacion de un canal concreto gana sobre la de cualquier canal', async () => {
+    it('la asignación de un canal concreto gana sobre la de cualquier canal', async () => {
       await crear({ guardado: { 7: 'A.volume', '1:7': 'B.volume' } });
 
       moverEnCanal(1, 7, 0);

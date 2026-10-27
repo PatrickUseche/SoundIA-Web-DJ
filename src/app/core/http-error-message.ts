@@ -22,17 +22,17 @@ function bodyOf(error: HttpErrorResponse): { error?: unknown } | null {
  * Mensaje legible para el usuario a partir de un error: si el API Gateway respondio con su cuerpo uniforme
  * `{ error: "..." }` se muestra ese texto; si no, uno generico segun el codigo HTTP.
  */
-export function httpErrorMessage(error: unknown, fallback = 'Ocurrio un error inesperado.'): string {
+export function httpErrorMessage(error: unknown, fallback = 'Ocurrió un error inesperado.'): string {
   if (error instanceof HttpErrorResponse) {
     const body = bodyOf(error);
     if (body && typeof body.error === 'string' && body.error.trim() !== '') {
       return body.error;
     }
     if (error.status === 0) {
-      return 'No se pudo conectar con el servidor. Verifica que el API este activo.';
+      return 'No se pudo conectar con el servidor. Verifica que el API esté activo.';
     }
     if (error.status === 404) {
-      return 'No se encontro lo que se pedia.';
+      return 'No se encontró lo que se pedía.';
     }
     if (error.status === 413) {
       return 'El archivo es demasiado grande.';

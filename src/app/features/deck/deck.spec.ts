@@ -59,7 +59,7 @@ describe('DeckComponent', () => {
     it('invita a cargar una pista y deshabilita los controles', () => {
       crear();
 
-      expect(texto()).toContain('Deck vacio');
+      expect(texto()).toContain('Deck vacío');
       for (const nombre of ['Play', 'Marcar cue', 'Ir al cue', 'Sync', 'Expulsar']) {
         expect(boton(nombre).disabled).toBe(true);
       }
@@ -365,7 +365,7 @@ describe('DeckComponent', () => {
       await refrescar();
 
       expect(mixer.deck('A').loaded).toBe(false);
-      expect(texto()).toContain('Deck vacio');
+      expect(texto()).toContain('Deck vacío');
     });
   });
 

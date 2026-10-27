@@ -23,7 +23,7 @@ test('si el API tarda en responder (servidores dormidos) avisa y lo quita al lle
   });
   await page.goto('/dj');
 
-  const aviso = page.getByText('Esto esta tardando mas de lo normal');
+  const aviso = page.getByText('Esto está tardando más de lo normal');
   await expect(aviso).toBeVisible({ timeout: 12_000 });
   await page.screenshot({ path: process.env['CAPTURA_AVISO'] ?? 'test-results/aviso.png' });
   await expect(page.getByRole('table', { name: 'Pistas analizadas' })).toBeVisible({ timeout: 12_000 });
@@ -101,7 +101,7 @@ test('una pista de la biblioteca se carga en el deck A y se puede reproducir', a
   await expect(deck.getByRole('button', { name: 'Pausa' })).toHaveAttribute('aria-pressed', 'true');
 
   await deck.getByRole('button', { name: 'Expulsar' }).click();
-  await expect(deck.getByText('Deck vacio')).toBeVisible();
+  await expect(deck.getByText('Deck vacío')).toBeVisible();
 });
 
 test('el mezclador permite centrar el crossfader', async ({ page }) => {
@@ -119,7 +119,7 @@ test('el panel de telemetría muestra el historial del API', async ({ page }) =>
   await page.goto('/dashboard');
 
   await expect(page.getByText('CROSSFADE')).toBeVisible();
-  await expect(page.getByText('Sin decision de la IA').first()).toBeVisible();
+  await expect(page.getByText('Sin decisión de la IA').first()).toBeVisible();
 });
 
 test('la pantalla de DJ no desborda horizontalmente', async ({ page }) => {

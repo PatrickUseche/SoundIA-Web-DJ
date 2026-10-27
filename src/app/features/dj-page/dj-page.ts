@@ -10,7 +10,7 @@ import { QuickGuideComponent } from '../quick-guide/quick-guide';
 /**
  * Pantalla principal de DJ: una guia rapida, la consola con los dos decks, el modo aprendizaje (lo principal para quien
  * le ensena su estilo a la IA, por eso va justo debajo de los decks), la biblioteca y el Auto-DJ. El
- * controlador MIDI y la asignacion de sus controles (largos y de uso ocasional) van en un bloque plegable.
+ * controlador MIDI y la asignación de sus controles (largos y de uso ocasional) van en un bloque plegable.
  */
 @Component({
   selector: 'app-dj-page',

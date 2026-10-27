@@ -5,7 +5,7 @@ import { QueueItem } from '../models/autodj';
 import { SessionsApiService } from './sessions-api';
 
 /** Nombre de la sesion que se abre sola cuando se encola una pista y no hay ninguna abierta. */
-export const DEFAULT_SESSION_NAME = 'Sesion DJ';
+export const DEFAULT_SESSION_NAME = 'Sesión DJ';
 
 /** Cola de reproduccion de la sesion abierta: ver, agregar y quitar pistas. */
 @Injectable({ providedIn: 'root' })

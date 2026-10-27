@@ -19,7 +19,7 @@
     }
 
     @if (autodj.status() === 'mezclando') {
-        <progress max="100" [value]="porcentajeMezcla()" aria-label="Avance de la transicion">{{ porcentajeMezcla() }} %</progress>
+        <progress max="100" [value]="porcentajeMezcla()" aria-label="Avance de la transición">{{ porcentajeMezcla() }} %</progress>
     }
 
     @if (autodj.message(); as mensaje) {
@@ -42,7 +42,7 @@
 
     @if (autodj.lastTransition(); as ultima) {
         <div class="valoracion">
-            <h4>Ultima mezcla</h4>
+            <h4>Última mezcla</h4>
             <p>De <strong>{{ ultima.from.title }}</strong> a <strong>{{ ultima.to.title }}</strong></p>
             @if (autodj.rating() === null) {
                 <p>Te gusto la mezcla?</p>
@@ -51,9 +51,9 @@
             } @else {
                 <p role="status" class="gracias">
                     @if (autodj.rating() === 'liked') {
-                        Gracias: la IA tendra en cuenta que te gusto.
+                        Gracias: la IA tendrá en cuenta que te gustó.
                     } @else {
-                        Gracias: la IA evitara mezclas parecidas.
+                        Gracias: la IA evitará mezclas parecidas.
                     }
                 </p>
             }
@@ -68,13 +68,13 @@
             <h4>Lo que la IA ha aprendido</h4>
             @if (p.aprendidos) {
                 <p>
-                    Segun tus {{ p.valoraciones }} valoraciones, pesa: tempo {{ p.tempo }}%,
-                    armonia {{ p.armonia }}%, energia {{ p.energia }}%.
+                    Según tus {{ p.valoraciones }} valoraciones, pesa: tempo {{ p.tempo }}%,
+                    armonía {{ p.armonia }}%, energía {{ p.energia }}%.
                 </p>
             } @else {
                 <p>
-                    Todavia usa los pesos por defecto (tempo {{ p.tempo }}%, armonia {{ p.armonia }}%,
-                    energia {{ p.energia }}%). Necesita al menos 10 valoraciones, con mezclas que te gustaron y otras que no
+                    Todavía usa los pesos por defecto (tempo {{ p.tempo }}%, armonía {{ p.armonia }}%,
+                    energía {{ p.energia }}%). Necesita al menos 10 valoraciones, con mezclas que te gustaron y otras que no
                     (llevas {{ p.valoraciones }}).
                 </p>
             }
@@ -87,8 +87,8 @@
     }
     @if (queue.items().length === 0) {
         <p class="cola-vacia">
-            La cola esta vacia: el Auto-DJ elegira las pistas que recomiende la IA. Agrega pistas desde la biblioteca
-            para decidir tu el orden.
+            La cola está vacía: el Auto-DJ elegirá las pistas que recomiende la IA. Agrega pistas desde la biblioteca
+            para decidir tú el orden.
         </p>
     } @else {
         <ol class="cola">

@@ -15,9 +15,9 @@ describe('httpErrorMessage', () => {
   });
 
   it('ignora un cuerpo sin mensaje util y usa el del codigo', () => {
-    expect(httpErrorMessage(http(404, { error: '   ' }))).toBe('No se encontro lo que se pedia.');
-    expect(httpErrorMessage(http(404, { otro: 1 }))).toBe('No se encontro lo que se pedia.');
-    expect(httpErrorMessage(http(404, 'texto plano'))).toBe('No se encontro lo que se pedia.');
+    expect(httpErrorMessage(http(404, { error: '   ' }))).toBe('No se encontró lo que se pedía.');
+    expect(httpErrorMessage(http(404, { otro: 1 }))).toBe('No se encontró lo que se pedía.');
+    expect(httpErrorMessage(http(404, 'texto plano'))).toBe('No se encontró lo que se pedía.');
   });
 
   it('lee el mensaje cuando el cuerpo llega como ArrayBuffer (descargas binarias que fallan)', () => {
@@ -29,7 +29,7 @@ describe('httpErrorMessage', () => {
   it('un ArrayBuffer que no contiene JSON usa el mensaje del codigo HTTP', () => {
     const cuerpo = new TextEncoder().encode('<html>Not Found</html>').buffer;
 
-    expect(httpErrorMessage(http(404, cuerpo))).toBe('No se encontro lo que se pedia.');
+    expect(httpErrorMessage(http(404, cuerpo))).toBe('No se encontró lo que se pedía.');
   });
 
   it('un ArrayBuffer vacio usa el mensaje del codigo HTTP', () => {
@@ -50,8 +50,8 @@ describe('httpErrorMessage', () => {
   });
 
   it('otros codigos sin mensaje del API usan el mensaje de respaldo por defecto', () => {
-    expect(httpErrorMessage(http(409))).toBe('Ocurrio un error inesperado.');
-    expect(httpErrorMessage(http(418))).toBe('Ocurrio un error inesperado.');
+    expect(httpErrorMessage(http(409))).toBe('Ocurrió un error inesperado.');
+    expect(httpErrorMessage(http(418))).toBe('Ocurrió un error inesperado.');
   });
 
   it('permite personalizar el mensaje de respaldo', () => {
@@ -64,7 +64,7 @@ describe('httpErrorMessage', () => {
   });
 
   it('un valor desconocido usa el respaldo', () => {
-    expect(httpErrorMessage(undefined)).toBe('Ocurrio un error inesperado.');
+    expect(httpErrorMessage(undefined)).toBe('Ocurrió un error inesperado.');
     expect(httpErrorMessage('boom', 'Fallo')).toBe('Fallo');
   });
 });

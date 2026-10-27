@@ -9,7 +9,7 @@ const CODE_PATTERN = /^(1[0-2]|[1-9])([AB])$/;
 function parse(code: string): { number: number; letter: 'A' | 'B' } {
   const match = CODE_PATTERN.exec(code);
   if (!match) {
-    throw new RangeError(`Codigo Camelot invalido: ${JSON.stringify(code)}`);
+    throw new RangeError(`Código Camelot inválido: ${JSON.stringify(code)}`);
   }
   return { number: Number(match[1]), letter: match[2] as 'A' | 'B' };
 }

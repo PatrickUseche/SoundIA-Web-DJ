@@ -13,7 +13,7 @@
         }
         @case ('denied') {
             <p role="alert" class="alerta">
-                Se denego el acceso a MIDI. Permitelo en la configuracion del sitio y vuelve a intentarlo.
+                Se denegó el acceso a MIDI. Permítelo en la configuración del sitio y vuelve a intentarlo.
             </p>
             <button type="button" (click)="conectar()">Reintentar</button>
         }
@@ -23,7 +23,7 @@
         }
         @case ('ready') {
             @if (midi.inputs().length === 0) {
-                <p role="status">No hay controladores conectados. Enchufa uno y aparecera aqui.</p>
+                <p role="status">No hay controladores conectados. Enchufa uno y aparecerá aquí.</p>
             } @else {
                 <label>
                     Controlador:

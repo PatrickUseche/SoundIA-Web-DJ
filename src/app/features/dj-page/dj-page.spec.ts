@@ -61,7 +61,7 @@ describe('DjPageComponent', () => {
     expect(el.querySelector('app-dj-console')!.compareDocumentPosition(aprendizaje) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  it('incluye la conexion del controlador MIDI y la asignacion de sus controles', () => {
+  it('incluye la conexion del controlador MIDI y la asignación de sus controles', () => {
     const { el } = crear();
 
     expect(el.querySelector('app-midi-panel')).not.toBeNull();

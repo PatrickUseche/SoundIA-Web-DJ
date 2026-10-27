@@ -2,7 +2,7 @@
     <h2 id="titulo-grabaciones">Grabaciones de mezclas</h2>
     <p class="ayuda">
         Las mezclas que hiciste a mano con el modo aprendizaje encendido. Marca las buenas y descarta las que salieron
-        mal: solo las buenas deberian usarse para que el sistema aprenda tu estilo.
+        mal: solo las buenas deberían usarse para que el sistema aprenda tu estilo.
     </p>
 
     <div class="resumen" role="status">
@@ -10,7 +10,7 @@
         Descartadas: {{ counts().discard }}
     </div>
 
-    <div class="filtros-grabaciones" role="group" aria-label="Filtrar por revision">
+    <div class="filtros-grabaciones" role="group" aria-label="Filtrar por revisión">
         @for (opcion of filtros; track opcion.valor) {
             <button type="button" (click)="elegirFiltro(opcion.valor)" [attr.aria-pressed]="filtro() === opcion.valor">
                 {{ opcion.texto }}
@@ -44,9 +44,9 @@
     } @else if (recordings().length === 0) {
         <p class="sin-grabaciones">
             @if (hayGrabaciones()) {
-                Ninguna grabacion coincide con el filtro.
+                Ninguna grabación coincide con el filtro.
             } @else {
-                Todavia no hay grabaciones. Enciende el modo aprendizaje en la pantalla de DJ y mezcla a mano.
+                Todavía no hay grabaciones. Enciende el modo aprendizaje en la pantalla de DJ y mezcla a mano.
             }
         </p>
     } @else {
@@ -61,7 +61,7 @@
                     <th scope="col">Crossfader</th>
                     <th scope="col">Graves</th>
                     <th scope="col">Desfase</th>
-                    <th scope="col">Revision</th>
+                    <th scope="col">Revisión</th>
                     <th scope="col">Notas</th>
                     <th scope="col">Borrar</th>
                 </tr>
@@ -72,7 +72,7 @@
                         <td>
                             {{ r.createdAt | date: 'dd/MM/yy HH:mm' }}
                             @if (r.source === 'autodj') {
-                                <span class="etiqueta-autodj" title="La hizo el Auto-DJ, no tu">Auto-DJ</span>
+                                <span class="etiqueta-autodj" title="La hizo el Auto-DJ, no tú">Auto-DJ</span>
                             }
                         </td>
                         <td>{{ pistas(r) }}</td>
@@ -93,7 +93,7 @@
                         </td>
                         <td>
                             <input type="text" class="notas" maxlength="500" [value]="r.notes"
-                                (change)="guardarNotas(r, $event)" placeholder="Por que si o por que no"
+                                (change)="guardarNotas(r, $event)" placeholder="Por qué sí o por qué no"
                                 [attr.aria-label]="'Notas de la mezcla ' + r.id" />
                         </td>
                         <td>

@@ -16,7 +16,7 @@
     } @else if (deck().loaded) {
         <p class="titulo">Archivo local (sin analizar)</p>
     } @else {
-        <p class="titulo">Deck vacio. Carga una pista desde la biblioteca.</p>
+        <p class="titulo">Deck vacío. Carga una pista desde la biblioteca.</p>
     }
 
     <app-waveform
@@ -42,7 +42,7 @@
         <button type="button" (click)="irAlCue()" [disabled]="!deck().loaded">Ir al cue</button>
         <button type="button" class="sync" (click)="sincronizar()" [disabled]="!deck().track()">Sync</button>
         <button type="button" (click)="marcarElUno()" [disabled]="!deck().track()?.grid || fijandoUno()"
-            title="Fija como primer tiempo (un 1) el punto donde esta la pista ahora">Marcar el 1</button>
+            title="Fija como primer tiempo (un 1) el punto donde está la pista ahora">Marcar el 1</button>
         <button type="button" (click)="expulsar()" [disabled]="!deck().loaded">Expulsar</button>
     </div>
 

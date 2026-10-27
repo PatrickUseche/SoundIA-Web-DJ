@@ -22,7 +22,7 @@ const FORMA_CROSSFADER: Record<string, string> = { corte: 'Corte', gradual: 'Gra
 
 /**
  * Revision de las mezclas que el DJ grabo con el modo aprendizaje: marcarlas como buenas o descartarlas y anotar por
- * que, porque solo las buenas deberian usarse para entrenar. Tambien baja y restaura la copia de seguridad.
+ * que, porque solo las buenas deberían usarse para entrenar. Tambien baja y restaura la copia de seguridad.
  */
 @Component({
   selector: 'app-recordings',
@@ -145,7 +145,7 @@ export class RecordingsComponent implements OnInit {
             this.recordings.update((lista) => lista.map((x) => (x.id === r.id ? { ...x, ...actualizada } : x)));
           }
         },
-        error: (err) => this.errorAccion.set(httpErrorMessage(err, 'No se pudo guardar la revision.')),
+        error: (err) => this.errorAccion.set(httpErrorMessage(err, 'No se pudo guardar la revisión.')),
       });
   }
 
@@ -189,9 +189,9 @@ export class RecordingsComponent implements OnInit {
         next: () => {
           this.recordings.update((lista) => lista.filter((x) => x.id !== r.id));
           this.counts.update((c) => ({ ...c, [r.quality]: Math.max(0, c[r.quality] - 1), total: Math.max(0, c.total - 1) }));
-          this.mensaje.set('Grabacion borrada.');
+          this.mensaje.set('Grabación borrada.');
         },
-        error: (err) => this.errorAccion.set(httpErrorMessage(err, 'No se pudo borrar la grabacion.')),
+        error: (err) => this.errorAccion.set(httpErrorMessage(err, 'No se pudo borrar la grabación.')),
       });
   }
 
@@ -232,7 +232,7 @@ export class RecordingsComponent implements OnInit {
       try {
         copia = JSON.parse(await archivo.text());
       } catch {
-        throw new Error('El archivo no es un JSON valido.');
+        throw new Error('El archivo no es un JSON válido.');
       }
       const resultado = await firstValueFrom(this.api.importAll(copia));
       this.mensaje.set(`${resultado.created} grabaciones restauradas; ${resultado.skipped} ya estaban.`);

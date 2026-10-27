@@ -10,8 +10,8 @@
     <p role="status" class="estado-aprendizaje" [attr.data-grabando]="recorder.recording()">{{ textoEstado() }}</p>
 
     <p class="ayuda">
-        Con esto encendido, cada mezcla que hagas a mano entre dos pistas de la biblioteca se guarda (cuando entra la
-        siguiente, cuanto solapan y como mueves el crossfader y el EQ) para que el sistema aprenda tu estilo. No se
+        Con esto encendido, cada mezcla que hagas a mano entre dos pistas de la biblioteca se guarda (cuándo entra la
+        siguiente, cuánto solapan y cómo mueves el crossfader y el EQ) para que el sistema aprenda tu estilo. No se
         graban las mezclas del Auto-DJ ni audio.
     </p>
 
@@ -21,7 +21,7 @@
     @if (recorder.pendingCount() > 0) {
         <p role="status" class="pendientes aviso">
             {{ recorder.pendingCount() }} mezcla(s) esperan a guardarse porque el servidor no responde. Se reintenta solo:
-            no cierres la pagina.
+            no cierres la página.
         </p>
     }
     @if (recorder.message(); as mensaje) {

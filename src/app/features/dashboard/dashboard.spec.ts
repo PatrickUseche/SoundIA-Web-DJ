@@ -88,7 +88,7 @@ describe('DashboardComponent', () => {
 
     const items = (fixture.nativeElement as HTMLElement).querySelectorAll('li');
     expect(items[0].textContent).toContain('Corte de EQ en deck 14');
-    expect(items[1].textContent).toContain('Sin decision de la IA');
+    expect(items[1].textContent).toContain('Sin decisión de la IA');
   });
 
   describe('estados de carga y error', () => {
@@ -214,7 +214,7 @@ describe('DashboardComponent', () => {
 
       FakeEventSource.last.fail(true);
       fixture.detectChanges();
-      expect(el().querySelector('[role="status"]')?.textContent).toContain('Sin conexion en vivo');
+      expect(el().querySelector('[role="status"]')?.textContent).toContain('Sin conexión en vivo');
     });
 
     it('muestra en el feed cada evento MIDI que llega', async () => {
@@ -262,7 +262,7 @@ describe('DashboardComponent', () => {
       });
 
       expect(texto()).toContain('unavailable');
-      expect(texto()).toContain('Sin decision de la IA');
+      expect(texto()).toContain('Sin decisión de la IA');
     });
 
     it('no duplica una decision que ya estaba en el historial', async () => {

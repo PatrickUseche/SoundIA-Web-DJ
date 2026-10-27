@@ -24,7 +24,7 @@ export class MidiMappingComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Texto de la asignacion de un control, por ejemplo "Canal 2 · CC 14" o "Sin asignar". Las asignaciones
+   * Texto de la asignación de un control, por ejemplo "Canal 2 · CC 14" o "Sin asignar". Las asignaciones
    * guardadas antes de distinguir el canal valen para cualquiera y se muestran como "CC 14 (cualquier canal)".
    */
   asignacion(control: MixerControl): string {

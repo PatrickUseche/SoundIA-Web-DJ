@@ -262,7 +262,7 @@ describe('AutoDjService', () => {
       await service.tick();
 
       expect(service.next()).toBeNull();
-      expect(service.message()).toContain('No hay mas pistas');
+      expect(service.message()).toContain('No hay más pistas');
       expect(service.status()).toBe('esperando');
     });
 
@@ -316,12 +316,12 @@ describe('AutoDjService', () => {
 
       await service.tick();
 
-      expect(service.message()).toContain('no esta analizada');
+      expect(service.message()).toContain('no está analizada');
       expect(autodjApi.nextTracks).not.toHaveBeenCalled();
     });
   });
 
-  describe('hacer la transicion', () => {
+  describe('hacer la transición', () => {
     beforeEach(async () => {
       configurar();
       sonandoEnA();

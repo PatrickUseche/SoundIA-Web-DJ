@@ -231,7 +231,7 @@ describe('AutoDjPanelComponent', () => {
 
       const barra = el().querySelector('progress') as HTMLProgressElement;
       expect(barra.value).toBe(42);
-      expect(barra.getAttribute('aria-label')).toBe('Avance de la transicion');
+      expect(barra.getAttribute('aria-label')).toBe('Avance de la transición');
     });
 
     it('fuera de una mezcla no muestra la barra de avance', async () => {
@@ -329,7 +329,7 @@ describe('AutoDjPanelComponent', () => {
       (el().querySelector('.me-gusto') as HTMLButtonElement).click();
       fixture.detectChanges();
 
-      expect(el().querySelector('.gracias')?.textContent).toContain('tendra en cuenta que te gusto');
+      expect(el().querySelector('.gracias')?.textContent).toContain('tendrá en cuenta que te gustó');
       expect(el().querySelector('.me-gusto')).toBeNull();
       expect(el().querySelector('.no-me-gusto')).toBeNull();
     });
@@ -339,7 +339,7 @@ describe('AutoDjPanelComponent', () => {
       autodj.rating.set('disliked');
       await crear();
 
-      expect(el().querySelector('.gracias')?.textContent).toContain('evitara mezclas parecidas');
+      expect(el().querySelector('.gracias')?.textContent).toContain('evitará mezclas parecidas');
     });
 
     it('muestra el error al valorar como alerta y mantiene los botones para reintentar', async () => {
@@ -371,10 +371,10 @@ describe('AutoDjPanelComponent', () => {
       await crear();
 
       const seccion = el().querySelector('.aprendido')?.textContent ?? '';
-      expect(seccion).toContain('Todavia usa los pesos por defecto');
+      expect(seccion).toContain('Todavía usa los pesos por defecto');
       expect(seccion).toContain('tempo 45%');
-      expect(seccion).toContain('armonia 40%');
-      expect(seccion).toContain('energia 15%');
+      expect(seccion).toContain('armonía 40%');
+      expect(seccion).toContain('energía 15%');
       expect(seccion).toContain('llevas 3');
     });
 
@@ -383,11 +383,11 @@ describe('AutoDjPanelComponent', () => {
       await crear();
 
       const seccion = el().querySelector('.aprendido')?.textContent ?? '';
-      expect(seccion).toContain('Segun tus 42 valoraciones');
+      expect(seccion).toContain('Según tus 42 valoraciones');
       expect(seccion).toContain('tempo 20%');
-      expect(seccion).toContain('armonia 62%');
-      expect(seccion).toContain('energia 18%');
-      expect(seccion).not.toContain('Todavia usa los pesos por defecto');
+      expect(seccion).toContain('armonía 62%');
+      expect(seccion).toContain('energía 18%');
+      expect(seccion).not.toContain('Todavía usa los pesos por defecto');
     });
 
     it('se actualiza cuando llegan pesos nuevos tras valorar', async () => {
@@ -397,7 +397,7 @@ describe('AutoDjPanelComponent', () => {
       autodj.weights.set({ weights: { tempo: 0.3, harmonic: 0.55, energy: 0.15 }, learned: true, samples: 10 });
       fixture.detectChanges();
 
-      expect(el().querySelector('.aprendido')?.textContent).toContain('armonia 55%');
+      expect(el().querySelector('.aprendido')?.textContent).toContain('armonía 55%');
     });
   });
 
@@ -422,7 +422,7 @@ describe('AutoDjPanelComponent', () => {
     it('con la cola vacia explica que la IA elegira las pistas', async () => {
       await crear();
 
-      expect(el().querySelector('.cola-vacia')?.textContent).toContain('el Auto-DJ elegira');
+      expect(el().querySelector('.cola-vacia')?.textContent).toContain('el Auto-DJ elegirá');
     });
 
     it('lista las pistas de la cola con su titulo', async () => {

@@ -164,7 +164,7 @@ describe('MidiMappingComponent', () => {
   describe('quitar y restablecer', () => {
     beforeEach(() => crear({ guardado: { 14: 'crossfader', 7: 'A.volume' } }));
 
-    it('Quitar elimina la asignacion de esa fila', () => {
+    it('Quitar elimina la asignación de esa fila', () => {
       boton('Crossfader', 'quitar')!.click();
       refrescar();
 

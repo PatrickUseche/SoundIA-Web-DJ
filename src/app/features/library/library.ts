@@ -24,7 +24,7 @@ export const REFRESCO_VOZ_MS = 5000;
 export type OrdenBiblioteca = 'recientes' | 'bpm-asc' | 'bpm-desc' | 'camelot' | 'titulo' | 'genero';
 
 export const ORDENES: { valor: OrdenBiblioteca; texto: string }[] = [
-  { valor: 'recientes', texto: 'Mas recientes' },
+  { valor: 'recientes', texto: 'Más recientes' },
   { valor: 'bpm-asc', texto: 'BPM de menor a mayor' },
   { valor: 'bpm-desc', texto: 'BPM de mayor a menor' },
   { valor: 'camelot', texto: 'Tonalidad (Camelot)' },
@@ -282,7 +282,7 @@ export class LibraryComponent implements OnInit {
           campo.value = actualizada.genre ?? '';
         },
         error: (err) => {
-          this.errorGenero.set(httpErrorMessage(err, `No se pudo guardar el genero de "${track.title}".`));
+          this.errorGenero.set(httpErrorMessage(err, `No se pudo guardar el género de "${track.title}".`));
           campo.value = track.genre ?? '';
         },
       });
@@ -342,7 +342,7 @@ export class LibraryComponent implements OnInit {
     this.avisosSubida.set(
       archivos
         .filter((a) => a.size > TAMANO_DE_AVISO_BYTES && a.size <= TAMANO_MAXIMO_BYTES)
-        .map((a) => `${a.name} pesa ${Math.round(a.size / (1024 * 1024))} MB: el servidor gratuito puede no aguantarlo; si falla, prueba con un MP3 mas liviano.`),
+        .map((a) => `${a.name} pesa ${Math.round(a.size / (1024 * 1024))} MB: el servidor gratuito puede no aguantarlo; si falla, prueba con un MP3 más liviano.`),
     );
     const total = archivos.length;
     const fallos: string[] = [];
@@ -353,7 +353,7 @@ export class LibraryComponent implements OnInit {
       const archivo = archivos[i];
       this.progresoSubida.set({ actual: i + 1, total, nombre: archivo.name });
       if (archivo.size > TAMANO_MAXIMO_BYTES) {
-        fallos.push(this.motivo(archivo, total, `supera el maximo de ${TAMANO_MAXIMO_BYTES / (1024 * 1024)} MB.`));
+        fallos.push(this.motivo(archivo, total, `supera el máximo de ${TAMANO_MAXIMO_BYTES / (1024 * 1024)} MB.`));
         continue;
       }
       try {

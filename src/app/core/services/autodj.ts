@@ -6,6 +6,7 @@ import { httpErrorMessage } from '../http-error-message';
 import { TransitionPlan, WeightsInfo } from '../models/autodj';
 import { Track } from '../models/track';
 import { AutoDjApiService } from './autodj-api';
+import { ChoiceRecorderService } from './choice-recorder';
 import { MixerService } from './mixer';
 import { SessionsApiService } from './sessions-api';
 import { TrackApiService } from './tracks';
@@ -43,6 +44,7 @@ export class AutoDjService {
   private readonly autodj = inject(AutoDjApiService);
   private readonly sessions = inject(SessionsApiService);
   private readonly tracks = inject(TrackApiService);
+  private readonly choices = inject(ChoiceRecorderService);
   private readonly runner = inject(TransitionRunnerService);
 
   readonly enabled = signal(false);
@@ -240,7 +242,10 @@ export class AutoDjService {
     if (sessionId !== null) {
       try {
         const item = await firstValueFrom(this.sessions.pollNext(sessionId));
-        return await firstValueFrom(this.tracks.get(item.trackId));
+        const chosen = await firstValueFrom(this.tracks.get(item.trackId));
+        // El DJ eligio esta pista: el motor aprende de en que se aparta de lo que la IA habria propuesto.
+        void this.choices.record(current, chosen, 'queue', this.played);
+        return chosen;
       } catch (error) {
         // Una cola vacia responde 404: no es un fallo, se sigue con las recomendaciones.
         if (!(error instanceof HttpErrorResponse && error.status === 404)) {
@@ -256,6 +261,7 @@ export class AutoDjService {
       }
       const track = await firstValueFrom(this.tracks.get(candidate.track.id));
       if (track.hasAudio) {
+        void this.choices.record(current, track, 'ai');
         return track;
       }
     }

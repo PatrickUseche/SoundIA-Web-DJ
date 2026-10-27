@@ -70,6 +70,25 @@ describe('StyleModelPanelComponent', () => {
     expect(texto()).toContain('· en uso');
   });
 
+  it('dice cuantas correcciones lleva el modelo de que pista sigue', async () => {
+    await crear(info({ nextTrack: { choices: 9, corrections: 6, required: 15, ready: false } }));
+
+    expect(texto()).toContain('Correcciones: 6 de 15 necesarias');
+    expect(texto()).toContain('Faltan 9.');
+  });
+
+  it('cuando el modelo de que pista sigue gana lo dice con su porcentaje', async () => {
+    await crear(listo({
+      enabled: true,
+      nextTrack: {
+        choices: 30, corrections: 20, required: 15, ready: true, inUse: true,
+        evaluation: { evaluated: 20, accuracy: 0.8, rulesAccuracy: 0, wins: true },
+      },
+    }));
+
+    expect(texto()).toContain('habría acertado 80 %: ya gana a las reglas · en uso');
+  });
+
   it('el interruptor enciende el modelo y muestra el nuevo estado', async () => {
     await crear(listo());
     expect(boton().getAttribute('aria-pressed')).toBe('false');

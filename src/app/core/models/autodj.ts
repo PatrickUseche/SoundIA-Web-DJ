@@ -104,6 +104,20 @@ export interface StyleModelInfo {
   evaluation?: { bars: StyleModelTarget; bassSwap: StyleModelTarget };
   /** Que parametros se estan usando ahora (encendido y ganando a las reglas). */
   inUse?: { bars: boolean; bassSwap: boolean };
+  /** Lo aprendido de que pista sigue, a partir de las veces que el DJ eligio una distinta de la que proponia la IA. */
+  nextTrack?: NextTrackModelInfo;
+}
+
+/** Estado del modelo de que pista sigue (parte de StyleModelInfo). */
+export interface NextTrackModelInfo {
+  /** Veces que el DJ eligio la siguiente pista (aceptando o no la propuesta). */
+  choices: number;
+  /** Las que se aparto de la propuesta de la IA: son las que ensenan. */
+  corrections: number;
+  required: number;
+  ready: boolean;
+  evaluation?: { evaluated: number; accuracy: number | null; rulesAccuracy: number | null; wins: boolean };
+  inUse?: boolean;
 }
 
 /** Respuesta de POST /autodj/timing: lo que el motor lleva aprendido de cuando mezclar. */

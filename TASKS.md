@@ -88,6 +88,7 @@ Arquitectura acordada con el usuario (2026-10-24): este frontend en Cloudflare P
 - [x] feat(app): indicador «Motor IA» en el menú (activo, sin respuesta o sin datos) con `GET /engine/status`, consultado cada 30 s con la pestaña a la vista [9.4]
 - [x] feat(learning): panel «Modelo de tu estilo» en Grabaciones (mezclas buenas de 20 necesarias, en qué parámetros gana a las reglas, interruptor «Usar mi estilo») y aviso en el Auto-DJ cuando la mezcla usa el estilo del DJ [9.5]
 - [x] feat(library): etiqueta «tempo variable» en la biblioteca y explicación en el Auto-DJ de por qué la mezcla es un fundido [9.6]
+- [x] feat(autodj): el Auto-DJ registra qué pista elige el DJ en la cola frente a la que proponía la IA (`ChoiceRecorderService`) y el panel del modelo muestra las correcciones que lleva [9.7]
 
 ## Fase 10 — Aprender desde la nube con el repertorio del DJ (en curso)
 

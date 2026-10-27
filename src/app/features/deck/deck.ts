@@ -94,7 +94,7 @@ export class DeckComponent {
     if (match === null) {
       this.mensajeSync.set('Carga una pista con BPM en los dos decks para sincronizar.');
     } else if (!match.feasible) {
-      this.mensajeSync.set('Los tempos estan demasiado lejos: el pitch llego al limite de +-8 %.');
+      this.mensajeSync.set('Los tempos están demasiado lejos: el pitch llegó al límite de +-8 %.');
     } else {
       this.mensajeSync.set(null);
     }
@@ -115,7 +115,7 @@ export class DeckComponent {
   }
 
   /**
-   * Fija como primer tiempo el punto donde esta la pista ahora. Se puede pausar o buscar para acertar; el motor lo
+   * Fija como primer tiempo el punto donde está la pista ahora. Se puede pausar o buscar para acertar; el motor lo
    * ajusta al pulso mas cercano, asi que basta con estar a menos de medio pulso.
    */
   marcarElUno(): void {

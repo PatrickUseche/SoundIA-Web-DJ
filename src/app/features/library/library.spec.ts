@@ -71,7 +71,7 @@ describe('LibraryComponent', () => {
 
       await responderLista([]);
 
-      expect(texto()).toContain('Todavia no hay pistas');
+      expect(texto()).toContain('Todavía no hay pistas');
     });
 
     it('muestra una fila por pista con BPM, tonalidad, Camelot y duracion', async () => {
@@ -377,7 +377,7 @@ describe('LibraryComponent', () => {
       await responderLista([pista({ id: 1, title: 'Tema uno', genre: 'salsa' })]);
 
       expect(campo(filas()[0]).value).toBe('salsa');
-      expect(campo(filas()[0]).getAttribute('aria-label')).toBe('Genero de Tema uno');
+      expect(campo(filas()[0]).getAttribute('aria-label')).toBe('Género de Tema uno');
       expect(el().querySelectorAll('#generos-sugeridos option').length).toBeGreaterThan(4);
     });
 
@@ -489,7 +489,7 @@ describe('LibraryComponent', () => {
       botonEn(filas()[0], 'Borrar').click();
       await esperar();
 
-      expect(texto()).toContain('Borrar tambien su audio');
+      expect(texto()).toContain('Borrar también su audio');
       http.expectNone(`${TRACKS}/7`);
     });
 
@@ -502,7 +502,7 @@ describe('LibraryComponent', () => {
       botonEn(filas()[0], 'No').click();
       await esperar();
 
-      expect(texto()).not.toContain('Borrar tambien su audio');
+      expect(texto()).not.toContain('Borrar también su audio');
       expect(filas().length).toBe(1);
       expect(botonEn(filas()[0], 'Borrar')).toBeTruthy();
     });
@@ -894,7 +894,7 @@ describe('LibraryComponent', () => {
       await esperar();
       await responder(pista({ id: 1, title: 'normal.mp3' }));
 
-      expect(el().querySelector('.subida-errores')?.textContent).toContain('enorme.wav: supera el maximo de 50 MB');
+      expect(el().querySelector('.subida-errores')?.textContent).toContain('enorme.wav: supera el máximo de 50 MB');
       expect(el().querySelector('.subida-ok')?.textContent).toContain('1 de 2 pistas analizadas.');
     });
 
@@ -908,7 +908,7 @@ describe('LibraryComponent', () => {
       await esperar();
 
       http.expectNone(`${TRACKS}/analyze`);
-      expect(el().querySelector('.subida-error')?.textContent).toContain('supera el maximo de 50 MB');
+      expect(el().querySelector('.subida-error')?.textContent).toContain('supera el máximo de 50 MB');
     });
   });
 

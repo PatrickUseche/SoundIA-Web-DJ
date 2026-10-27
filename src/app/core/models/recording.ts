@@ -24,7 +24,7 @@ export interface SavedRecording {
   features: { overlapBars: number; crossfaderShape: string | null; bassSwapAt: number | null };
 }
 
-/** Revision del DJ de una grabacion: solo las `good` deberian usarse para entrenar. */
+/** Revision del DJ de una grabacion: solo las `good` deberían usarse para entrenar. */
 export type RecordingQuality = 'unreviewed' | 'good' | 'discard';
 
 /** Rasgos que el motor calcula de cada grabacion (los que se muestran al revisarla). */

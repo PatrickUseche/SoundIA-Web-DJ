@@ -66,7 +66,7 @@ describe('RecordingsComponent', () => {
       http.expectOne(TRACKS).flush({ tracks: [] });
       await esperar();
 
-      expect(texto()).toContain('Todavia no hay grabaciones');
+      expect(texto()).toContain('Todavía no hay grabaciones');
       expect(texto()).toContain('modo aprendizaje');
     });
 
@@ -147,7 +147,7 @@ describe('RecordingsComponent', () => {
       http.expectOne(TRACKS).flush({ tracks: [] });
       await esperar();
 
-      expect(texto()).toContain('Ninguna grabacion coincide con el filtro');
+      expect(texto()).toContain('Ninguna grabación coincide con el filtro');
     });
   });
 
@@ -261,7 +261,7 @@ describe('RecordingsComponent', () => {
 
       expect(filas().length).toBe(0);
       expect(el().querySelector('.resumen')?.textContent).toContain('Total: 0');
-      expect(el().querySelector('.grabaciones-ok')?.textContent).toContain('Grabacion borrada');
+      expect(el().querySelector('.grabaciones-ok')?.textContent).toContain('Grabación borrada');
     });
 
     it('con No se queda como estaba', async () => {
@@ -347,7 +347,7 @@ describe('RecordingsComponent', () => {
       fixture.detectChanges();
 
       http.expectNone(`${RECORDINGS}/import`);
-      expect(el().querySelector('.grabaciones-error')?.textContent).toContain('no es un JSON valido');
+      expect(el().querySelector('.grabaciones-error')?.textContent).toContain('no es un JSON válido');
     });
 
     it('si el motor rechaza la copia muestra su mensaje', async () => {

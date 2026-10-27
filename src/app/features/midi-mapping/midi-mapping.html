@@ -7,8 +7,8 @@
         </p>
     } @else {
         <p>
-            Pulsa <strong>Asignar</strong> en un control y mueve el fader, la perilla o el boton del aparato que quieres
-            usar para el. La asignacion se guarda en este navegador.
+            Pulsa <strong>Asignar</strong> en un control y mueve el fader, la perilla o el botón del aparato que quieres
+            usar para él. La asignación se guarda en este navegador.
         </p>
     }
 
@@ -22,7 +22,7 @@
             <tr>
                 <th scope="col">Control</th>
                 <th scope="col">Asignado a</th>
-                <th scope="col">Accion</th>
+                <th scope="col">Acción</th>
             </tr>
         </thead>
         <tbody>
@@ -33,12 +33,12 @@
                     <td>
                         <button type="button" class="asignar" (click)="asignar(control)"
                             [attr.aria-pressed]="mapper.learning() === control"
-                            [attr.aria-label]="(mapper.learning() === control ? 'Cancelar la asignacion de ' : 'Asignar ') + etiqueta(control)">
+                            [attr.aria-label]="(mapper.learning() === control ? 'Cancelar la asignación de ' : 'Asignar ') + etiqueta(control)">
                             {{ mapper.learning() === control ? 'Cancelar' : 'Asignar' }}
                         </button>
                         @if (mapper.assignedTo(control) !== null) {
                             <button type="button" class="quitar" (click)="quitar(control)"
-                                [attr.aria-label]="'Quitar la asignacion de ' + etiqueta(control)">
+                                [attr.aria-label]="'Quitar la asignación de ' + etiqueta(control)">
                                 Quitar
                             </button>
                         }

@@ -84,12 +84,12 @@
     } @else if (cargando() && tracks().length === 0) {
         <p>Cargando biblioteca...</p>
     } @else if (tracks().length === 0) {
-        <p>Todavia no hay pistas. Sube una para analizarla.</p>
+        <p>Todavía no hay pistas. Sube una para analizarla.</p>
     } @else {
         <div class="filtros" role="search">
             <label>
                 Buscar
-                <input type="search" [value]="busqueda()" (input)="alBuscarTexto($event)" placeholder="Titulo de la pista"
+                <input type="search" [value]="busqueda()" (input)="alBuscarTexto($event)" placeholder="Título de la pista"
                     aria-label="Buscar pista" />
             </label>
             <label>
@@ -113,13 +113,13 @@
             <caption>Pistas analizadas</caption>
             <thead>
                 <tr>
-                    <th scope="col">Titulo</th>
+                    <th scope="col">Título</th>
                     <th scope="col">BPM</th>
                     <th scope="col">Tonalidad</th>
                     <th scope="col">Camelot</th>
                     <th scope="col">Genero</th>
-                    <th scope="col">Energia</th>
-                    <th scope="col">Duracion</th>
+                    <th scope="col">Energía</th>
+                    <th scope="col">Duración</th>
                     <th scope="col">Cargar</th>
                 </tr>
             </thead>
@@ -129,7 +129,7 @@
                         <td>
                             {{ pista.title }}
                             @if (analizandoVoz(pista)) {
-                                <span class="analizando-voz" title="Se esta analizando donde acaba la voz para no cortar la letra al mezclar">analizando voz</span>
+                                <span class="analizando-voz" title="Se está analizando dónde acaba la voz para no cortar la letra al mezclar">analizando voz</span>
                             }
                             @if (deckDe(pista); as deck) {
                                 <span class="etiqueta-deck" [attr.data-deck]="deck" [title]="'Cargada en el deck ' + deck">Deck {{ deck }}</span>
@@ -144,7 +144,7 @@
                         <td>
                             <input type="text" class="genero" list="generos-sugeridos" maxlength="40"
                                 [value]="pista.genre ?? ''" (change)="cambiarGenero(pista, $event)"
-                                [attr.aria-label]="'Genero de ' + pista.title" placeholder="sin genero" />
+                                [attr.aria-label]="'Género de ' + pista.title" placeholder="sin género" />
                         </td>
                         <td>
                             <meter min="0" max="1" [value]="pista.energy" [attr.aria-label]="'Energia de ' + pista.title">
@@ -161,7 +161,7 @@
                                     {{ cargandoDeck() === 'B' ? 'Cargando...' : 'Deck B' }}
                                 </button>
                             } @else if (!pista.hasAudio) {
-                                <span class="sin-audio" title="Se analizo antes de guardar el audio: vuelve a subirla">sin audio</span>
+                                <span class="sin-audio" title="Se analizó antes de guardar el audio: vuelve a subirla">sin audio</span>
                             }
                             <button type="button" (click)="encolar(pista)" [disabled]="!pista.hasAudio"
                                 [attr.aria-label]="'Agregar ' + pista.title + ' a la cola'">
@@ -169,7 +169,7 @@
                             </button>
                             @if (confirmandoBorrado() === pista.id) {
                                 <span class="confirmar-borrado" role="group" [attr.aria-label]="'Confirmar el borrado de ' + pista.title">
-                                    ¿Borrar tambien su audio?
+                                    ¿Borrar también su audio?
                                     <button type="button" (click)="borrar(pista)">Si, borrar</button>
                                     <button type="button" (click)="cancelarBorrado()">No</button>
                                 </span>

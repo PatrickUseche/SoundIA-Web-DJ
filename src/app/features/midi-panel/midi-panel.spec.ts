@@ -60,7 +60,7 @@ describe('MidiPanelComponent', () => {
 
     await conectar();
 
-    expect(el().querySelector('[role="alert"]')?.textContent).toContain('Se denego el acceso');
+    expect(el().querySelector('[role="alert"]')?.textContent).toContain('Se denegó el acceso');
     expect(boton('Reintentar')).toBeDefined();
   });
 

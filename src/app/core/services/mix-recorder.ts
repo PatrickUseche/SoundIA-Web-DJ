@@ -245,7 +245,7 @@ export class MixRecorderService {
           const wait = this.retryMs[Math.min(this.attempts, this.retryMs.length - 1)];
           this.attempts++;
           this._message.set({
-            text: `El servidor no responde: ${this.pending.length} mezcla(s) esperan para guardarse. Se reintenta solo; no cierres la pagina.`,
+            text: `El servidor no responde: ${this.pending.length} mezcla(s) esperan para guardarse. Se reintenta solo; no cierres la página.`,
             error: true,
           });
           this.retryTimer = setTimeout(() => this.flush(), wait);

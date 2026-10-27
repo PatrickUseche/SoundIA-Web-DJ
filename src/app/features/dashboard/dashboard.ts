@@ -25,7 +25,7 @@ const TEXTO_ESTADO: Record<ConnectionState, string> = {
   connecting: 'Conectando...',
   open: 'En vivo',
   reconnecting: 'Reconectando...',
-  closed: 'Sin conexion en vivo',
+  closed: 'Sin conexión en vivo',
 };
 
 @Component({
@@ -89,7 +89,7 @@ export class DashboardComponent implements OnInit {
         },
         error: (err) => {
           console.error('[API Gateway] No se pudo cargar el historial:', err);
-          this.errorHistorial.set('No se pudo cargar el historial. Verifica que el API este activo.');
+          this.errorHistorial.set('No se pudo cargar el historial. Verifica que el API esté activo.');
           this.cargandoHistorial.set(false);
         }
       });
@@ -148,7 +148,7 @@ export class DashboardComponent implements OnInit {
       [registro, ...actuales.filter((log) => log.id !== registro.id)].slice(0, MAX_HISTORIAL),
     );
     this.ultimaDecision.set({ status: decision.status, action: decision.action });
-    this.agregarAlFeed(`IA (${decision.status}): ${decision.action ?? 'Sin decision de la IA'}`);
+    this.agregarAlFeed(`IA (${decision.status}): ${decision.action ?? 'Sin decisión de la IA'}`);
   }
 
   private agregarAlFeed(texto: string): void {

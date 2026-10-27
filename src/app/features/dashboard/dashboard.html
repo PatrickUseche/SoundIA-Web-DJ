@@ -12,9 +12,9 @@
     <!-- Bloque condicional: Solo se renderiza si Django responde -->
     @if (ultimaDecision(); as decision) {
         <div class="panel decision">
-            <h3>Decision del Motor IA (Django)</h3>
+            <h3>Decisión del Motor IA (Django)</h3>
             <p><strong>Estado:</strong> {{decision.status}}</p>
-            <p><strong>Accion Ejecutada:</strong> {{ decision.action ?? 'Sin decision de la IA' }}</p>
+            <p><strong>Acción Ejecutada:</strong> {{ decision.action ?? 'Sin decisión de la IA' }}</p>
         </div>
     }
 
@@ -27,20 +27,20 @@
         }
     </ul>
 
-    <h3>Historial en PostgreSQL (Via Spring Boot)</h3>
+    <h3>Historial en PostgreSQL (Vía Spring Boot)</h3>
     @if (errorHistorial(); as mensaje) {
         <p role="alert" class="alerta">{{ mensaje }}</p>
     } @else if (cargandoHistorial() && logs().length === 0) {
         <p>Cargando historial...</p>
     } @else if (logs().length === 0) {
-        <p>Sin eventos registrados todavia.</p>
+        <p>Sin eventos registrados todavía.</p>
     }
     <ul>
         @for (log of logs(); track log.id) {
             <li class="historial">
                 <strong>Control:</strong> {{ log.controlId }} |
                 <strong>Valor:</strong> {{ log.value }} |
-                <strong>Accion IA:</strong> {{ log.action ?? 'Sin decision de la IA' }} |
+                <strong>Acción IA:</strong> {{ log.action ?? 'Sin decisión de la IA' }} |
                 <strong>Fecha:</strong> {{ log.createdIn }}
             </li>
         }

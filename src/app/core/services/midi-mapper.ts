@@ -80,7 +80,7 @@ export class MidiMapperService {
     return entry ? parseMappingKey(entry[0]) : null;
   }
 
-  /** Quita la asignacion de un control de pantalla. */
+  /** Quita la asignación de un control de pantalla. */
   clear(control: MixerControl): void {
     const next = { ...this.mapping() };
     for (const [key, assigned] of Object.entries(next)) {
@@ -108,7 +108,7 @@ export class MidiMapperService {
       return;
     }
 
-    // Primero la asignacion de ese canal y, si no la hay, la de cualquier canal (las guardadas antes del canal).
+    // Primero la asignación de ese canal y, si no la hay, la de cualquier canal (las guardadas antes del canal).
     const mapping = this.mapping();
     const control = mapping[mappingKey(event.controlId, event.channel)] ?? mapping[mappingKey(event.controlId)];
     if (control !== undefined && this.mixer.supported) {

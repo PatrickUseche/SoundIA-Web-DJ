@@ -36,7 +36,7 @@ export class TransitionRunnerService {
   private pendingDeck: Deck | null = null;
 
   readonly running = signal(false);
-  /** Avance de la transicion en curso, de 0 a 1. */
+  /** Avance de la transición en curso, de 0 a 1. */
   readonly progress = signal(0);
 
   /**
@@ -48,7 +48,7 @@ export class TransitionRunnerService {
     const outgoing = this.mixer.deck(from);
     const incoming = this.mixer.deck(to);
     if (!outgoing.loaded || !incoming.loaded) {
-      throw new Error('Los dos decks necesitan una pista cargada para hacer la transicion.');
+      throw new Error('Los dos decks necesitan una pista cargada para hacer la transición.');
     }
 
     // Se reanuda el contexto antes de calcular nada: la alineacion depende de en que punto va la saliente.

@@ -15,13 +15,13 @@ export class LearningPanelComponent {
 
   protected textoEstado(): string {
     if (!this.recorder.supported) {
-      return 'Este navegador no puede reproducir audio, asi que no hay mezclas que grabar.';
+      return 'Este navegador no puede reproducir audio, así que no hay mezclas que grabar.';
     }
     if (!this.recorder.enabled()) {
       return 'Apagado: no se graba nada.';
     }
     return this.recorder.recording()
-      ? 'Mezcla en curso: se esta grabando.'
+      ? 'Mezcla en curso: se está grabando.'
       : 'Esperando una mezcla: pon una pista, deja que suene sola y mezcla la siguiente.';
   }
 }

@@ -132,7 +132,7 @@ export class AutoDjService {
       this.weights.set(info);
       this.rating.set(liked ? 'liked' : 'disliked');
     } catch (error) {
-      this.feedbackError.set(httpErrorMessage(error, 'No se pudo enviar la valoracion.'));
+      this.feedbackError.set(httpErrorMessage(error, 'No se pudo enviar la valoración.'));
     } finally {
       this.sending = false;
     }
@@ -204,7 +204,7 @@ export class AutoDjService {
   private async prepareNext(current: Deck): Promise<void> {
     const currentTrack = current.track();
     if (!currentTrack) {
-      this.message.set('La pista que suena no esta analizada; el Auto-DJ necesita su BPM y tonalidad.');
+      this.message.set('La pista que suena no está analizada; el Auto-DJ necesita su BPM y tonalidad.');
       this.retryAt = Date.now() + AUTODJ_RETRY_MS;
       return;
     }
@@ -214,7 +214,7 @@ export class AutoDjService {
     try {
       const track = await this.chooseNextTrack(currentTrack);
       if (!track) {
-        this.message.set('No hay mas pistas para continuar. Agrega alguna a la cola o sube mas a la biblioteca.');
+        this.message.set('No hay más pistas para continuar. Agrega alguna a la cola o sube más a la biblioteca.');
         this.status.set('esperando');
         this.retryAt = Date.now() + AUTODJ_RETRY_MS;
         return;
@@ -281,7 +281,7 @@ export class AutoDjService {
         this.status.set(this.enabled() ? 'esperando' : 'off');
       }
     } catch (error) {
-      this.message.set(httpErrorMessage(error, 'La transicion fallo.'));
+      this.message.set(httpErrorMessage(error, 'La transición falló.'));
       this.status.set('error');
       this.next.set(null);
       this.retryAt = Date.now() + AUTODJ_RETRY_MS;

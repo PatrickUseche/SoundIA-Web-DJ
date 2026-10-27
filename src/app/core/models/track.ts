@@ -28,6 +28,8 @@ export interface Track {
   grid?: { offset: number; downbeat: number; confidence: number; manual?: boolean } | null;
   /** Genero de la pista (merengue, bachata, salsa...), en minusculas; vacio si no se ha puesto. */
   genre?: string;
+  /** La pista no mantiene un tempo fijo (musica en vivo): no se puede igualar a un BPM unico, asi que se mezcla con fundido. */
+  variableTempo?: boolean;
   /** Si el backend guardo el audio original (las pistas analizadas antes de guardarlo no lo tienen). */
   hasAudio: boolean;
   createdAt: string;

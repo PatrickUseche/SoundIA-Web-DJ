@@ -81,6 +81,8 @@ export interface TransitionPlan {
   mixOutAdvance?: number;
   /** De donde salen los compases y el cambio de graves: "model" si se uso el estilo aprendido del DJ, "rules" si no. */
   source?: 'model' | 'rules';
+  /** Alguna de las dos pistas no tiene un tempo fijo: por eso la transicion es un fundido y no una mezcla igualada. */
+  variableTempo?: boolean;
   learnedBars?: boolean;
   learnedBassSwap?: boolean;
 }

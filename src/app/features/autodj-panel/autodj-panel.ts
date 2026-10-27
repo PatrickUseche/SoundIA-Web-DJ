@@ -60,6 +60,7 @@ export class AutoDjPanelComponent implements OnInit {
       camelot: track.camelot,
       deck: preparada.deck,
       estilo: describirEstilo(plan),
+      tempoVariable: plan.variableTempo === true,
       compatibilidad: Math.round(plan.compatibility.score * 100),
       adelanto: Math.round(plan.mixOutAdvance ?? 0),
       conTuEstilo: plan.source === 'model',

@@ -34,6 +34,9 @@
                 ({{ formatBpm(siguiente.bpm) }} BPM, {{ siguiente.camelot }})
             </p>
             <p>{{ siguiente.estilo }}, compatibilidad {{ siguiente.compatibilidad }}%</p>
+            @if (siguiente.tempoVariable) {
+                <p class="adelanto">Una de las pistas tiene el tempo variable (en vivo): no se iguala el BPM, se hace un fundido.</p>
+            }
             @if (siguiente.conTuEstilo) {
                 <p class="adelanto">
                     Esta mezcla usa tu estilo@if (siguiente.compasesAprendidos) { ({{ siguiente.compasesAprendidos }}, como sueles mezclar esta combinación) }.

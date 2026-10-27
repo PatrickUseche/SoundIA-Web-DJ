@@ -64,6 +64,17 @@ describe('LibraryComponent', () => {
 
   afterEach(() => http?.verify());
 
+  describe('tempo variable', () => {
+    it('marca las pistas cuyo tempo no es fijo y solo esas', async () => {
+      await crear();
+      await responderLista([pista({ variableTempo: true }), pista({ id: 2, title: 'Tema dos' })]);
+
+      const filas = Array.from(el().querySelectorAll('tbody tr'));
+      expect(filas[0].textContent).toContain('tempo variable');
+      expect(filas[1].textContent).not.toContain('tempo variable');
+    });
+  });
+
   describe('listado', () => {
     it('muestra que esta cargando y luego el estado vacio', async () => {
       crear();

@@ -168,6 +168,14 @@ describe('AutoDjPanelComponent', () => {
       expect(el().querySelector('.siguiente')?.textContent).toContain('8 compases');
     });
 
+    it('explica por que es un fundido cuando una pista tiene tempo variable', async () => {
+      autodj.enabled.set(true);
+      autodj.next.set({ track: pista(2), plan: plan({ style: 'fade', bars: 2, variableTempo: true }), deck: 'B' });
+      await crear();
+
+      expect(el().querySelector('.siguiente')?.textContent).toContain('tempo variable');
+    });
+
     it('con las reglas no habla del estilo del DJ', async () => {
       autodj.enabled.set(true);
       autodj.next.set({ track: pista(2), plan: plan({ source: 'rules' }), deck: 'B' });

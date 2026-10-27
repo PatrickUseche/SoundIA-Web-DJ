@@ -138,7 +138,12 @@
                                 <span class="etiqueta-compatible" title="Mezcla bien con una pista cargada">compatible</span>
                             }
                         </td>
-                        <td>{{ formatBpm(pista.bpm) }}</td>
+                        <td>
+                            {{ formatBpm(pista.bpm) }}
+                            @if (pista.variableTempo) {
+                                <span class="etiqueta-compatible" title="El tempo de esta pista no es fijo (en vivo): se mezcla con fundido, sin igualar el BPM">tempo variable</span>
+                            }
+                        </td>
                         <td>{{ pista.key }}</td>
                         <td>{{ pista.camelot }}</td>
                         <td>

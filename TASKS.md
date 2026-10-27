@@ -87,6 +87,7 @@ Arquitectura acordada con el usuario (2026-10-24): este frontend en Cloudflare P
 - [x] perf(app): carga diferida de las pantallas (login, DJ, grabaciones y telemetría con `loadComponent`): el paquete inicial baja de 414,8 a 319,4 kB (113,2 a 88,4 kB al transferirse, medido con `ng build`) y el mezclador (73,5 kB) solo se baja al abrir /dj [9.3]
 - [x] feat(app): indicador «Motor IA» en el menú (activo, sin respuesta o sin datos) con `GET /engine/status`, consultado cada 30 s con la pestaña a la vista [9.4]
 - [x] feat(learning): panel «Modelo de tu estilo» en Grabaciones (mezclas buenas de 20 necesarias, en qué parámetros gana a las reglas, interruptor «Usar mi estilo») y aviso en el Auto-DJ cuando la mezcla usa el estilo del DJ [9.5]
+- [x] feat(library): etiqueta «tempo variable» en la biblioteca y explicación en el Auto-DJ de por qué la mezcla es un fundido [9.6]
 
 ## Fase 10 — Aprender desde la nube con el repertorio del DJ (en curso)
 

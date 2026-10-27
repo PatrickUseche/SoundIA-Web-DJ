@@ -159,6 +159,23 @@ describe('AutoDjPanelComponent', () => {
       expect(el().querySelector('.siguiente')?.textContent).toContain('adelanta sus mezclas 40 s');
     });
 
+    it('avisa cuando la mezcla usa el estilo aprendido del DJ y dice los compases', async () => {
+      autodj.enabled.set(true);
+      autodj.next.set({ track: pista(2), plan: plan({ source: 'model', learnedBars: true, bars: 8 }), deck: 'B' });
+      await crear();
+
+      expect(el().querySelector('.siguiente')?.textContent).toContain('Esta mezcla usa tu estilo');
+      expect(el().querySelector('.siguiente')?.textContent).toContain('8 compases');
+    });
+
+    it('con las reglas no habla del estilo del DJ', async () => {
+      autodj.enabled.set(true);
+      autodj.next.set({ track: pista(2), plan: plan({ source: 'rules' }), deck: 'B' });
+      await crear();
+
+      expect(texto()).not.toContain('usa tu estilo');
+    });
+
     it('si aun no aprendio nada no menciona el adelanto', async () => {
       autodj.enabled.set(true);
       autodj.next.set({ track: pista(2), plan: plan({ mixOutAdvance: 0 }), deck: 'B' });

@@ -1,0 +1,36 @@
+<section class="modelo-estilo" aria-labelledby="titulo-modelo-estilo">
+    <h3 id="titulo-modelo-estilo">Modelo de tu estilo</h3>
+    @if (modelo.error(); as texto) {
+        <p role="alert" class="alerta">{{ texto }}</p>
+    }
+    @if (modelo.info(); as info) {
+        <p class="ayuda">
+            La IA aprende solo de tus mezclas buenas, nunca de las de otros DJ. Mezclas buenas:
+            <strong>{{ info.goodRecordings }} de {{ info.required }}</strong> necesarias.
+        </p>
+        <progress [value]="progreso()" [max]="info.required" aria-label="Mezclas buenas para entrenar el modelo"></progress>
+        @if (!info.ready) {
+            <p class="ayuda">
+                Faltan {{ faltan() }} mezclas buenas para poder evaluar el modelo. Hasta entonces el Auto-DJ usa sus reglas.
+            </p>
+        } @else {
+            <ul class="parametros-modelo">
+                @for (parametro of parametros(); track parametro.nombre) {
+                    <li [attr.data-gana]="parametro.gana">
+                        {{ parametro.nombre }}: {{ parametro.texto }}@if (parametro.enUso) { · en uso }
+                    </li>
+                }
+            </ul>
+        }
+        <div class="interruptor-modelo">
+            <button type="button" (click)="alternar()" [attr.aria-pressed]="info.enabled" [disabled]="modelo.cambiando()">
+                Usar mi estilo: {{ info.enabled ? 'activado' : 'apagado' }}
+            </button>
+            <span class="ayuda">
+                Aunque lo actives, solo cambia lo que gana a las reglas. Apágalo para volver a las reglas al instante.
+            </span>
+        </div>
+    } @else if (!modelo.error()) {
+        <p>Cargando el modelo...</p>
+    }
+</section>

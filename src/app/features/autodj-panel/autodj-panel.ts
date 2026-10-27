@@ -62,6 +62,8 @@ export class AutoDjPanelComponent implements OnInit {
       estilo: describirEstilo(plan),
       compatibilidad: Math.round(plan.compatibility.score * 100),
       adelanto: Math.round(plan.mixOutAdvance ?? 0),
+      conTuEstilo: plan.source === 'model',
+      compasesAprendidos: plan.learnedBars ? `${plan.bars} compases` : null,
     };
   });
 

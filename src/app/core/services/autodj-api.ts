@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { MixTimingInfo, NextTracksResponse, TransitionPlan, WeightsInfo } from '../models/autodj';
+import { MixTimingInfo, NextTracksResponse, StyleModelInfo, TransitionPlan, WeightsInfo } from '../models/autodj';
 
 /** Recomendaciones de la IA: que pista sigue y como mezclarla. */
 @Injectable({ providedIn: 'root' })
@@ -39,6 +39,16 @@ export class AutoDjApiService {
   /** Los pesos de la puntuacion que usa el motor ahora. */
   weights(): Observable<WeightsInfo> {
     return this.http.get<WeightsInfo>(`${this.baseUrl}/weights`);
+  }
+
+  /** El modelo del estilo del DJ: mezclas buenas que hay y que faltan, su evaluacion y si esta encendido. */
+  styleModel(): Observable<StyleModelInfo> {
+    return this.http.get<StyleModelInfo>(`${this.baseUrl}/style-model`);
+  }
+
+  /** Enciende o apaga el modelo; apagado, el motor usa solo sus reglas. */
+  setStyleModel(enabled: boolean): Observable<StyleModelInfo> {
+    return this.http.post<StyleModelInfo>(`${this.baseUrl}/style-model`, { enabled });
   }
 
   /** Plan de transicion entre dos pistas: estilo, compases, puntos de mezcla y curvas de EQ. */

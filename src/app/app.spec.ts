@@ -1,11 +1,13 @@
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { signal } from '@angular/core';
 import { Router, provideRouter } from '@angular/router';
 import { routes } from './app.routes';
 import { App } from './app';
 import { AUTH_STORAGE, AUTH_STORAGE_KEY, AuthService } from './core/services/auth';
 import { authGuard } from './core/services/auth-guard';
+import { EngineStatusService } from './core/services/engine-status';
 import { KeepAliveService } from './core/services/keep-alive';
 import { WakeNoticeService } from './core/services/wake-notice';
 import { environment } from '../environments/environment';
@@ -75,6 +77,38 @@ describe('App', () => {
     fixture.detectChanges();
     expect(html.querySelector('.estado-servidor')?.textContent?.trim()).toBe('Sin respuesta del servidor');
     expect(html.querySelector('.estado-servidor')?.getAttribute('data-estado')).toBe('caido');
+  });
+
+  it('muestra el estado del motor de IA con texto ademas del color y lo oculta si no se sabe', async () => {
+    const estado = signal<'UNKNOWN' | 'UP' | 'DOWN' | null>(null);
+    TestBed.overrideProvider(EngineStatusService, { useValue: { state: estado, start: () => undefined } });
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const html = fixture.nativeElement as HTMLElement;
+    const motor = () => html.querySelector('.estado-motor');
+    expect(motor()).toBeNull();
+
+    estado.set('UP');
+    fixture.detectChanges();
+    expect(motor()?.textContent?.trim()).toBe('Motor IA activo');
+    expect(motor()?.getAttribute('data-estado')).toBe('UP');
+
+    estado.set('DOWN');
+    fixture.detectChanges();
+    expect(motor()?.textContent?.trim()).toBe('Motor IA sin respuesta: puede estar despertando');
+    expect(motor()?.getAttribute('data-estado')).toBe('DOWN');
+
+    estado.set('UNKNOWN');
+    fixture.detectChanges();
+    expect(motor()?.textContent?.trim()).toBe('Motor IA: sin datos todavía');
+  });
+
+  it('empieza a consultar el estado del motor al abrirse', () => {
+    const empezar = vi.spyOn(TestBed.inject(EngineStatusService), 'start');
+
+    TestBed.createComponent(App);
+
+    expect(empezar).toHaveBeenCalled();
   });
 
   it('empieza a mantener despiertos los servidores al abrirse', () => {

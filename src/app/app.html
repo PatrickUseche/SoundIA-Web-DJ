@@ -11,6 +11,16 @@
       {{ aviso.reachable() ? 'Servidores listos' : 'Sin respuesta del servidor' }}
     </span>
   }
+  @if (motor.state(); as estadoMotor) {
+    <!-- Dormido y caido se ven igual desde aqui: el estado es lo ultimo que le paso al Auto-DJ con el motor. -->
+    <span class="estado-motor" [attr.data-estado]="estadoMotor" role="status">
+      @switch (estadoMotor) {
+        @case ('UP') { Motor IA activo }
+        @case ('DOWN') { Motor IA sin respuesta: puede estar despertando }
+        @default { Motor IA: sin datos todavía }
+      }
+    </span>
+  }
   @if (auth.enabled() && auth.authenticated()) {
     <button type="button" class="cerrar-sesion" (click)="cerrarSesion()">Cerrar sesión</button>
   }

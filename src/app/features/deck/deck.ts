@@ -43,8 +43,11 @@ export class DeckComponent {
   protected readonly fijandoUno = signal(false);
 
   protected readonly progreso = computed(() => {
+    // La posicion se lee siempre: la duracion no es una señal, y si solo se leyera con pista cargada, un deck creado
+    // vacio nunca se suscribiria a la posicion y la barra se quedaria en 0.
+    const position = this.position();
     const duration = this.deck().duration;
-    return duration > 0 ? this.position() / duration : 0;
+    return duration > 0 ? position / duration : 0;
   });
 
   /** Segundos que le quedan a la pista; con poco tiempo se resalta para avisar de que hay que preparar la siguiente. */

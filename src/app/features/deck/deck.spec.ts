@@ -1,7 +1,9 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { By } from '@angular/platform-browser';
 import { DeckComponent } from './deck';
+import { WaveformComponent } from '../../shared/waveform/waveform';
 import { DeckId } from '../../core/audio/deck';
 import { MixerService } from '../../core/services/mixer';
 import { Track } from '../../core/models/track';
@@ -222,6 +224,26 @@ describe('DeckComponent', () => {
       fixture.detectChanges();
 
       expect(el().querySelector('.reloj')?.textContent).toContain('1:05 / 1:40');
+    });
+  });
+
+  describe('progreso de la forma de onda', () => {
+    it('avanza aunque el componente se creara con el deck vacio', async () => {
+      vi.useFakeTimers();
+      crear(); // deck vacio: la duracion es 0 al crearse
+      fixture.detectChanges();
+      mixer.loadBuffer('A', buffer(100), pista());
+      fixture.detectChanges();
+      boton('Play').click();
+      await vi.advanceTimersByTimeAsync(0);
+      ctx.currentTime = 50;
+
+      await vi.advanceTimersByTimeAsync(100);
+      fixture.detectChanges();
+
+      const onda = fixture.debugElement.query(By.directive(WaveformComponent)).componentInstance as WaveformComponent;
+      expect(el().querySelector('.reloj')?.textContent).toContain('0:50 / 1:40');
+      expect(onda.progress()).toBeCloseTo(0.5, 2);
     });
   });
 

@@ -25,6 +25,10 @@ export const DECK_WAVEFORM_COLORS: Record<'A' | 'B', WaveformColors> = {
   B: { played: '#f472b6', remaining: '#4b5169', playhead: '#ffffff', cue: '#fbbf24' },
 };
 
+/** Ancho de cada barra y hueco entre barras, en pixeles del lienzo. */
+export const BAR_WIDTH = 3;
+export const BAR_GAP = 3;
+
 /** Parte del contexto 2D que usa el dibujo (permite probarlo con un contexto falso). */
 export type Canvas2D = Pick<CanvasRenderingContext2D, 'clearRect' | 'fillRect' | 'fillStyle'>;
 
@@ -49,12 +53,21 @@ export function drawWaveform(
   }
 
   const playedUntil = Math.min(1, Math.max(0, progress)) * width;
-  for (let x = 0; x < width; x++) {
-    const peak = peaks[Math.min(peaks.length - 1, Math.floor((x / width) * peaks.length))];
+  // Barras separadas por un hueco: una por cada BAR_WIDTH + BAR_GAP pixeles, con el pico mas alto de su tramo.
+  const step = BAR_WIDTH + BAR_GAP;
+  const bars = Math.max(1, Math.floor(width / step));
+  for (let i = 0; i < bars; i++) {
+    const from = Math.floor((i / bars) * peaks.length);
+    const to = Math.max(from + 1, Math.floor(((i + 1) / bars) * peaks.length));
+    let peak = 0;
+    for (let k = from; k < to && k < peaks.length; k++) {
+      peak = Math.max(peak, peaks[k]);
+    }
+    const x = i * step;
     // Un minimo de 1 px para que el silencio siga viendose como una linea.
     const barHeight = Math.max(1, peak * height);
-    ctx.fillStyle = x < playedUntil ? colors.played : colors.remaining;
-    ctx.fillRect(x, (height - barHeight) / 2, 1, barHeight);
+    ctx.fillStyle = x + BAR_WIDTH / 2 <= playedUntil ? colors.played : colors.remaining;
+    ctx.fillRect(x, (height - barHeight) / 2, BAR_WIDTH, barHeight);
   }
 
   ctx.fillStyle = colors.cue;
@@ -65,5 +78,5 @@ export function drawWaveform(
   }
 
   ctx.fillStyle = colors.playhead;
-  ctx.fillRect(Math.min(width - 1, Math.round(playedUntil)), 0, 1, height);
+  ctx.fillRect(Math.min(width - 2, Math.round(playedUntil)), 0, 2, height);
 }

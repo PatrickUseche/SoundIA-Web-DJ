@@ -1,4 +1,4 @@
-import { Canvas2D, DECK_WAVEFORM_COLORS, DEFAULT_WAVEFORM_COLORS, drawWaveform } from './waveform-draw';
+import { BAR_GAP, BAR_WIDTH, Canvas2D, DECK_WAVEFORM_COLORS, DEFAULT_WAVEFORM_COLORS, drawWaveform } from './waveform-draw';
 
 /** Contexto 2D de mentira que registra lo que se pinta con cada color. */
 class FakeCanvas2D implements Canvas2D {
@@ -39,20 +39,23 @@ describe('drawWaveform', () => {
     expect(ctx.rects).toEqual([]);
   });
 
-  it('dibuja una barra por columna de pixeles mas la linea de reproduccion', () => {
+  it('dibuja barras separadas por un hueco, mas la linea de reproduccion', () => {
     const ctx = new FakeCanvas2D();
+    const paso = BAR_WIDTH + BAR_GAP;
 
-    drawWaveform(ctx, new Float32Array([0.5, 0.5]), 10, 40, 0);
+    drawWaveform(ctx, new Float32Array([0.5, 0.5]), paso * 10, 40, 0);
 
     const barras = ctx.rects.filter((r) => r.color !== C.playhead);
     expect(barras.length).toBe(10);
+    expect(barras.every((b) => b.w === BAR_WIDTH)).toBe(true);
+    expect(barras[1].x - (barras[0].x + barras[0].w)).toBe(BAR_GAP);
     expect(ctx.porColor(C.playhead).length).toBe(1);
   });
 
   it('colorea de verde lo reproducido y de gris lo que falta', () => {
     const ctx = new FakeCanvas2D();
 
-    drawWaveform(ctx, new Float32Array([1, 1, 1, 1]), 10, 40, 0.5);
+    drawWaveform(ctx, new Float32Array([1, 1, 1, 1]), 60, 40, 0.5);
 
     expect(ctx.porColor(C.played).length).toBe(5);
     expect(ctx.porColor(C.remaining).length).toBe(5);
@@ -60,9 +63,9 @@ describe('drawWaveform', () => {
 
   it('con progreso 0 todo es gris y con progreso 1 todo es verde', () => {
     const inicio = new FakeCanvas2D();
-    drawWaveform(inicio, new Float32Array([1]), 8, 40, 0);
+    drawWaveform(inicio, new Float32Array([1]), 48, 40, 0);
     const fin = new FakeCanvas2D();
-    drawWaveform(fin, new Float32Array([1]), 8, 40, 1);
+    drawWaveform(fin, new Float32Array([1]), 48, 40, 1);
 
     expect(inicio.porColor(C.played).length).toBe(0);
     expect(fin.porColor(C.remaining).length).toBe(0);
@@ -71,7 +74,7 @@ describe('drawWaveform', () => {
   it('la altura de cada barra es proporcional al pico y esta centrada', () => {
     const ctx = new FakeCanvas2D();
 
-    drawWaveform(ctx, new Float32Array([0.5]), 4, 40, 0);
+    drawWaveform(ctx, new Float32Array([0.5]), 6, 40, 0);
 
     const barra = ctx.rects[0];
     expect(barra.h).toBe(20);
@@ -81,18 +84,18 @@ describe('drawWaveform', () => {
   it('el silencio se dibuja como una linea de 1 px', () => {
     const ctx = new FakeCanvas2D();
 
-    drawWaveform(ctx, new Float32Array([0]), 4, 40, 0);
+    drawWaveform(ctx, new Float32Array([0]), 6, 40, 0);
 
     expect(ctx.rects[0].h).toBe(1);
   });
 
-  it('cada columna toma el pico que le corresponde', () => {
+  it('cada barra toma el pico mas alto de su tramo', () => {
     const ctx = new FakeCanvas2D();
 
-    drawWaveform(ctx, new Float32Array([0, 1]), 4, 100, 0);
+    drawWaveform(ctx, new Float32Array([0, 1]), 12, 100, 0);
 
     const alturas = ctx.rects.filter((r) => r.color === C.remaining).map((r) => r.h);
-    expect(alturas).toEqual([1, 1, 100, 100]); // mitad izquierda: pico 0; mitad derecha: pico 1
+    expect(alturas).toEqual([1, 100]); // mitad izquierda: pico 0; mitad derecha: pico 1
   });
 
   it('marca los puntos de mezcla y descarta los que caen fuera de la pista', () => {
@@ -113,13 +116,13 @@ describe('drawWaveform', () => {
 
     const fin = new FakeCanvas2D();
     drawWaveform(fin, new Float32Array([1]), 100, 40, 1);
-    expect(fin.porColor(C.playhead)[0].x).toBe(99);
+    expect(fin.porColor(C.playhead)[0].x).toBe(98);
   });
 
   it('limita un progreso fuera de rango', () => {
     const ctx = new FakeCanvas2D();
 
-    drawWaveform(ctx, new Float32Array([1]), 10, 40, 7);
+    drawWaveform(ctx, new Float32Array([1]), 60, 40, 7);
 
     expect(ctx.porColor(C.remaining).length).toBe(0);
   });
@@ -147,7 +150,7 @@ describe('DECK_WAVEFORM_COLORS', () => {
   it('dibuja lo reproducido con el color de su deck', () => {
     const ctx = new FakeCanvas2D();
 
-    drawWaveform(ctx, new Float32Array([1]), 10, 40, 1, [], DECK_WAVEFORM_COLORS.B);
+    drawWaveform(ctx, new Float32Array([1]), 60, 40, 1, [], DECK_WAVEFORM_COLORS.B);
 
     expect(ctx.porColor(DECK_WAVEFORM_COLORS.B.played).length).toBe(10);
   });

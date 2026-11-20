@@ -70,12 +70,12 @@ describe('WaveformComponent', () => {
   it('con picos dibuja la forma de onda', async () => {
     const { rects } = espiarCanvas();
     crear();
-    poner('width', 20);
+    poner('width', 60);
     poner('peaks', new Float32Array([0.5, 1, 0.3]));
     fixture.detectChanges();
     await fixture.whenStable();
 
-    expect(rects.length).toBeGreaterThanOrEqual(20); // una barra por columna mas la linea de reproduccion
+    expect(rects.length).toBeGreaterThanOrEqual(10); // una barra cada 6 px mas la linea de reproduccion
   });
 
   it('se redibuja cuando cambia el progreso', async () => {

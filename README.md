@@ -39,6 +39,14 @@ El script (`scripts/build-pages.mjs`) copia `index.csr.html` a `index.html`, cre
 comando de build `npm ci && npm run build:pages`, carpeta de salida `dist/soundia-web-dj/browser` y la variable
 `SOUNDIA_API_URL`. El API debe permitir ese dominio en `SOUNDIA_CORS_ALLOWED_ORIGINS`.
 
+### Vercel
+
+El repo trae un `vercel.json` (comando de build, carpeta de salida, reescritura de las rutas de la SPA a `index.html` y
+las mismas cabeceras de seguridad). Vercel no lee `_redirects` ni `_headers`, por eso las repite. En Vercel: «Add New >
+Project», importa el repo y añade la variable `SOUNDIA_API_URL` (la URL del API más `/api/v1`, con `https://`); el resto
+sale de `vercel.json`. La CSP del archivo permite conectar a cualquier `https://*.onrender.com`; si el API vive en otro
+dominio, cámbiala en `vercel.json`. Después añade la dirección de Vercel a `SOUNDIA_CORS_ALLOWED_ORIGINS` del API.
+
 ### Pruebas end-to-end
 
 Las pruebas de `e2e/` abren la aplicación en Chromium (escritorio y móvil) contra un API **simulado** dentro del propio navegador, así que no necesitan Spring ni Django. La primera vez hay que descargar el navegador: `npx playwright install chromium`. Playwright levanta `ng serve` en el puerto 4300 por su cuenta. En GitHub Actions corren en un job aparte («Pruebas end-to-end (Playwright)») junto con las pruebas unitarias y el build; si fallan se guardan las trazas como artefacto (`trazas-e2e`).

@@ -119,3 +119,4 @@ Acordado con el usuario (2026-10-24, con la skill ui-ux-pro-max): tema oscuro pa
 Pedido por el usuario (2026-11-20, para la demo): que la consola parezca una mezcladora de DJ profesional tipo Pioneer DJM, con perillas rotativas y medidores de nivel que funcionen de verdad. Se verifica con Chromium y Playwright.
 
 - [x] feat(audio): medir el nivel de cada canal y de la salida (`Deck.level()`, `MixerService.masterLevel()`, escala de dB) para los medidores [12.1]
+- [x] feat(ui): perilla rotativa (`app-knob`, se arrastra en vertical, doble clic para el reposo, accesible con un slider nativo debajo) y medidor de nivel con segmentos LED (`app-level-meter`) [12.2]

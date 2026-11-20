@@ -1,0 +1,7 @@
+<div class="medidor" role="meter" [attr.aria-label]="etiqueta()" aria-valuemin="0" aria-valuemax="100"
+    [attr.aria-valuenow]="porcentaje()">
+    @for (segmento of lista(); track $index) {
+        <span class="segmento" [class.encendido]="segmento.encendido" [attr.data-zona]="segmento.zona"
+            aria-hidden="true"></span>
+    }
+</div>

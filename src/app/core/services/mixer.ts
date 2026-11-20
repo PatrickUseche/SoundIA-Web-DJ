@@ -5,6 +5,7 @@ import { MIN_PHASE_SHIFT_SECONDS, phaseShift } from '../audio/beatgrid';
 import { TempoMatch, matchTempo } from '../audio/beatmatch';
 import { crossfaderGains } from '../audio/crossfader';
 import { Deck, DeckId } from '../audio/deck';
+import { peakOf, peakToLevel } from '../audio/level';
 import { AudioDecodeError, AudioUnsupportedError, TrackWithoutAudioError } from '../audio/errors';
 import { Track } from '../models/track';
 import { TrackApiService } from './tracks';
@@ -21,6 +22,8 @@ export class MixerService {
   private readonly tracks = inject(TrackApiService);
   private readonly ctx = inject(AUDIO_CONTEXT_FACTORY)();
   private readonly master: GainNode | null;
+  private readonly masterAnalyser: AnalyserNode | null;
+  private readonly masterSamples = new Float32Array(512);
   private readonly decks: Record<DeckId, Deck> | null;
 
   /** La ultima pista cuyos datos cambiaron (por ejemplo su primer tiempo): otras pantallas la actualizan en su lista. */
@@ -34,10 +37,14 @@ export class MixerService {
     if (this.ctx) {
       this.master = this.ctx.createGain();
       this.master.connect(this.ctx.destination);
+      this.masterAnalyser = this.ctx.createAnalyser();
+      this.masterAnalyser.fftSize = this.masterSamples.length;
+      this.master.connect(this.masterAnalyser);
       this.decks = { A: new Deck('A', this.ctx, this.master), B: new Deck('B', this.ctx, this.master) };
       this.applyCrossfader();
     } else {
       this.master = null;
+      this.masterAnalyser = null;
       this.decks = null;
     }
   }
@@ -45,6 +52,15 @@ export class MixerService {
   /** El navegador tiene Web Audio y el mixer esta listo para usarse. */
   get supported(): boolean {
     return this.decks !== null;
+  }
+
+  /** Nivel de salida de la mesa (despues del volumen maestro) para el medidor: 0 (silencio) a 1 (0 dBFS). */
+  masterLevel(): number {
+    if (!this.masterAnalyser) {
+      return 0;
+    }
+    this.masterAnalyser.getFloatTimeDomainData(this.masterSamples);
+    return peakToLevel(peakOf(this.masterSamples));
   }
 
   deck(id: DeckId): Deck {

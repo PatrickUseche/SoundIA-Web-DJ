@@ -22,6 +22,22 @@ describe('Deck', () => {
     deck = new Deck('A', ctx as unknown as AudioContext, destino as unknown as AudioNode);
   });
 
+  describe('nivel del canal', () => {
+    it('en silencio el nivel es 0', () => {
+      expect(deck.level()).toBe(0);
+    });
+
+    it('sube con la amplitud que ve el analizador y llega a 1 en 0 dBFS', () => {
+      ctx.analysers[0].peak = 0.1;
+      const bajo = deck.level();
+      ctx.analysers[0].peak = 1;
+
+      expect(bajo).toBeGreaterThan(0);
+      expect(bajo).toBeLessThan(1);
+      expect(deck.level()).toBe(1);
+    });
+  });
+
   describe('estado inicial', () => {
     it('empieza vacio y detenido', () => {
       expect(deck.loaded).toBe(false);
@@ -47,8 +63,13 @@ describe('Deck', () => {
       expect(grave.connections).toEqual([medio]);
       expect(medio.connections).toEqual([agudo]);
       expect(agudo.connections).toEqual([volumen]);
-      expect(volumen.connections).toEqual([crossfader]);
+      expect(volumen.connections).toEqual([crossfader, ctx.analysers[0]]);
       expect(crossfader.connections).toEqual([destino]);
+    });
+
+    it('mide el nivel con un analizador que no forma parte de la cadena de sonido', () => {
+      expect(ctx.analysers.length).toBe(1);
+      expect(ctx.analysers[0].connections).toEqual([]);
     });
 
     it('configura los filtros del EQ como un mixer de DJ', () => {

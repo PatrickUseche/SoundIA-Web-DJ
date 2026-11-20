@@ -22,6 +22,26 @@ function crear(ctx: FakeAudioContext | null): { mixer: MixerService; http: HttpT
 const buffer = (segundos = 10) => new FakeAudioBuffer(segundos) as unknown as AudioBuffer;
 
 describe('MixerService', () => {
+  describe('nivel de salida', () => {
+    it('sin Web Audio el nivel maestro es 0', () => {
+      const { mixer } = crear(null);
+
+      expect(mixer.masterLevel()).toBe(0);
+    });
+
+    it('lee el nivel del analizador del maestro', () => {
+      const ctx = new FakeAudioContext();
+      const { mixer } = crear(ctx);
+      expect(mixer.masterLevel()).toBe(0);
+
+      // El analizador del maestro se crea primero; los dos siguientes son los de los decks.
+      expect(ctx.analysers.length).toBe(3);
+      ctx.analysers[0].peak = 1;
+
+      expect(mixer.masterLevel()).toBe(1);
+    });
+  });
+
   describe('soporte de Web Audio', () => {
     it('sin Web Audio no esta soportado y pedir un deck falla con un error claro', () => {
       const { mixer } = crear(null);
@@ -98,7 +118,7 @@ describe('MixerService', () => {
 
       expect(mixer.masterVolume()).toBe(0.3);
       expect(ctx.gains[0].gain.value).toBe(0.3);
-      expect(ctx.gains[0].connections).toEqual([ctx.destination]);
+      expect(ctx.gains[0].connections).toContain(ctx.destination);
     });
 
     it('limita el volumen al rango 0-1', () => {

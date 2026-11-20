@@ -63,6 +63,20 @@ export class FakeBiquadFilterNode extends FakeAudioNode {
   readonly gain = new FakeAudioParam(0);
 }
 
+/** Analizador de mentira: devuelve un pico fijo (`peak`) en la primera muestra, para probar los medidores. */
+export class FakeAnalyserNode extends FakeAudioNode {
+  fftSize = 2048;
+  /** Amplitud pico (0-1) que "ve" el analizador. */
+  peak = 0;
+
+  getFloatTimeDomainData(array: Float32Array): void {
+    array.fill(0);
+    if (array.length > 0) {
+      array[0] = this.peak;
+    }
+  }
+}
+
 export class FakeAudioBuffer {
   readonly numberOfChannels: number;
   readonly sampleRate: number;
@@ -116,6 +130,7 @@ export class FakeAudioContext {
   readonly destination = new FakeAudioNode();
   readonly gains: FakeGainNode[] = [];
   readonly filters: FakeBiquadFilterNode[] = [];
+  readonly analysers: FakeAnalyserNode[] = [];
   readonly sources: FakeBufferSourceNode[] = [];
   resumeCalls = 0;
   /** Segundos de audio que "decodifica" decodeAudioData (la duracion no depende de los bytes). */
@@ -124,6 +139,12 @@ export class FakeAudioContext {
   createGain(): FakeGainNode {
     const node = new FakeGainNode();
     this.gains.push(node);
+    return node;
+  }
+
+  createAnalyser(): FakeAnalyserNode {
+    const node = new FakeAnalyserNode();
+    this.analysers.push(node);
     return node;
   }
 

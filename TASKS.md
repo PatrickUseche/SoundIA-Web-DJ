@@ -113,3 +113,9 @@ Acordado con el usuario (2026-10-24, con la skill ui-ux-pro-max): tema oscuro pa
 - [x] feat(ui): etiqueta del deck en la biblioteca, tiempo restante resaltado en cada deck y aviso al subir archivos de más de 20 MB [11.10]
 - [x] fix(ui): tildes y ñ en los textos más visibles (login, menú, cerrar sesión, telemetría, cola de la sesión y avisos de sesión) [11.12]. El resto de textos se corrigió en [11.13]
 - [x] fix(ui): tildes y ñ en el resto de textos visibles de la aplicación (biblioteca, Auto-DJ, decks, MIDI, grabaciones, telemetría, avisos y mensajes de error) y en sus pruebas [11.13] (queda sin tildes lo que no ve el usuario: identificadores, ids, nombres de archivo y mensajes de consola)
+
+## Fase 12 — Consola con aspecto de mezcladora profesional (en curso)
+
+Pedido por el usuario (2026-11-20, para la demo): que la consola parezca una mezcladora de DJ profesional tipo Pioneer DJM, con perillas rotativas y medidores de nivel que funcionen de verdad. Se verifica con Chromium y Playwright.
+
+- [x] feat(audio): medir el nivel de cada canal y de la salida (`Deck.level()`, `MixerService.masterLevel()`, escala de dB) para los medidores [12.1]

@@ -29,6 +29,17 @@ export function peakOf(samples: ArrayLike<number>): number {
   return max;
 }
 
+/** Cuanto conserva el medidor del nivel anterior en cada lectura: asi las barras caen suave y no parpadean. */
+export const METER_DECAY = 0.8;
+/** Por debajo de este nivel el medidor se apaga del todo. */
+const METER_CUTOFF = 0.01;
+
+/** Nivel que muestra el medidor: sube al instante y baja con una caida suave. */
+export function smoothLevel(previous: number, current: number): number {
+  const nivel = Math.max(current, previous * METER_DECAY);
+  return nivel < METER_CUTOFF ? 0 : nivel;
+}
+
 /** Cuantos segmentos de un medidor de `count` se encienden para un nivel 0-1. */
 export function litSegments(level: number, count: number): number {
   return Math.round(clamp01(level) * count);

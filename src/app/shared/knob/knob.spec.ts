@@ -41,6 +41,13 @@ describe('KnobComponent', () => {
       expect(el().querySelector('.etiqueta')?.textContent).toContain('Graves');
     });
 
+    it('puede mostrar un texto corto distinto del nombre accesible', () => {
+      crear(0.5, { etiquetaVisible: 'Vol' });
+
+      expect(el().querySelector('.etiqueta')?.textContent?.trim()).toBe('Vol');
+      expect(entrada().getAttribute('aria-label')).toBe('Graves');
+    });
+
     it('el dibujo de la perilla se oculta a los lectores de pantalla (el control es el slider)', () => {
       crear();
 

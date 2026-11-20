@@ -1,4 +1,4 @@
-import { METER_FLOOR_DB, litSegments, peakOf, peakToLevel, segmentZone } from './level';
+import { METER_FLOOR_DB, litSegments, peakOf, peakToLevel, segmentZone, smoothLevel } from './level';
 
 describe('nivel de un medidor', () => {
   describe('peakToLevel', () => {
@@ -58,6 +58,28 @@ describe('nivel de un medidor', () => {
     it('limita los valores fuera de 0-1', () => {
       expect(litSegments(-3, 12)).toBe(0);
       expect(litSegments(7, 12)).toBe(12);
+    });
+  });
+
+  describe('smoothLevel', () => {
+    it('sube de inmediato cuando entra mas nivel', () => {
+      expect(smoothLevel(0.2, 0.9)).toBe(0.9);
+    });
+
+    it('baja poco a poco, no de golpe', () => {
+      const siguiente = smoothLevel(0.8, 0);
+
+      expect(siguiente).toBeGreaterThan(0.5);
+      expect(siguiente).toBeLessThan(0.8);
+    });
+
+    it('termina en 0 y no se queda arrastrando un nivel casi invisible', () => {
+      let nivel = 1;
+      for (let i = 0; i < 60; i++) {
+        nivel = smoothLevel(nivel, 0);
+      }
+
+      expect(nivel).toBe(0);
     });
   });
 

@@ -23,7 +23,10 @@ const ARC_LENGTH = RING_LENGTH * (SWEEP / 360);
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class KnobComponent {
+  /** Nombre accesible del control (lo lee el lector de pantalla). */
   readonly etiqueta = input.required<string>();
+  /** Texto corto que se ve bajo la perilla cuando el nombre accesible no cabe; por defecto, el mismo nombre. */
+  readonly etiquetaVisible = input<string | null>(null);
   readonly valor = input.required<number>();
   readonly min = input(0);
   readonly max = input(1);

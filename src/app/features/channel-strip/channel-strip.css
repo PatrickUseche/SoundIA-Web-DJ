@@ -1,0 +1,124 @@
+/* Canal de mezcladora: EQ arriba, medidor y fader de volumen abajo. --canal-color lo hereda del color del deck. */
+:host {
+  display: block;
+  --canal-color: var(--deck-a);
+}
+
+:host([deckid='B']) {
+  --canal-color: var(--deck-b);
+}
+
+.canal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 6px 8px;
+  background: linear-gradient(180deg, #17172e 0%, #0f0f22 100%);
+  border: 1px solid #2a2a4a;
+  border-top: 3px solid var(--canal-color);
+  border-radius: 6px;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.05);
+}
+
+.canal[data-deck='A'] {
+  --canal-color: var(--deck-a);
+}
+
+.canal[data-deck='B'] {
+  --canal-color: var(--deck-b);
+}
+
+.nombre {
+  margin: 0;
+  color: var(--canal-color);
+  font-size: 0.85rem;
+  letter-spacing: 0.18em;
+}
+
+.perillas {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #25254a;
+}
+
+.fader-y-medidor {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  gap: 10px;
+  height: 168px;
+}
+
+.caja-fader {
+  display: flex;
+  justify-content: center;
+  width: 34px;
+  padding: 4px 0;
+  /* Marcas de la escala a lo largo del recorrido del fader. */
+  background:
+    repeating-linear-gradient(180deg, transparent 0 15px, #3a3a62 15px 16px) center / 100% 100% no-repeat;
+}
+
+/* Fader vertical de canal: ranura oscura y una tapa rectangular con una linea del color del canal. */
+.fader {
+  writing-mode: vertical-lr;
+  direction: rtl;
+  width: 34px;
+  height: 100%;
+  padding: 0;
+  margin: 0;
+  cursor: ns-resize;
+}
+
+.fader::-webkit-slider-runnable-track {
+  width: 6px;
+  height: 100%;
+  background: #05050d;
+  border: 1px solid #3a3a62;
+  border-radius: 3px;
+  box-shadow: inset 0 1px 3px rgb(0 0 0 / 0.9);
+}
+
+.fader::-moz-range-track {
+  width: 6px;
+  height: 100%;
+  background: #05050d;
+  border: 1px solid #3a3a62;
+  border-radius: 3px;
+}
+
+.fader::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 30px;
+  height: 18px;
+  margin-left: -13px;
+  margin-top: 0;
+  border-radius: 3px;
+  border: 1px solid #0a0a14;
+  background:
+    linear-gradient(var(--canal-color), var(--canal-color)) center / 100% 2px no-repeat,
+    linear-gradient(180deg, #5a5a7c 0%, #2b2b48 50%, #1b1b34 100%);
+  box-shadow: 0 2px 4px rgb(0 0 0 / 0.7), inset 0 1px 0 rgb(255 255 255 / 0.25);
+}
+
+.fader::-moz-range-thumb {
+  width: 28px;
+  height: 16px;
+  border-radius: 3px;
+  border: 1px solid #0a0a14;
+  background:
+    linear-gradient(var(--canal-color), var(--canal-color)) center / 100% 2px no-repeat,
+    linear-gradient(180deg, #5a5a7c 0%, #2b2b48 50%, #1b1b34 100%);
+}
+
+.etiqueta {
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--texto-suave);
+}

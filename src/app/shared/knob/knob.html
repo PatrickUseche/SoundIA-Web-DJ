@@ -10,5 +10,5 @@
     </div>
     <input type="range" class="control" [min]="min()" [max]="max()" [step]="paso()" [value]="valor()"
         [attr.aria-label]="etiqueta()" (input)="alEntrada($event)" />
-    <span class="etiqueta">{{ etiqueta() }}</span>
+    <span class="etiqueta">{{ etiquetaVisible() ?? etiqueta() }}</span>
 </div>

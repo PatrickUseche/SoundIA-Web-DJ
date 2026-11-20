@@ -1,23 +1,32 @@
 <section [attr.aria-label]="'Deck ' + deckId()" class="panel deck" [attr.data-deck]="deckId()">
     <h3>Deck {{ deckId() }}</h3>
 
-    @if (deck().track(); as pista) {
-        <p class="titulo"><strong>{{ pista.title }}</strong></p>
-        <p class="datos">
-            <span class="bpm">{{ formatBpm(pista.bpm) }}</span> BPM
-            @if (deck().pitch() !== 1) {
-                (suena a {{ formatBpm(deck().effectiveBpm ?? pista.bpm) }})
+    <div class="pantalla">
+        @if (deck().track(); as pista) {
+            <p class="titulo"><strong>{{ pista.title }}</strong></p>
+            <p class="datos">
+                <span class="bpm">{{ formatBpm(pista.bpm) }}</span> BPM
+                @if (deck().pitch() !== 1) {
+                    (suena a {{ formatBpm(deck().effectiveBpm ?? pista.bpm) }})
+                }
+                | {{ pista.key }} | <span class="camelot">{{ pista.camelot }}</span>
+            </p>
+            @if (estadoDelUno(); as estado) {
+                <p class="primer-tiempo">Primer tiempo: {{ estado }}</p>
             }
-            | {{ pista.key }} | <span class="camelot">{{ pista.camelot }}</span>
-        </p>
-        @if (estadoDelUno(); as estado) {
-            <p class="primer-tiempo">Primer tiempo: {{ estado }}</p>
+        } @else if (deck().loaded) {
+            <p class="titulo">Archivo local (sin analizar)</p>
+        } @else {
+            <p class="titulo">Deck vacío. Carga una pista desde la biblioteca.</p>
         }
-    } @else if (deck().loaded) {
-        <p class="titulo">Archivo local (sin analizar)</p>
-    } @else {
-        <p class="titulo">Deck vacío. Carga una pista desde la biblioteca.</p>
-    }
+
+        <div class="tiempos">
+            <p class="reloj" aria-live="off">{{ formatTime(position()) }} / {{ formatTime(deck().duration) }}</p>
+            @if (deck().loaded) {
+                <p class="restante" aria-live="off" [attr.data-poco]="quedaPoco()">Quedan {{ formatTime(queda()) }}</p>
+            }
+        </div>
+    </div>
 
     <app-waveform
         [peaks]="deck().peaks()"
@@ -25,25 +34,35 @@
         [cues]="marcasCue()"
         [etiqueta]="'Forma de onda del deck ' + deckId()"
         [colors]="colores()"
-        [height]="110"
+        [height]="190"
         (seek)="alBuscar($event)" />
 
-    <p class="reloj" aria-live="off">{{ formatTime(position()) }} / {{ formatTime(deck().duration) }}</p>
-    @if (deck().loaded) {
-        <p class="restante" aria-live="off" [attr.data-poco]="quedaPoco()">Quedan {{ formatTime(queda()) }}</p>
-    }
+    <div class="mando">
+        <div class="plato" aria-hidden="true" [attr.data-sonando]="deck().playing()"
+            [style.--velocidad]="deck().pitch()">
+            <span class="plato-surcos"></span>
+            <span class="plato-marca"></span>
+            <span class="plato-letra">{{ deckId() }}</span>
+        </div>
 
-    <div class="transporte">
-        <button type="button" class="play" (click)="alternarReproduccion()" [disabled]="!deck().loaded"
-            [attr.aria-pressed]="deck().playing()">
-            {{ deck().playing() ? 'Pausa' : 'Play' }}
-        </button>
-        <button type="button" (click)="ponerCue()" [disabled]="!deck().loaded">Marcar cue</button>
-        <button type="button" (click)="irAlCue()" [disabled]="!deck().loaded">Ir al cue</button>
-        <button type="button" class="sync" (click)="sincronizar()" [disabled]="!deck().track()">Sync</button>
-        <button type="button" (click)="marcarElUno()" [disabled]="!deck().track()?.grid || fijandoUno()"
-            title="Fija como primer tiempo (un 1) el punto donde está la pista ahora">Marcar el 1</button>
-        <button type="button" (click)="expulsar()" [disabled]="!deck().loaded">Expulsar</button>
+        <div class="transporte">
+            <button type="button" class="play" (click)="alternarReproduccion()" [disabled]="!deck().loaded"
+                [attr.aria-pressed]="deck().playing()">
+                {{ deck().playing() ? 'Pausa' : 'Play' }}
+            </button>
+            <button type="button" class="cue" (click)="ponerCue()" [disabled]="!deck().loaded">Marcar cue</button>
+            <button type="button" (click)="irAlCue()" [disabled]="!deck().loaded">Ir al cue</button>
+            <button type="button" class="sync" (click)="sincronizar()" [disabled]="!deck().track()">Sync</button>
+            <button type="button" (click)="marcarElUno()" [disabled]="!deck().track()?.grid || fijandoUno()"
+                title="Fija como primer tiempo (un 1) el punto donde está la pista ahora">Marcar el 1</button>
+            <button type="button" (click)="expulsar()" [disabled]="!deck().loaded">Expulsar</button>
+        </div>
+
+        <label class="pitch">
+            <span class="pitch-valor">Pitch {{ formatPitch(deck().pitch()) }}</span>
+            <input type="range" class="fader-pitch" min="0.92" max="1.08" step="0.001" [value]="deck().pitch()"
+                (input)="alMoverPitch($event)" aria-label="Pitch" />
+        </label>
     </div>
 
     @if (mensajeSync(); as mensaje) {
@@ -52,28 +71,4 @@
     @if (mensajeUno(); as mensaje) {
         <p [attr.role]="mensaje.error ? 'alert' : 'status'" class="mensaje-uno" [class.alerta]="mensaje.error">{{ mensaje.texto }}</p>
     }
-
-    <label>
-        Pitch {{ formatPitch(deck().pitch()) }}
-        <input type="range" min="0.92" max="1.08" step="0.001" [value]="deck().pitch()"
-            (input)="alMoverPitch($event)" aria-label="Pitch" />
-    </label>
-
-    <fieldset class="canal-fader">
-        <legend>Ecualizador y volumen</legend>
-        <div class="faders">
-            @for (banda of bandas; track banda) {
-                <label>
-                    <input type="range" class="fader" min="0" max="1" step="0.01" [value]="deck().eq()[banda]"
-                        (input)="alMoverEq(banda, $event)" [attr.aria-label]="nombreBanda[banda]" />
-                    <span>{{ nombreBanda[banda] }}</span>
-                </label>
-            }
-            <label>
-                <input type="range" class="fader fader-volumen" min="0" max="1" step="0.01" [value]="deck().volume()"
-                    (input)="alMoverVolumen($event)" aria-label="Volumen del deck" />
-                <span>Volumen</span>
-            </label>
-        </div>
-    </fieldset>
 </section>

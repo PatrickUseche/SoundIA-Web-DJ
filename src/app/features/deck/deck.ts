@@ -2,7 +2,6 @@ import { Component, DestroyRef, PLATFORM_ID, computed, inject, input, signal } f
 import { isPlatformBrowser } from '@angular/common';
 import { MixerService } from '../../core/services/mixer';
 import { DeckId } from '../../core/audio/deck';
-import { EQ_BANDS, EqBand } from '../../core/audio/eq';
 import { formatBpm, formatPitch, formatTime } from '../../core/audio/format';
 import { WaveformComponent } from '../../shared/waveform/waveform';
 import { DECK_WAVEFORM_COLORS } from '../../core/audio/waveform-draw';
@@ -16,9 +15,7 @@ export const QUEDA_POCO_SEGUNDOS = 30;
 // Cada cuanto se lee la posicion de reproduccion para refrescar el reloj y la forma de onda.
 const POSITION_REFRESH_MS = 50;
 
-const NOMBRE_BANDA: Record<EqBand, string> = { low: 'Graves', mid: 'Medios', high: 'Agudos' };
-
-/** Controles de un deck: reproduccion, cue, sincronizacion de tempo, pitch, volumen, EQ y forma de onda. */
+/** Controles de un deck: reproduccion, cue, sincronizacion de tempo, pitch y forma de onda. El EQ y el volumen estan en el canal. */
 @Component({
   selector: 'app-deck',
   imports: [WaveformComponent],
@@ -33,8 +30,6 @@ export class DeckComponent {
   protected readonly deck = computed(() => this.mixer.deck(this.deckId()));
 
   protected readonly colores = computed(() => DECK_WAVEFORM_COLORS[this.deckId()]);
-  protected readonly bandas = EQ_BANDS;
-  protected readonly nombreBanda = NOMBRE_BANDA;
   protected readonly formatTime = formatTime;
   protected readonly formatBpm = formatBpm;
   protected readonly formatPitch = formatPitch;
@@ -146,14 +141,6 @@ export class DeckComponent {
 
   alMoverPitch(evento: Event): void {
     this.deck().setPitch(this.valorDe(evento));
-  }
-
-  alMoverVolumen(evento: Event): void {
-    this.deck().setVolume(this.valorDe(evento));
-  }
-
-  alMoverEq(banda: EqBand, evento: Event): void {
-    this.deck().setEq(banda, this.valorDe(evento));
   }
 
   expulsar(): void {

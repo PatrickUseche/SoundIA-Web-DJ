@@ -1,7 +1,16 @@
-/* Cada deck lleva su color (el mismo de la onda) para distinguir A de B de un vistazo con poca luz. */
+/* Deck de mezcladora: pantalla LCD arriba, forma de onda, y abajo el plato, los botones y el fader de pitch.
+   Cada deck lleva su color (el mismo de la onda) para distinguir A de B de un vistazo con poca luz. */
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
 .deck {
+  flex: 1;
   --deck-color: var(--acento);
   border-top: 3px solid var(--deck-color);
+  background: linear-gradient(180deg, #151530 0%, #0e0e22 100%);
 }
 
 .deck[data-deck='A'] {
@@ -14,105 +23,289 @@
 
 h3 {
   color: var(--deck-color);
-  font-size: 1rem;
+  font-size: 0.95rem;
+  letter-spacing: 0.2em;
 }
 
-/* BPM en grande y con cifras de ancho fijo. */
+/* Pantalla estilo LCD: fondo casi negro, cifras de ancho fijo y un leve brillo del color del deck. */
+.pantalla {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px 16px;
+  align-items: end;
+  margin-bottom: 8px;
+  padding: 8px 12px;
+  background: #05050c;
+  border: 1px solid #26264a;
+  border-radius: 6px;
+  box-shadow: inset 0 2px 8px rgb(0 0 0 / 0.85);
+}
+
+.titulo,
+.datos,
+.primer-tiempo {
+  grid-column: 1;
+}
+
+.titulo {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .datos {
-  margin: 2px 0 6px;
+  margin: 0;
   color: var(--texto-suave);
 }
 
 .bpm {
   font-family: var(--fuente-datos);
-  font-size: 1.7rem;
+  font-size: 2rem;
   font-weight: 700;
-  color: var(--texto);
+  line-height: 1.1;
+  color: var(--deck-color);
+  text-shadow: 0 0 10px color-mix(in srgb, var(--deck-color) 55%, transparent);
 }
 
 .primer-tiempo {
-  margin: 0 0 6px;
+  margin: 0;
   color: var(--texto-suave);
-  font-size: 0.9rem;
+  font-size: 0.8rem;
 }
 
-/* Transporte: Play es el boton principal. */
+.tiempos {
+  grid-column: 2;
+  grid-row: 1 / span 3;
+  align-self: center;
+  text-align: right;
+}
+
+.reloj,
+.restante {
+  margin: 0;
+  font-family: var(--fuente-datos);
+}
+
+.reloj {
+  font-size: 1.15rem;
+  color: var(--texto);
+}
+
+.restante {
+  font-size: 0.85rem;
+}
+
+/* Plato, transporte y pitch en una fila: el plato a la izquierda, los botones al centro y el pitch a la derecha. */
+.mando {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr) 70px;
+  gap: 14px;
+  align-items: start;
+  margin-top: 10px;
+}
+
+/* El plato (jog): disco de vinilo con surcos y una marca que da la vuelta al girar. */
+.plato {
+  position: relative;
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 50%, #0b0b18 0 18%, transparent 19%),
+    repeating-radial-gradient(circle at 50% 50%, #12122a 0 2px, #1b1b38 2px 4px);
+  border: 3px solid #2b2b4d;
+  box-shadow:
+    0 0 0 2px #0a0a14,
+    0 6px 14px rgb(0 0 0 / 0.65),
+    inset 0 0 18px rgb(0 0 0 / 0.8);
+  animation: giro calc(1.8s / var(--velocidad, 1)) linear infinite;
+  animation-play-state: paused;
+}
+
+.plato[data-sonando='true'] {
+  animation-play-state: running;
+  border-color: color-mix(in srgb, var(--deck-color) 60%, #2b2b4d);
+  box-shadow:
+    0 0 0 2px #0a0a14,
+    0 0 14px color-mix(in srgb, var(--deck-color) 35%, transparent),
+    inset 0 0 18px rgb(0 0 0 / 0.8);
+}
+
+.plato-surcos {
+  position: absolute;
+  inset: 22px;
+  border-radius: 50%;
+  border: 1px solid #2b2b4d;
+}
+
+.plato-marca {
+  position: absolute;
+  top: 4px;
+  left: 50%;
+  width: 4px;
+  height: 22px;
+  margin-left: -2px;
+  border-radius: 2px;
+  background: var(--deck-color);
+  box-shadow: 0 0 8px var(--deck-color);
+}
+
+.plato-letra {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 1.5rem;
+  color: var(--deck-color);
+}
+
+@keyframes giro {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plato {
+    animation: none;
+  }
+}
+
+/* Transporte: Play y Cue grandes (como en un reproductor), el resto debajo. */
+.transporte {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .transporte .play {
-  min-width: 96px;
-  min-height: 44px;
-  font-size: 1.05rem;
-  border-color: var(--deck-color);
+  flex: 1 1 100%;
+  min-height: 52px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--on-play);
+  background: linear-gradient(180deg, #34d673 0%, var(--play) 100%);
+  border-color: #16a34a;
+  box-shadow: 0 2px 0 #0f6b30, 0 0 12px rgb(34 197 94 / 0.25);
+}
+
+.transporte .play:hover:not(:disabled) {
+  background: linear-gradient(180deg, #4ade80 0%, #22c55e 100%);
+  border-color: #4ade80;
+}
+
+.transporte .play[aria-pressed='true'] {
+  color: #fff;
+  background: linear-gradient(180deg, #15803d 0%, #166534 100%);
+  border-color: #22c55e;
+}
+
+.transporte .cue {
+  color: #fed7aa;
+  background: linear-gradient(180deg, #7c3a0a 0%, #5a2a07 100%);
+  border-color: #ea580c;
 }
 
 .transporte .sync {
   border-color: var(--deck-color);
 }
 
-/* Volumen y ecualizador como faders verticales, uno junto a otro, como en una mesa de mezclas. */
-.canal-fader {
-  padding: 8px 4px;
-}
-
-.faders {
-  display: flex;
-  justify-content: space-around;
-  gap: 4px;
-}
-
-.faders label {
+/* Fader de pitch vertical (arriba = mas rapido). */
+.pitch {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   margin: 0;
-  font-size: 0.8rem;
 }
 
-.fader {
+.pitch-valor {
+  font-family: var(--fuente-datos);
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.fader-pitch {
   writing-mode: vertical-lr;
   direction: rtl;
-  width: 28px;
-  height: 130px;
-  accent-color: var(--deck-color);
+  width: 34px;
+  height: 110px;
+  cursor: ns-resize;
 }
 
-.fader::-webkit-slider-runnable-track {
+.fader-pitch::-webkit-slider-runnable-track {
   width: 6px;
   height: 100%;
+  background: #05050d;
+  border: 1px solid #3a3a62;
+  border-radius: 3px;
 }
 
-.fader::-moz-range-track {
+.fader-pitch::-moz-range-track {
   width: 6px;
   height: 100%;
+  background: #05050d;
+  border: 1px solid #3a3a62;
+  border-radius: 3px;
 }
 
-.fader::-webkit-slider-thumb {
+.fader-pitch::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 30px;
+  height: 18px;
+  margin-left: -13px;
   margin-top: 0;
-  margin-left: -9px;
-  border-color: var(--deck-color);
+  border-radius: 3px;
+  border: 1px solid #0a0a14;
+  background:
+    linear-gradient(var(--deck-color), var(--deck-color)) center / 100% 2px no-repeat,
+    linear-gradient(180deg, #5a5a7c 0%, #2b2b48 50%, #1b1b34 100%);
+  box-shadow: 0 2px 4px rgb(0 0 0 / 0.7), inset 0 1px 0 rgb(255 255 255 / 0.25);
 }
 
-.fader::-moz-range-thumb {
-  border-color: var(--deck-color);
+.fader-pitch::-moz-range-thumb {
+  width: 28px;
+  height: 16px;
+  border-radius: 3px;
+  border: 1px solid #0a0a14;
+  background:
+    linear-gradient(var(--deck-color), var(--deck-color)) center / 100% 2px no-repeat,
+    linear-gradient(180deg, #5a5a7c 0%, #2b2b48 50%, #1b1b34 100%);
 }
 
-.fader-volumen::-webkit-slider-thumb {
-  background: var(--deck-color);
+/* En pantallas estrechas el plato y el pitch se acomodan alrededor de los botones. */
+@media (max-width: 1250px) {
+  .mando {
+    grid-template-columns: 96px minmax(0, 1fr) 64px;
+    gap: 10px;
+  }
+
+  .plato {
+    width: 96px;
+    height: 96px;
+  }
+
+  .plato-marca {
+    height: 16px;
+  }
+
+  .plato-letra {
+    font-size: 1.1rem;
+  }
 }
 
-.fader-volumen::-moz-range-thumb {
-  background: var(--deck-color);
-}
+@media (max-width: 640px) {
+  .mando {
+    grid-template-columns: 80px minmax(0, 1fr) 56px;
+  }
 
-/* El pitch tambien lleva el color del deck. */
-.deck input[type='range']:not(.fader) {
-  accent-color: var(--deck-color);
-}
-
-.deck input[type='range']:not(.fader)::-webkit-slider-thumb {
-  border-color: var(--deck-color);
-}
-
-.deck input[type='range']:not(.fader)::-moz-range-thumb {
-  border-color: var(--deck-color);
+  .plato {
+    width: 80px;
+    height: 80px;
+  }
 }

@@ -21,6 +21,12 @@
                 }
             }
         }
+        @if (esperandoServidor(); as espera) {
+            <p role="status" class="subida-espera">
+                El servidor no responde: reintentando «{{ espera.nombre }}» (intento {{ espera.intento }} de {{ espera.de }}).
+                Puede estar despertando o reiniciándose; no cierres la página.
+            </p>
+        }
         @if (avisosSubida().length > 0) {
             <ul class="subida-avisos" role="status">
                 @for (aviso of avisosSubida(); track $index) {
@@ -33,6 +39,16 @@
         }
         @if (errorSubida(); as mensaje) {
             <p role="alert" class="subida-error alerta">{{ mensaje }}</p>
+            @if (pendientesSubida().length > 0) {
+                <ul class="subida-pendientes alerta">
+                    @for (pendiente of pendientesSubida(); track $index) {
+                        <li>{{ pendiente.name }}</li>
+                    }
+                </ul>
+                <button type="button" class="reintentar-pendientes" (click)="reintentarPendientes()">
+                    Reintentar los pendientes
+                </button>
+            }
             @if (erroresSubida().length > 0) {
                 <ul class="subida-errores alerta">
                     @for (motivo of erroresSubida(); track $index) {

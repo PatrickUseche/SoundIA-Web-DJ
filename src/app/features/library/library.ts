@@ -1,4 +1,5 @@
-import { Component, OnInit, computed, effect, inject, signal } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
+import { Component, InjectionToken, OnInit, computed, effect, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DestroyRef } from '@angular/core';
@@ -16,6 +17,21 @@ export const TAMANO_MAXIMO_BYTES = 50 * 1024 * 1024;
 
 /** Por encima de esto el servidor gratuito (poca memoria) puede fallar al analizar: se avisa, pero se intenta igual. */
 export const TAMANO_DE_AVISO_BYTES = 20 * 1024 * 1024;
+
+/**
+ * Esperas (ms) entre reintentos cuando el servidor no responde en medio de una subida: un API gratuito que se reinicia
+ * tarda hasta ~2 minutos en volver. Son 6 reintentos (5, 10, 20, 30, 45 y 60 s): si ni asi responde, la tanda se
+ * detiene y se pueden reintentar los pendientes. Un token para que las pruebas usen esperas de 1 ms.
+ */
+export const ESPERAS_SERVIDOR = new InjectionToken<number[]>('ESPERAS_SERVIDOR', {
+  providedIn: 'root',
+  factory: () => [5000, 10000, 20000, 30000, 45000, 60000],
+});
+
+/** El servidor no esta (se cayo, se reinicia o esta despertando), a diferencia de un error del propio archivo. */
+export function servidorNoDisponible(err: unknown): boolean {
+  return err instanceof HttpErrorResponse && [0, 429, 502, 503, 504].includes(err.status);
+}
 
 /** Cada cuanto se vuelve a pedir la lista mientras alguna pista tiene la voz en analisis. */
 export const REFRESCO_VOZ_MS = 5000;
@@ -67,6 +83,11 @@ export class LibraryComponent implements OnInit {
   readonly errorSubida = signal<string | null>(null);
   /** Cuando se suben varios archivos, el motivo del fallo de cada uno. */
   readonly erroresSubida = signal<string[]>([]);
+  /** El servidor no respondio y se reintenta: que archivo, en que intento y de cuantos (null si no se espera). */
+  readonly esperandoServidor = signal<{ nombre: string; intento: number; de: number } | null>(null);
+  /** Archivos que quedaron sin subir porque el servidor dejo de responder (se pueden reintentar). */
+  readonly pendientesSubida = signal<File[]>([]);
+  private readonly esperas = inject(ESPERAS_SERVIDOR);
   /** Avisos de una subida en curso (por ejemplo archivos grandes que podrian fallar); no impiden subir. */
   readonly avisosSubida = signal<string[]>([]);
   /** Archivo que se esta analizando y cuantos hay en total (null si no hay una subida en curso). */
@@ -339,6 +360,7 @@ export class LibraryComponent implements OnInit {
     this.mensajeSubida.set(null);
     this.errorSubida.set(null);
     this.erroresSubida.set([]);
+    this.pendientesSubida.set([]);
     this.avisosSubida.set(
       archivos
         .filter((a) => a.size > TAMANO_DE_AVISO_BYTES && a.size <= TAMANO_MAXIMO_BYTES)
@@ -346,6 +368,7 @@ export class LibraryComponent implements OnInit {
     );
     const total = archivos.length;
     const fallos: string[] = [];
+    let pendientes: File[] = [];
     let correctas = 0;
     let ultima: Track | null = null;
 
@@ -356,21 +379,52 @@ export class LibraryComponent implements OnInit {
         fallos.push(this.motivo(archivo, total, `supera el máximo de ${TAMANO_MAXIMO_BYTES / (1024 * 1024)} MB.`));
         continue;
       }
-      try {
-        const track = await firstValueFrom(this.api.analyze(archivo));
-        this.tracks.update((actuales) => [track, ...actuales.filter((t) => t.id !== track.id)]);
-        correctas++;
-        ultima = track;
-        this.programarRefrescoVoz();
-      } catch (err) {
-        fallos.push(this.motivo(archivo, total, httpErrorMessage(err, 'No se pudo analizar el archivo.')));
+      let intento = 0;
+      for (;;) {
+        try {
+          const track = await firstValueFrom(this.api.analyze(archivo));
+          this.tracks.update((actuales) => [track, ...actuales.filter((t) => t.id !== track.id)]);
+          correctas++;
+          ultima = track;
+          this.programarRefrescoVoz();
+          break;
+        } catch (err) {
+          if (servidorNoDisponible(err) && !this.destruido) {
+            if (intento >= this.esperas.length) {
+              // Ya se espero todo lo razonable: se corta la tanda en vez de marcar todo lo que falta como fallido.
+              pendientes = archivos.slice(i);
+              break;
+            }
+            this.esperandoServidor.set({ nombre: archivo.name, intento: intento + 1, de: this.esperas.length });
+            await this.dormir(this.esperas[intento]);
+            this.esperandoServidor.set(null);
+            intento++;
+            continue;
+          }
+          fallos.push(this.motivo(archivo, total, httpErrorMessage(err, 'No se pudo analizar el archivo.')));
+          break;
+        }
+      }
+      if (pendientes.length > 0) {
+        break;
       }
     }
 
     this.progresoSubida.set(null);
+    this.esperandoServidor.set(null);
     this.subiendo.set(false);
     this.avisosSubida.set([]);
     if (this.destruido) {
+      return;
+    }
+    if (pendientes.length > 0) {
+      this.pendientesSubida.set(pendientes);
+      if (correctas > 0) {
+        this.mensajeSubida.set(`${correctas} de ${total} pistas analizadas.`);
+      }
+      const faltan = pendientes.length === 1 ? 'quedó 1 archivo sin subir' : `quedaron ${pendientes.length} archivos sin subir`;
+      this.errorSubida.set(`El servidor no responde: se detuvo la subida y ${faltan}.`);
+      this.erroresSubida.set(fallos);
       return;
     }
     if (total === 1) {
@@ -390,6 +444,18 @@ export class LibraryComponent implements OnInit {
       this.errorSubida.set(`No se pudieron analizar ${fallos.length} de ${total} archivos:`);
       this.erroresSubida.set(fallos);
     }
+  }
+
+  /** Vuelve a subir los archivos que quedaron sin subir cuando el servidor dejo de responder. */
+  reintentarPendientes(): void {
+    const pendientes = this.pendientesSubida();
+    if (pendientes.length > 0 && !this.subiendo()) {
+      void this.subirVarios(pendientes);
+    }
+  }
+
+  private dormir(ms: number): Promise<void> {
+    return new Promise((resolver) => setTimeout(resolver, ms));
   }
 
   /** Con varios archivos el mensaje de error dice a cual se refiere; con uno basta el motivo. */

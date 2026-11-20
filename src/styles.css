@@ -496,6 +496,22 @@ input.genero {
   color: var(--aviso);
 }
 
+/* El servidor no responde y la subida espera para reintentar; los pendientes quedan listados para volver a subirlos. */
+.subida-espera {
+  margin: 4px 0;
+  padding: 6px 10px;
+  border-left: 3px solid var(--aviso);
+  background: rgb(251 191 36 / 0.1);
+  color: var(--aviso);
+  font-size: 0.9rem;
+}
+
+.subida-pendientes {
+  margin: 4px 0;
+  padding-left: 20px;
+  font-size: 0.9rem;
+}
+
 /* Tiempo que le queda a la pista de un deck. */
 .restante {
   margin: 0 0 4px;

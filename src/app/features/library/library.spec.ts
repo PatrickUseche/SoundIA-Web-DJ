@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { LibraryComponent, REFRESCO_VOZ_MS } from './library';
+import { ESPERAS_SERVIDOR, LibraryComponent, REFRESCO_VOZ_MS } from './library';
 import { MixerService } from '../../core/services/mixer';
 import { QueueService } from '../../core/services/queue';
 import { Track } from '../../core/models/track';
@@ -43,6 +43,8 @@ describe('LibraryComponent', () => {
       providers: [
         provideHttpClient(), provideHttpClientTesting(), provideFakeAudio(ctx),
         { provide: QueueService, useValue: colaDoble },
+        // Esperas de 1 ms: en produccion son de 5 a 60 s.
+        { provide: ESPERAS_SERVIDOR, useValue: [1, 1] },
       ],
     });
     http = TestBed.inject(HttpTestingController);
@@ -920,6 +922,176 @@ describe('LibraryComponent', () => {
 
       http.expectNone(`${TRACKS}/analyze`);
       expect(el().querySelector('.subida-error')?.textContent).toContain('supera el máximo de 50 MB');
+    });
+  });
+
+  describe('cuando el servidor deja de responder en medio de una tanda', () => {
+    const elegirVarios = (archivos: File[]) => {
+      const input = el().querySelector('input[type="file"]') as HTMLInputElement;
+      Object.defineProperty(input, 'files', { value: archivos, configurable: true });
+      input.dispatchEvent(new Event('change'));
+    };
+    const archivo = (nombre: string) => new File(['x'], nombre, { type: 'audio/mpeg' });
+    const nombreEnCurso = (req: { request: { body: unknown } }) => ((req.request.body as FormData).get('file') as File).name;
+    const fallar = async (status: number, cuerpo: unknown = null) => {
+      http.expectOne(`${TRACKS}/analyze`).flush(cuerpo as Record<string, unknown> | null, { status, statusText: 'Error' });
+      await esperar();
+    };
+    const exito = async (p: Track) => {
+      http.expectOne(`${TRACKS}/analyze`).flush(p);
+      await esperar();
+    };
+    const esperarReintento = async () => {
+      await new Promise((resolver) => setTimeout(resolver, 10));
+      await esperar();
+    };
+
+    it('si el API se cae y vuelve, reintenta el mismo archivo y lo sube sin marcarlo como fallo', async () => {
+      crear();
+      await responderLista([]);
+
+      elegirVarios([archivo('uno.mp3'), archivo('dos.mp3')]);
+      await fallar(503);
+      await esperarReintento();
+      const reintento = http.expectOne(`${TRACKS}/analyze`);
+      expect(nombreEnCurso(reintento)).toBe('uno.mp3');
+      reintento.flush(pista({ id: 1, title: 'uno.mp3' }));
+      await esperar();
+      await exito(pista({ id: 2, title: 'dos.mp3' }));
+
+      expect(el().querySelector('.subida-ok')?.textContent).toContain('2 pistas analizadas.');
+      expect(el().querySelector('.subida-error')).toBeNull();
+      expect(filas().length).toBe(2);
+    });
+
+    it('reintenta con un corte de red (estado 0) y con 429, 502 y 504', async () => {
+      for (const status of [0, 429, 502, 504]) {
+        TestBed.resetTestingModule();
+        crear();
+        await responderLista([]);
+
+        elegirVarios([archivo('uno.mp3')]);
+        await fallar(status);
+        await esperarReintento();
+        http.expectOne(`${TRACKS}/analyze`).flush(pista({ id: 1, title: 'uno.mp3' }));
+        await esperar();
+
+        expect(el().querySelector('.subida-error')).toBeNull();
+        expect(filas().length).toBe(1);
+      }
+    });
+
+    it('mientras espera avisa de que el servidor no responde y que sigue intentando', async () => {
+      crear();
+      await responderLista([]);
+
+      elegirVarios([archivo('uno.mp3')]);
+      http.expectOne(`${TRACKS}/analyze`).flush(null, { status: 503, statusText: 'Unavailable' });
+      await Promise.resolve();
+      fixture.detectChanges();
+
+      const aviso = el().querySelector('.subida-espera')?.textContent ?? '';
+      expect(aviso).toContain('El servidor no responde');
+      expect(aviso).toContain('uno.mp3');
+      expect(aviso).toContain('intento 1 de 2');
+      await esperarReintento();
+      await exito(pista({ id: 1 }));
+      expect(el().querySelector('.subida-espera')).toBeNull();
+    });
+
+    it('un error del propio archivo (422) no se reintenta: se explica y se sigue con el resto', async () => {
+      crear();
+      await responderLista([]);
+
+      elegirVarios([archivo('silencio.wav'), archivo('dos.mp3')]);
+      await fallar(422, { error: 'El audio es silencio; no hay nada que analizar.' });
+      await exito(pista({ id: 2, title: 'dos.mp3' }));
+
+      expect(el().querySelector('.subida-errores')?.textContent).toContain('silencio.wav: El audio es silencio');
+      expect(el().querySelector('.subida-espera')).toBeNull();
+    });
+
+    describe('si el servidor sigue sin responder tras todos los reintentos', () => {
+      /** uno.mp3 sube bien; dos.mp3 falla 3 veces (el intento y 2 reintentos) y la tanda se detiene. */
+      const cortarEnLaSegunda = async () => {
+        elegirVarios([archivo('uno.mp3'), archivo('dos.mp3'), archivo('tres.mp3'), archivo('cuatro.mp3')]);
+        await exito(pista({ id: 1, title: 'uno.mp3' }));
+        await fallar(503);
+        await esperarReintento();
+        await fallar(503);
+        await esperarReintento();
+        await fallar(503);
+      };
+
+      it('se detiene, sin marcar el resto como fallido, y dice cuantas quedaron sin subir', async () => {
+        crear();
+        await responderLista([]);
+
+        await cortarEnLaSegunda();
+
+        http.expectNone(`${TRACKS}/analyze`);
+        expect(el().querySelector('.subida-ok')?.textContent).toContain('1 de 4 pistas analizadas.');
+        expect(el().querySelector('.subida-error')?.textContent).toContain('El servidor no responde');
+        expect(el().querySelector('.subida-error')?.textContent).toContain('3 archivos sin subir');
+        const pendientes = Array.from(el().querySelectorAll('.subida-pendientes li')).map((li) => li.textContent?.trim());
+        expect(pendientes).toEqual(['dos.mp3', 'tres.mp3', 'cuatro.mp3']);
+        expect(el().querySelector('.subida-errores')).toBeNull();
+        expect((el().querySelector('input[type="file"]') as HTMLInputElement).disabled).toBe(false);
+      });
+
+      it('el boton «Reintentar los pendientes» los sube en orden y limpia el aviso', async () => {
+        crear();
+        await responderLista([]);
+        await cortarEnLaSegunda();
+        fixture.detectChanges();
+
+        (el().querySelector('.reintentar-pendientes') as HTMLButtonElement).click();
+        await esperar();
+        for (const [id, nombre] of [[2, 'dos.mp3'], [3, 'tres.mp3'], [4, 'cuatro.mp3']] as const) {
+          const req = http.expectOne(`${TRACKS}/analyze`);
+          expect(nombreEnCurso(req)).toBe(nombre);
+          req.flush(pista({ id, title: nombre }));
+          await esperar();
+        }
+
+        expect(el().querySelector('.subida-ok')?.textContent).toContain('3 pistas analizadas.');
+        expect(el().querySelector('.subida-error')).toBeNull();
+        expect(el().querySelector('.subida-pendientes')).toBeNull();
+        expect(el().querySelector('.reintentar-pendientes')).toBeNull();
+        expect(filas().length).toBe(4);
+      });
+
+      it('si vuelve a fallar, los pendientes siguen ahi para otro intento', async () => {
+        crear();
+        await responderLista([]);
+        await cortarEnLaSegunda();
+        fixture.detectChanges();
+
+        (el().querySelector('.reintentar-pendientes') as HTMLButtonElement).click();
+        await esperar();
+        await fallar(503);
+        await esperarReintento();
+        await fallar(503);
+        await esperarReintento();
+        await fallar(503);
+
+        expect(Array.from(el().querySelectorAll('.subida-pendientes li')).length).toBe(3);
+      });
+
+      it('con un solo archivo y el servidor caido tambien se detiene y ofrece reintentar', async () => {
+        crear();
+        await responderLista([]);
+
+        elegirVarios([archivo('solo.mp3')]);
+        await fallar(503);
+        await esperarReintento();
+        await fallar(503);
+        await esperarReintento();
+        await fallar(503);
+
+        expect(el().querySelector('.subida-error')?.textContent).toContain('quedó 1 archivo sin subir');
+        expect(el().querySelector('.reintentar-pendientes')).not.toBeNull();
+      });
     });
   });
 

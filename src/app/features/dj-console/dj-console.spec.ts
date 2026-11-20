@@ -80,6 +80,63 @@ describe('DjConsoleComponent', () => {
       expect(mixer.masterVolume()).toBeCloseTo(0.25);
     });
 
+    describe('mezclador', () => {
+      const mezclador = () => el().querySelector('section[aria-label="Mezclador"]') as HTMLElement;
+
+      it('lleva el canal de cada deck: el EQ y el volumen estan en el centro, como en una mezcladora', () => {
+        expect(mezclador().querySelectorAll('app-channel-strip').length).toBe(2);
+        expect(mezclador().querySelector('section[aria-label="Canal A"]')).not.toBeNull();
+        expect(mezclador().querySelector('section[aria-label="Canal B"]')).not.toBeNull();
+      });
+
+      it('el volumen maestro es una perilla que vuelve al maximo con doble clic', () => {
+        mixer.setMasterVolume(0.3);
+        fixture.detectChanges();
+        const perilla = mezclador().querySelector('.maestro app-knob .dial') as HTMLElement;
+
+        perilla.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+
+        expect(mixer.masterVolume()).toBe(1);
+      });
+
+      it('tiene un medidor de nivel de salida', () => {
+        const medidor = mezclador().querySelector('.maestro [role="meter"]');
+
+        expect(medidor?.getAttribute('aria-label')).toBe('Nivel de salida');
+      });
+    });
+
+    describe('medidor de salida', () => {
+      beforeEach(() => {
+        TestBed.resetTestingModule();
+        vi.useFakeTimers();
+        crear(new FakeAudioContext());
+      });
+
+      afterEach(() => vi.useRealTimers());
+
+      it('sigue al nivel de salida del mezclador y baja suave al callarse', () => {
+        const medidor = () => el().querySelector('.maestro [role="meter"]') as HTMLElement;
+        // El analizador 0 es el del maestro.
+        (ctx as FakeAudioContext).analysers[0].peak = 1;
+
+        vi.advanceTimersByTime(100);
+        fixture.detectChanges();
+        expect(medidor().getAttribute('aria-valuenow')).toBe('100');
+
+        (ctx as FakeAudioContext).analysers[0].peak = 0;
+        vi.advanceTimersByTime(3000);
+        fixture.detectChanges();
+        expect(medidor().getAttribute('aria-valuenow')).toBe('0');
+      });
+
+      it('deja de medir al destruirse la consola', () => {
+        fixture.destroy();
+
+        expect(vi.getTimerCount()).toBe(0);
+      });
+    });
+
     describe('al cerrar o recargar la pagina', () => {
       const intentarCerrar = () => {
         const evento = new Event('beforeunload', { cancelable: true });

@@ -113,3 +113,13 @@ Acordado con el usuario (2026-10-24, con la skill ui-ux-pro-max): tema oscuro pa
 - [x] feat(ui): etiqueta del deck en la biblioteca, tiempo restante resaltado en cada deck y aviso al subir archivos de más de 20 MB [11.10]
 - [x] fix(ui): tildes y ñ en los textos más visibles (login, menú, cerrar sesión, telemetría, cola de la sesión y avisos de sesión) [11.12]. El resto de textos se corrigió en [11.13]
 - [x] fix(ui): tildes y ñ en el resto de textos visibles de la aplicación (biblioteca, Auto-DJ, decks, MIDI, grabaciones, telemetría, avisos y mensajes de error) y en sus pruebas [11.13] (queda sin tildes lo que no ve el usuario: identificadores, ids, nombres de archivo y mensajes de consola)
+
+## Fase 12 — Consola con aspecto de mezcladora profesional (en curso)
+
+Pedido por el usuario (2026-11-20, para la demo): que la consola parezca una mezcladora de DJ profesional tipo Pioneer DJM, con perillas rotativas y medidores de nivel que funcionen de verdad. Se verifica con Chromium y Playwright.
+
+- [x] feat(audio): medir el nivel de cada canal y de la salida (`Deck.level()`, `MixerService.masterLevel()`, escala de dB) para los medidores [12.1]
+- [x] feat(ui): perilla rotativa (`app-knob`, se arrastra en vertical, doble clic para el reposo, accesible con un slider nativo debajo) y medidor de nivel con segmentos LED (`app-level-meter`) [12.2]
+- [x] feat(ui): canal de mezcladora (`app-channel-strip`): perillas de agudos, medios y graves, medidor LED conectado al audio y fader vertical de volumen, con caída suave de los LEDs [12.3]
+- [x] feat(ui): deck con pantalla LCD de BPM, plato que gira al sonar (más rápido con más pitch, quieto con movimiento reducido), fader de pitch vertical y Play/Cue destacados; mezclador central con los dos canales, volumen maestro con medidor de salida y crossfader horizontal con escala [12.4]
+- [x] test(e2e): pruebas en Chromium (escritorio y Pixel 7) de la consola: distribución en tres columnas, perillas con ratón y teclado, plato, medidores con audio real, sin desplazamiento horizontal, nombres accesibles y objetivos táctiles de 44 px [12.5]. Falta escuchar y afinar a oído el EQ [6.10]

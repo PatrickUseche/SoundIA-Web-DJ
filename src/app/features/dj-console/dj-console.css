@@ -1,45 +1,160 @@
-/* Dos decks con el mezclador en medio; en pantallas estrechas se apilan. */
+/* Dos decks con la mezcladora en medio; en pantallas estrechas el mezclador pasa arriba y los decks se apilan. */
 .consola {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 220px minmax(0, 1fr);
-  gap: 16px;
-  align-items: start;
+  grid-template-columns: minmax(0, 1fr) 330px minmax(0, 1fr);
+  gap: 14px;
+  align-items: stretch;
 }
 
+.lado {
+  display: flex;
+  flex-direction: column;
+}
+
+.lado app-deck {
+  flex: 1;
+}
+
+/* La mezcladora: panel de metal oscuro con un leve brillo arriba y tornillos en las esquinas. */
 .mezclador {
   position: sticky;
   top: 8px;
+  align-self: start;
+  padding: 12px 10px 14px;
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.05), transparent 40px),
+    linear-gradient(180deg, #1b1b36 0%, #0d0d1e 100%);
+  border: 1px solid #34345a;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.55), inset 0 1px 0 rgb(255 255 255 / 0.08);
 }
 
-/* El crossfader va del color del deck A al del deck B. */
+.mezclador h3 {
+  text-align: center;
+  letter-spacing: 0.3em;
+}
+
+/* Canal A, columna del maestro y canal B. */
+.canales {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 62px minmax(0, 1fr);
+  gap: 8px;
+  align-items: stretch;
+}
+
+.maestro {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 0 8px;
+  background: linear-gradient(180deg, #141428 0%, #0c0c1c 100%);
+  border: 1px solid #25254a;
+  border-radius: 6px;
+}
+
+.maestro app-level-meter {
+  flex: 1 1 auto;
+  display: flex;
+  min-height: 150px;
+}
+
+.maestro app-level-meter .medidor {
+  height: 100%;
+}
+
+.etiqueta {
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--texto-suave);
+}
+
+/* Crossfader horizontal abajo del todo, con la escala de A a B. */
+.crossfader-bloque {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 10px 12px 12px;
+  background: linear-gradient(180deg, #141428 0%, #0c0c1c 100%);
+  border: 1px solid #25254a;
+  border-radius: 6px;
+}
+
+.crossfader-bloque button {
+  align-self: center;
+}
+
+.crossfader-etiqueta {
+  margin: 0;
+}
+
+.cf-lados {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 4px;
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.cf-a {
+  color: var(--deck-a);
+  font-weight: 800;
+}
+
+.cf-b {
+  color: var(--deck-b);
+  font-weight: 800;
+}
+
+.crossfader {
+  height: 34px;
+}
+
 .crossfader::-webkit-slider-runnable-track {
   height: 8px;
   background: linear-gradient(90deg, var(--deck-a), var(--deck-b));
-  border: 0;
+  border: 1px solid #0a0a14;
+  border-radius: 4px;
+  box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.6);
 }
 
 .crossfader::-moz-range-track {
   height: 8px;
   background: linear-gradient(90deg, var(--deck-a), var(--deck-b));
-  border: 0;
+  border: 1px solid #0a0a14;
+  border-radius: 4px;
 }
 
+/* La tapa del crossfader es rectangular, de metal, con una linea blanca en el centro. */
 .crossfader::-webkit-slider-thumb {
-  width: 14px;
-  height: 30px;
-  margin-top: -11px;
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 32px;
+  margin-top: -13px;
   border-radius: 3px;
-  border: 2px solid var(--fondo);
+  border: 1px solid #0a0a14;
+  background:
+    linear-gradient(#f8fafc, #f8fafc) center / 2px 70% no-repeat,
+    linear-gradient(180deg, #5a5a7c 0%, #2b2b48 50%, #1b1b34 100%);
+  box-shadow: 0 3px 6px rgb(0 0 0 / 0.7), inset 0 1px 0 rgb(255 255 255 / 0.25);
 }
 
 .crossfader::-moz-range-thumb {
-  width: 10px;
-  height: 26px;
+  width: 20px;
+  height: 30px;
   border-radius: 3px;
-  border: 2px solid var(--fondo);
+  border: 1px solid #0a0a14;
+  background:
+    linear-gradient(#f8fafc, #f8fafc) center / 2px 70% no-repeat,
+    linear-gradient(180deg, #5a5a7c 0%, #2b2b48 50%, #1b1b34 100%);
 }
 
-@media (max-width: 1000px) {
+@media (max-width: 1100px) {
   .consola {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
@@ -48,10 +163,12 @@
     grid-column: 1 / -1;
     grid-row: 1;
     position: static;
+    justify-self: center;
+    width: min(100%, 420px);
   }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 760px) {
   .consola {
     grid-template-columns: minmax(0, 1fr);
   }

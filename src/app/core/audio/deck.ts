@@ -2,6 +2,7 @@ import { signal } from '@angular/core';
 import { Track } from '../models/track';
 import { clampPitch } from './beatmatch';
 import { EqBand, eqValueToDb } from './eq';
+import { peakOf, peakToLevel } from './level';
 import { computePeaks, normalizePeaks } from './waveform';
 
 // Frecuencias de corte de cada banda (Hz), las habituales de un mixer de DJ.
@@ -13,6 +14,9 @@ const EQ_FILTER_TYPE: Record<EqBand, BiquadFilterType> = {
 };
 
 export type DeckId = 'A' | 'B';
+
+/** Tamano del bloque de muestras con el que se mide el nivel (unos 10 ms a 48 kHz). */
+const LEVEL_FFT_SIZE = 512;
 
 /** Cuantos picos se calculan de la forma de onda de la pista cargada. */
 export const WAVEFORM_PEAKS = 800;
@@ -46,6 +50,9 @@ export class Deck {
   private readonly filters: Record<EqBand, BiquadFilterNode>;
   private readonly volumeNode: GainNode;
   private readonly crossfaderNode: GainNode;
+  /** Mide el nivel del canal (despues del EQ y del fader, antes del crossfader) sin afectar al sonido. */
+  private readonly analyser: AnalyserNode;
+  private readonly levelSamples: Float32Array<ArrayBuffer>;
 
   constructor(
     readonly id: DeckId,
@@ -61,6 +68,11 @@ export class Deck {
     this.filters.high.connect(this.volumeNode);
     this.volumeNode.connect(this.crossfaderNode);
     this.crossfaderNode.connect(destination);
+
+    this.analyser = ctx.createAnalyser();
+    this.analyser.fftSize = LEVEL_FFT_SIZE;
+    this.levelSamples = new Float32Array(this.analyser.fftSize);
+    this.volumeNode.connect(this.analyser);
   }
 
   get loaded(): boolean {
@@ -70,6 +82,12 @@ export class Deck {
   /** Duracion de la pista cargada en segundos (0 si no hay ninguna). */
   get duration(): number {
     return this.buffer?.duration ?? 0;
+  }
+
+  /** Nivel actual del canal para un medidor, de 0 (silencio) a 1 (0 dBFS), en escala de dB. */
+  level(): number {
+    this.analyser.getFloatTimeDomainData(this.levelSamples);
+    return peakToLevel(peakOf(this.levelSamples));
   }
 
   /** BPM real al que suena la pista ahora mismo (el de la pista por el factor de pitch). */

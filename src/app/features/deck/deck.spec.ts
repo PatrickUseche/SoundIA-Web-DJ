@@ -80,13 +80,11 @@ describe('DeckComponent', () => {
       expect(el().querySelector('section')?.getAttribute('data-deck')).toBe('B');
     });
 
-    it('el boton Play es el principal y los volumenes y el EQ son faders', () => {
+    it('el boton Play es el principal y el pitch es un fader vertical', () => {
       crear();
 
       expect(boton('Play').classList.contains('play')).toBe(true);
-      for (const etiqueta of ['Volumen del deck', 'Graves', 'Medios', 'Agudos']) {
-        expect(slider(etiqueta).classList.contains('fader')).toBe(true);
-      }
+      expect(slider('Pitch').classList.contains('fader-pitch')).toBe(true);
     });
   });
 
@@ -299,6 +297,40 @@ describe('DeckComponent', () => {
     });
   });
 
+  describe('plato', () => {
+    const plato = () => el().querySelector('.plato') as HTMLElement;
+
+    beforeEach(async () => {
+      crear();
+      mixer.loadBuffer('A', buffer(), pista());
+      await refrescar();
+    });
+
+    it('es solo decorativo para los lectores de pantalla y muestra la letra del deck', () => {
+      expect(plato().getAttribute('aria-hidden')).toBe('true');
+      expect(plato().textContent).toContain('A');
+    });
+
+    it('esta quieto mientras no suena y gira mientras suena', async () => {
+      expect(plato().getAttribute('data-sonando')).toBe('false');
+
+      await boton('Play').click();
+      await refrescar();
+      expect(plato().getAttribute('data-sonando')).toBe('true');
+
+      boton('Pausa').click();
+      await refrescar();
+      expect(plato().getAttribute('data-sonando')).toBe('false');
+    });
+
+    it('gira mas rapido con mas pitch', async () => {
+      mixer.deck('A').setPitch(1.05);
+      await refrescar();
+
+      expect(plato().style.getPropertyValue('--velocidad')).toBe('1.05');
+    });
+  });
+
   describe('controles deslizantes', () => {
     beforeEach(async () => {
       crear();
@@ -319,21 +351,9 @@ describe('DeckComponent', () => {
       expect(texto()).toContain('+5.0%');
     });
 
-    it('el volumen cambia el volumen del deck', () => {
-      mover(slider('Volumen del deck'), 0.4);
-
-      expect(mixer.deck('A').volume()).toBeCloseTo(0.4);
-    });
-
-    it('cada banda del EQ mueve solo su perilla', () => {
-      mover(slider('Graves'), 0);
-
-      expect(mixer.deck('A').eq()).toEqual({ low: 0, mid: 0.5, high: 0.5 });
-    });
-
-    it('hay un control por cada banda del EQ', () => {
-      for (const banda of ['Graves', 'Medios', 'Agudos']) {
-        expect(slider(banda)).not.toBeNull();
+    it('el EQ y el volumen ya no estan en el deck: viven en el canal de la mezcladora', () => {
+      for (const nombre of ['Graves', 'Medios', 'Agudos', 'Volumen del deck']) {
+        expect(slider(nombre)).toBeNull();
       }
     });
 

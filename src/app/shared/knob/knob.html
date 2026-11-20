@@ -1,0 +1,14 @@
+<div class="knob" [attr.data-activa]="activa()">
+    <div class="dial" aria-hidden="true" [style.--angulo]="angulo() + 'deg'"
+        (pointerdown)="alPulsar($event)" (pointermove)="alMover($event)" (pointerup)="alSoltar()"
+        (pointercancel)="alSoltar()" (dblclick)="alDobleClic()">
+        <svg class="anillo" viewBox="0 0 48 48" focusable="false">
+            <circle class="pista" cx="24" cy="24" r="20" [attr.stroke-dasharray]="arcoTotal" transform="rotate(135 24 24)" />
+            <circle class="valor" cx="24" cy="24" r="20" [attr.stroke-dasharray]="arco()" transform="rotate(135 24 24)" />
+        </svg>
+        <span class="tapa"><span class="marca"></span></span>
+    </div>
+    <input type="range" class="control" [min]="min()" [max]="max()" [step]="paso()" [value]="valor()"
+        [attr.aria-label]="etiqueta()" (input)="alEntrada($event)" />
+    <span class="etiqueta">{{ etiquetaVisible() ?? etiqueta() }}</span>
+</div>

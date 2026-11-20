@@ -24,7 +24,7 @@ describe('QuickGuideComponent', () => {
   }
 
   /** jsdom no dispara `toggle` solo: se abre o cierra el bloque y se emite el evento a mano. */
-  const alternar = (detalles: HTMLDetailsElement, abierto: boolean) => {
+  const toggleState = (detalles: HTMLDetailsElement, abierto: boolean) => {
     detalles.open = abierto;
     detalles.dispatchEvent(new Event('toggle'));
   };
@@ -51,7 +51,7 @@ describe('QuickGuideComponent', () => {
   it('al cerrarla se recuerda', () => {
     const { detalles } = crear();
 
-    alternar(detalles, false);
+    toggleState(detalles, false);
 
     expect(almacen[QUICK_GUIDE_KEY]).toBe('1');
   });
@@ -68,7 +68,7 @@ describe('QuickGuideComponent', () => {
     almacen[QUICK_GUIDE_KEY] = '1';
     const { detalles } = crear();
 
-    alternar(detalles, true);
+    toggleState(detalles, true);
 
     expect(almacen[QUICK_GUIDE_KEY]).toBe('1');
   });
@@ -84,7 +84,7 @@ describe('QuickGuideComponent', () => {
     const detalles = (fixture.nativeElement as HTMLElement).querySelector('details') as HTMLDetailsElement;
 
     expect(detalles.open).toBe(true);
-    expect(() => alternar(detalles, false)).not.toThrow();
+    expect(() => toggleState(detalles, false)).not.toThrow();
   });
 
   it('si el almacenamiento falla al leer o guardar no rompe', () => {
@@ -95,6 +95,6 @@ describe('QuickGuideComponent', () => {
     const { detalles } = crear(roto);
 
     expect(detalles.open).toBe(true);
-    expect(() => alternar(detalles, false)).not.toThrow();
+    expect(() => toggleState(detalles, false)).not.toThrow();
   });
 });

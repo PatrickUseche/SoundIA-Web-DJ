@@ -3,23 +3,23 @@ import { Track } from '../models/track';
 import { EQ_KILL_DB } from './eq';
 import { FakeAudioBuffer, FakeAudioContext, FakeAudioNode, FakeBiquadFilterNode } from '../testing/fake-audio';
 
-const pista = (cambios: Partial<Track> = {}): Track => ({
+const trackItem = (changes: Partial<Track> = {}): Track => ({
   id: 1, title: 'tema.wav', duration: 10, bpm: 128, key: 'C major', camelot: '8B', energy: 0.6,
-  cuePoints: [2, 30], hasAudio: true, createdAt: '2026-10-21T18:30:00+00:00', ...cambios,
+  cuePoints: [2, 30], hasAudio: true, createdAt: '2026-10-21T18:30:00+00:00', ...changes,
 });
 
 describe('Deck', () => {
   let ctx: FakeAudioContext;
-  let destino: FakeAudioNode;
+  let redirectTarget: FakeAudioNode;
   let deck: Deck;
 
-  const buffer = (segundos = 10) => new FakeAudioBuffer(segundos) as unknown as AudioBuffer;
-  const cargar = (segundos = 10, track: Track | null = pista()) => deck.load(buffer(segundos), track);
+  const buffer = (secondsValue = 10) => new FakeAudioBuffer(secondsValue) as unknown as AudioBuffer;
+  const loadItems = (secondsValue = 10, track: Track | null = trackItem()) => deck.load(buffer(secondsValue), track);
 
   beforeEach(() => {
     ctx = new FakeAudioContext();
-    destino = new FakeAudioNode();
-    deck = new Deck('A', ctx as unknown as AudioContext, destino as unknown as AudioNode);
+    redirectTarget = new FakeAudioNode();
+    deck = new Deck('A', ctx as unknown as AudioContext, redirectTarget as unknown as AudioNode);
   });
 
   describe('nivel del canal', () => {
@@ -64,7 +64,7 @@ describe('Deck', () => {
       expect(medio.connections).toEqual([agudo]);
       expect(agudo.connections).toEqual([volumen]);
       expect(volumen.connections).toEqual([crossfader, ctx.analysers[0]]);
-      expect(crossfader.connections).toEqual([destino]);
+      expect(crossfader.connections).toEqual([redirectTarget]);
     });
 
     it('mide el nivel con un analizador que no forma parte de la cadena de sonido', () => {
@@ -82,7 +82,7 @@ describe('Deck', () => {
 
   describe('cargar', () => {
     it('carga una pista y deja el deck detenido al principio', () => {
-      cargar(10);
+      loadItems(10);
 
       expect(deck.loaded).toBe(true);
       expect(deck.duration).toBe(10);
@@ -92,23 +92,23 @@ describe('Deck', () => {
     });
 
     it('el punto cue inicial es el primer punto de mezcla de la pista', () => {
-      cargar(10, pista({ cuePoints: [2, 30] }));
+      loadItems(10, trackItem({ cuePoints: [2, 30] }));
 
       expect(deck.cuePoint()).toBe(2);
     });
 
     it('sin puntos de mezcla el cue inicial es el principio', () => {
-      cargar(10, pista({ cuePoints: [] }));
+      loadItems(10, trackItem({ cuePoints: [] }));
 
       expect(deck.cuePoint()).toBe(0);
     });
 
     it('al cargar otra pista detiene la que sonaba', () => {
-      cargar();
+      loadItems();
       deck.play();
       const primera = ctx.lastSource;
 
-      cargar();
+      loadItems();
 
       expect(primera.stopped).toBe(true);
       expect(deck.playing()).toBe(false);
@@ -116,7 +116,7 @@ describe('Deck', () => {
     });
 
     it('expulsar vacia el deck', () => {
-      cargar();
+      loadItems();
       deck.play();
 
       deck.eject();
@@ -135,7 +135,7 @@ describe('Deck', () => {
     it('al cargar una pista calcula los picos normalizados', () => {
       const audio = new FakeAudioBuffer(2);
       audio.getChannelData(0).fill(0.25);
-      deck.load(audio as unknown as AudioBuffer, pista());
+      deck.load(audio as unknown as AudioBuffer, trackItem());
 
       const picos = deck.peaks();
 
@@ -144,13 +144,13 @@ describe('Deck', () => {
     });
 
     it('un audio en silencio da picos en cero', () => {
-      cargar();
+      loadItems();
 
       expect(Math.max(...(deck.peaks() ?? [1]))).toBe(0);
     });
 
     it('expulsar la pista borra los picos', () => {
-      cargar();
+      loadItems();
 
       deck.eject();
 
@@ -160,14 +160,14 @@ describe('Deck', () => {
 
   describe('hora a la que la pista llega a una posicion', () => {
     it('sin sonar no se sabe', () => {
-      cargar();
+      loadItems();
 
       expect(deck.timeAtPosition(5)).toBeNull();
-      expect(new Deck('B', ctx as unknown as AudioContext, destino as unknown as AudioNode).timeAtPosition(5)).toBeNull();
+      expect(new Deck('B', ctx as unknown as AudioContext, redirectTarget as unknown as AudioNode).timeAtPosition(5)).toBeNull();
     });
 
     it('es la hora del reloj de audio en que el reproductor llega a esa posicion, sin depender de cuando se pregunta', () => {
-      cargar();
+      loadItems();
       ctx.currentTime = 4;
       deck.play(); // arranca en la hora 4 desde la posicion 0
 
@@ -177,7 +177,7 @@ describe('Deck', () => {
     });
 
     it('tiene en cuenta el pitch', () => {
-      cargar();
+      loadItems();
       deck.setPitch(1.05);
       ctx.currentTime = 4;
       deck.play();
@@ -186,7 +186,7 @@ describe('Deck', () => {
     });
 
     it('tras cambiar el pitch con la pista sonando se cuenta desde ese momento', () => {
-      cargar();
+      loadItems();
       ctx.currentTime = 0;
       deck.play();
       ctx.currentTime = 2; // posicion 2
@@ -198,7 +198,7 @@ describe('Deck', () => {
 
   describe('arranque programado', () => {
     it('playAt arranca en una hora absoluta del reloj de audio', () => {
-      cargar();
+      loadItems();
       deck.seek(2);
       ctx.currentTime = 5;
 
@@ -209,7 +209,7 @@ describe('Deck', () => {
     });
 
     it('playAt con una hora ya pasada arranca ahora', () => {
-      cargar();
+      loadItems();
       ctx.currentTime = 5;
 
       deck.playAt(4.9);
@@ -218,7 +218,7 @@ describe('Deck', () => {
     });
 
     it('playIn programa el arranque en el reloj de audio y la pista cuenta como sonando', () => {
-      cargar();
+      loadItems();
       deck.seek(2);
       ctx.currentTime = 5;
 
@@ -229,7 +229,7 @@ describe('Deck', () => {
     });
 
     it('hasta que llega el momento la posicion no se mueve; despues avanza con el pitch', () => {
-      cargar();
+      loadItems();
       deck.seek(2);
       deck.setPitch(1.04);
       ctx.currentTime = 5;
@@ -243,7 +243,7 @@ describe('Deck', () => {
     });
 
     it('cambiar el pitch mientras espera no adelanta ni retrasa el arranque', () => {
-      cargar();
+      loadItems();
       ctx.currentTime = 5;
       deck.playIn(2);
 
@@ -259,7 +259,7 @@ describe('Deck', () => {
     });
 
     it('pausar antes de que llegue el momento cancela el arranque y deja la posicion donde estaba', () => {
-      cargar();
+      loadItems();
       deck.seek(3);
       ctx.currentTime = 5;
       deck.playIn(2);
@@ -272,7 +272,7 @@ describe('Deck', () => {
     });
 
     it('con un retraso de 0 es lo mismo que play', () => {
-      cargar();
+      loadItems();
       ctx.currentTime = 4;
 
       deck.playIn(0);
@@ -281,7 +281,7 @@ describe('Deck', () => {
     });
 
     it('un retraso negativo se trata como 0', () => {
-      cargar();
+      loadItems();
       ctx.currentTime = 4;
 
       deck.playIn(-1);
@@ -293,7 +293,7 @@ describe('Deck', () => {
       deck.playIn(1);
       expect(ctx.sources.length).toBe(0);
 
-      cargar();
+      loadItems();
       deck.play();
       deck.playIn(1);
       expect(ctx.sources.length).toBe(1);
@@ -309,7 +309,7 @@ describe('Deck', () => {
     });
 
     it('play inicia una fuente desde el principio conectada al EQ', () => {
-      cargar();
+      loadItems();
 
       deck.play();
 
@@ -319,7 +319,7 @@ describe('Deck', () => {
     });
 
     it('play reanuda el contexto suspendido (hace falta un gesto del usuario)', () => {
-      cargar();
+      loadItems();
 
       deck.play();
 
@@ -327,7 +327,7 @@ describe('Deck', () => {
     });
 
     it('play dos veces seguidas no crea una segunda fuente', () => {
-      cargar();
+      loadItems();
 
       deck.play();
       deck.play();
@@ -336,7 +336,7 @@ describe('Deck', () => {
     });
 
     it('la posicion avanza con el reloj del contexto', () => {
-      cargar();
+      loadItems();
       deck.play();
 
       ctx.currentTime = 3.5;
@@ -345,7 +345,7 @@ describe('Deck', () => {
     });
 
     it('pause guarda la posicion y detiene la fuente', () => {
-      cargar();
+      loadItems();
       deck.play();
       ctx.currentTime = 4;
 
@@ -360,7 +360,7 @@ describe('Deck', () => {
     });
 
     it('al reanudar tras una pausa continua desde donde se quedo', () => {
-      cargar();
+      loadItems();
       deck.play();
       ctx.currentTime = 4;
       deck.pause();
@@ -374,7 +374,7 @@ describe('Deck', () => {
     });
 
     it('pause con el deck detenido no hace nada', () => {
-      cargar();
+      loadItems();
 
       deck.pause();
 
@@ -382,7 +382,7 @@ describe('Deck', () => {
     });
 
     it('la posicion no supera la duracion', () => {
-      cargar(10);
+      loadItems(10);
       deck.play();
 
       ctx.currentTime = 100;
@@ -391,7 +391,7 @@ describe('Deck', () => {
     });
 
     it('al llegar la fuente al final el deck se detiene en el final', () => {
-      cargar(10);
+      loadItems(10);
       deck.play();
       ctx.currentTime = 10;
 
@@ -402,7 +402,7 @@ describe('Deck', () => {
     });
 
     it('play desde el final vuelve a empezar la pista', () => {
-      cargar(10);
+      loadItems(10);
       deck.play();
       ctx.lastSource.finish();
 
@@ -413,7 +413,7 @@ describe('Deck', () => {
     });
 
     it('detener una fuente al pausar no se interpreta como el fin de la pista', () => {
-      cargar();
+      loadItems();
       deck.play();
       ctx.currentTime = 4;
 
@@ -426,7 +426,7 @@ describe('Deck', () => {
 
   describe('buscar (seek)', () => {
     it('con el deck detenido mueve la posicion sin sonar', () => {
-      cargar(10);
+      loadItems(10);
 
       deck.seek(6);
 
@@ -436,7 +436,7 @@ describe('Deck', () => {
     });
 
     it('con el deck sonando reinicia la fuente desde el nuevo punto', () => {
-      cargar(10);
+      loadItems(10);
       deck.play();
       const primera = ctx.lastSource;
       ctx.currentTime = 2;
@@ -451,7 +451,7 @@ describe('Deck', () => {
     });
 
     it('limita el salto al rango de la pista', () => {
-      cargar(10);
+      loadItems(10);
 
       deck.seek(-5);
       expect(deck.position()).toBe(0);
@@ -466,7 +466,7 @@ describe('Deck', () => {
     });
 
     it('el fin de la fuente reemplazada al saltar no detiene el deck', () => {
-      cargar(10);
+      loadItems(10);
       deck.play();
       const vieja = ctx.lastSource;
 
@@ -479,7 +479,7 @@ describe('Deck', () => {
 
   describe('punto cue', () => {
     it('setCue guarda la posicion actual', () => {
-      cargar(10);
+      loadItems(10);
       deck.seek(4.5);
 
       deck.setCue();
@@ -488,7 +488,7 @@ describe('Deck', () => {
     });
 
     it('goToCue vuelve al punto guardado sin cambiar si sonaba', () => {
-      cargar(10);
+      loadItems(10);
       deck.seek(3);
       deck.setCue();
       deck.play();
@@ -503,7 +503,7 @@ describe('Deck', () => {
 
   describe('pitch', () => {
     it('cambia la velocidad de la fuente que suena', () => {
-      cargar();
+      loadItems();
       deck.play();
 
       deck.setPitch(1.05);
@@ -521,7 +521,7 @@ describe('Deck', () => {
     });
 
     it('la posicion avanza mas rapido con mas pitch', () => {
-      cargar(100);
+      loadItems(100);
       deck.setPitch(1.08);
       deck.play();
 
@@ -531,7 +531,7 @@ describe('Deck', () => {
     });
 
     it('cambiar el pitch mientras suena no provoca un salto de posicion', () => {
-      cargar(100);
+      loadItems(100);
       deck.play();
       ctx.currentTime = 10;
       const antes = deck.position();
@@ -544,7 +544,7 @@ describe('Deck', () => {
     });
 
     it('la nueva reproduccion usa el pitch actual', () => {
-      cargar();
+      loadItems();
       deck.setPitch(0.95);
 
       deck.play();
@@ -553,7 +553,7 @@ describe('Deck', () => {
     });
 
     it('el BPM efectivo es el de la pista por el pitch', () => {
-      cargar(10, pista({ bpm: 120 }));
+      loadItems(10, trackItem({ bpm: 120 }));
       deck.setPitch(1.05);
 
       expect(deck.effectiveBpm).toBeCloseTo(126);
@@ -587,29 +587,29 @@ describe('Deck', () => {
   });
 
   describe('ecualizador', () => {
-    const filtro = (banda: 'low' | 'mid' | 'high'): FakeBiquadFilterNode =>
-      ctx.filters[{ low: 0, mid: 1, high: 2 }[banda]];
+    const activeFilter = (eqBand: 'low' | 'mid' | 'high'): FakeBiquadFilterNode =>
+      ctx.filters[{ low: 0, mid: 1, high: 2 }[eqBand]];
 
     it('al minimo corta la banda', () => {
       deck.setEq('low', 0);
 
-      expect(filtro('low').gain.value).toBe(EQ_KILL_DB);
+      expect(activeFilter('low').gain.value).toBe(EQ_KILL_DB);
       expect(deck.eq().low).toBe(0);
     });
 
     it('en el centro deja la banda plana y al maximo la realza', () => {
       deck.setEq('mid', 0.5);
-      expect(filtro('mid').gain.value).toBe(0);
+      expect(activeFilter('mid').gain.value).toBe(0);
 
       deck.setEq('mid', 1);
-      expect(filtro('mid').gain.value).toBe(6);
+      expect(activeFilter('mid').gain.value).toBe(6);
     });
 
     it('cada banda es independiente de las demas', () => {
       deck.setEq('low', 0);
 
-      expect(filtro('mid').gain.value).toBe(0);
-      expect(filtro('high').gain.value).toBe(0);
+      expect(activeFilter('mid').gain.value).toBe(0);
+      expect(activeFilter('high').gain.value).toBe(0);
       expect(deck.eq()).toEqual({ low: 0, mid: 0.5, high: 0.5 });
     });
 
@@ -622,10 +622,10 @@ describe('Deck', () => {
 
   describe('updateTrack', () => {
     it('reemplaza los datos de la pista cargada sin tocar la reproduccion', () => {
-      cargar(10, pista({ grid: { offset: 0.1, downbeat: 0.1, confidence: 0.03 } }));
+      loadItems(10, trackItem({ grid: { offset: 0.1, downbeat: 0.1, confidence: 0.03 } }));
       deck.seek(4);
 
-      deck.updateTrack(pista({ grid: { offset: 0.1, downbeat: 0.6, confidence: 1, manual: true } }));
+      deck.updateTrack(trackItem({ grid: { offset: 0.1, downbeat: 0.6, confidence: 1, manual: true } }));
 
       expect(deck.track()?.grid?.downbeat).toBe(0.6);
       expect(deck.position()).toBe(4);
@@ -633,19 +633,19 @@ describe('Deck', () => {
     });
 
     it('ignora los datos de otra pista', () => {
-      cargar(10, pista({ id: 1 }));
+      loadItems(10, trackItem({ id: 1 }));
 
-      deck.updateTrack(pista({ id: 2, title: 'otra' }));
+      deck.updateTrack(trackItem({ id: 2, title: 'otra' }));
 
       expect(deck.track()?.title).toBe('tema.wav');
     });
 
     it('no hace nada si el deck esta vacio o tiene un archivo local sin pista', () => {
-      deck.updateTrack(pista());
+      deck.updateTrack(trackItem());
       expect(deck.track()).toBeNull();
 
-      cargar(10, null);
-      deck.updateTrack(pista());
+      loadItems(10, null);
+      deck.updateTrack(trackItem());
       expect(deck.track()).toBeNull();
     });
   });

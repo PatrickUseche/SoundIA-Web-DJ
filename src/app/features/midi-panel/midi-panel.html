@@ -6,7 +6,7 @@
             <p role="status">Este navegador no soporta Web MIDI. Usa Chrome o Edge.</p>
         }
         @case ('idle') {
-            <button type="button" (click)="conectar()">Conectar controlador MIDI</button>
+            <button type="button" (click)="openConnection()">Conectar controlador MIDI</button>
         }
         @case ('requesting') {
             <p role="status">Esperando el permiso del navegador...</p>
@@ -15,11 +15,11 @@
             <p role="alert" class="alerta">
                 Se denegó el acceso a MIDI. Permítelo en la configuración del sitio y vuelve a intentarlo.
             </p>
-            <button type="button" (click)="conectar()">Reintentar</button>
+            <button type="button" (click)="openConnection()">Reintentar</button>
         }
         @case ('error') {
             <p role="alert" class="alerta">No se pudo acceder a MIDI.</p>
-            <button type="button" (click)="conectar()">Reintentar</button>
+            <button type="button" (click)="openConnection()">Reintentar</button>
         }
         @case ('ready') {
             @if (midi.inputs().length === 0) {
@@ -27,7 +27,7 @@
             } @else {
                 <label>
                     Controlador:
-                    <select (change)="alElegirControlador($event)">
+                    <select (change)="onControllerChosen($event)">
                         <option value="" [selected]="midi.selectedInputId() === null">Ninguno</option>
                         @for (input of midi.inputs(); track input.id) {
                             <option [value]="input.id" [selected]="input.id === midi.selectedInputId()">
@@ -37,7 +37,7 @@
                     </select>
                 </label>
 
-                <button type="button" (click)="alternarEnvio()" [disabled]="midi.selectedInputId() === null"
+                <button type="button" (click)="toggleSending()" [disabled]="midi.selectedInputId() === null"
                     [attr.aria-pressed]="bridge.active()">
                     {{ bridge.active() ? 'Detener envio al API' : 'Iniciar envio al API' }}
                 </button>

@@ -7,7 +7,7 @@ import { QueueService } from '../../core/services/queue';
 import { TrackApiService } from '../../core/services/tracks';
 import { TransitionRunnerService } from '../../core/services/transition-runner';
 
-function describirEstilo(plan: TransitionPlan): string {
+function describeStyle(plan: TransitionPlan): string {
   switch (plan.style) {
     case 'cut':
       return 'corte directo';
@@ -18,7 +18,7 @@ function describirEstilo(plan: TransitionPlan): string {
   }
 }
 
-const TEXTO_ESTADO: Record<AutoDjStatus, string> = {
+const STATUS_TEXT: Record<AutoDjStatus, string> = {
   off: 'Apagado',
   esperando: 'Activo: esperando el punto de salida de la pista que suena',
   preparando: 'Preparando la siguiente pista...',
@@ -42,24 +42,24 @@ export class AutoDjPanelComponent implements OnInit {
   protected readonly formatTime = formatTime;
 
   /** Titulos de las pistas por id, para mostrar la cola con nombres y no con numeros. */
-  private readonly titulos = signal<Map<number, string>>(new Map());
+  private readonly titles = signal<Map<number, string>>(new Map());
 
-  protected readonly textoEstado = computed(() => TEXTO_ESTADO[this.autodj.status()]);
+  protected readonly statusText = computed(() => STATUS_TEXT[this.autodj.status()]);
 
-  protected readonly porcentajeMezcla = computed(() => Math.round(this.runner.progress() * 100));
+  protected readonly mixPercentage = computed(() => Math.round(this.runner.progress() * 100));
 
-  protected readonly resumenSiguiente = computed(() => {
-    const preparada = this.autodj.next();
-    if (!preparada) {
+  protected readonly nextSummary = computed(() => {
+    const preparedNext = this.autodj.next();
+    if (!preparedNext) {
       return null;
     }
-    const { track, plan } = preparada;
+    const { track, plan } = preparedNext;
     return {
-      titulo: track.title,
+      trackTitle: track.title,
       bpm: track.bpm,
       camelot: track.camelot,
-      deck: preparada.deck,
-      estilo: describirEstilo(plan),
+      deck: preparedNext.deck,
+      estilo: describeStyle(plan),
       tempoVariable: plan.variableTempo === true,
       compatibilidad: Math.round(plan.compatibility.score * 100),
       adelanto: Math.round(plan.mixOutAdvance ?? 0),
@@ -77,7 +77,7 @@ export class AutoDjPanelComponent implements OnInit {
   }
 
   /** Pesos aprendidos como porcentajes enteros; null hasta conocerlos. */
-  protected readonly pesos = computed(() => {
+  protected readonly weightBars = computed(() => {
     const info = this.autodj.weights();
     if (!info) {
       return null;
@@ -98,13 +98,13 @@ export class AutoDjPanelComponent implements OnInit {
       .list()
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (lista) => this.titulos.set(new Map(lista.map((track) => [track.id, track.title]))),
+        next: (itemList) => this.titles.set(new Map(itemList.map((track) => [track.id, track.title]))),
         // Sin titulos la cola sigue funcionando: se muestran los numeros de pista.
         error: () => undefined,
       });
   }
 
-  async alternar(): Promise<void> {
+  async toggleState(): Promise<void> {
     if (this.autodj.enabled()) {
       this.autodj.stop();
     } else {
@@ -112,11 +112,11 @@ export class AutoDjPanelComponent implements OnInit {
     }
   }
 
-  titulo(item: QueueItem): string {
-    return this.titulos().get(item.trackId) ?? `Pista #${item.trackId}`;
+  trackTitle(item: QueueItem): string {
+    return this.titles().get(item.trackId) ?? `Pista #${item.trackId}`;
   }
 
-  quitar(item: QueueItem): void {
+  removeItem(item: QueueItem): void {
     void this.queue.remove(item.id);
   }
 }

@@ -38,14 +38,14 @@ describe('authGuard', () => {
   }
 
   /** Pide pasar a `url` y devuelve lo que decide el guard; `respuesta` es lo que contesta el API al preguntar por el login. */
-  function pedir(url: string, respuesta?: () => void): boolean | UrlTree | undefined {
-    let resultado: boolean | UrlTree | undefined;
+  function pedir(url: string, reply?: () => void): boolean | UrlTree | undefined {
+    let outcome: boolean | UrlTree | undefined;
     const salida = TestBed.runInInjectionContext(() =>
       authGuard({} as ActivatedRouteSnapshot, { url } as RouterStateSnapshot),
     ) as Observable<boolean | UrlTree>;
-    salida.subscribe((valor) => (resultado = valor));
-    respuesta?.();
-    return resultado;
+    salida.subscribe((rawValue) => (outcome = rawValue));
+    reply?.();
+    return outcome;
   }
 
   const contesta = (cuerpo: string | object, opciones?: { status: number; statusText: string }) => () =>
@@ -68,10 +68,10 @@ describe('authGuard', () => {
   it('lleva al login, recordando a donde iba, si el API exige login y no hay sesion', () => {
     crear(false);
 
-    const resultado = pedir('/dj', contesta({ enabled: true }));
+    const outcome = pedir('/dj', contesta({ enabled: true }));
 
-    expect(resultado).toBeInstanceOf(UrlTree);
-    expect(router.serializeUrl(resultado as UrlTree)).toBe('/login?returnUrl=%2Fdj');
+    expect(outcome).toBeInstanceOf(UrlTree);
+    expect(router.serializeUrl(outcome as UrlTree)).toBe('/login?returnUrl=%2Fdj');
   });
 
   it('si no se puede saber si hay login, deja pasar: el API es quien protege de verdad', () => {

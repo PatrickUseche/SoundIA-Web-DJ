@@ -8,8 +8,8 @@ import { environment } from '../../../environments/environment';
 
 const ROOT = environment.apiRootUrl;
 
-const sesion = (cambios: Partial<DjSession> = {}): DjSession => ({
-  id: 1, name: 'Viernes', startedAt: '2026-10-21T20:00:00', endedAt: null, active: true, ...cambios,
+const sesion = (changes: Partial<DjSession> = {}): DjSession => ({
+  id: 1, name: 'Viernes', startedAt: '2026-10-21T20:00:00', endedAt: null, active: true, ...changes,
 });
 
 describe('AutoDjApiService', () => {
@@ -25,15 +25,15 @@ describe('AutoDjApiService', () => {
   afterEach(() => http.verify());
 
   it('nextTracks hace POST con el id y el limite', () => {
-    let respuesta: NextTracksResponse | undefined;
+    let reply: NextTracksResponse | undefined;
 
-    service.nextTracks(7, 3).subscribe((r) => (respuesta = r));
+    service.nextTracks(7, 3).subscribe((r) => (reply = r));
 
     const req = http.expectOne(`${ROOT}/autodj/next`);
     expect(req.request.method).toBe('POST');
     expect(req.request.body).toEqual({ trackId: 7, limit: 3 });
     req.flush({ current: { id: 7 }, candidates: [] });
-    expect(respuesta?.current.id).toBe(7);
+    expect(reply?.current.id).toBe(7);
   });
 
   it('nextTracks sin limite no envia el campo', () => {
@@ -130,21 +130,21 @@ describe('SessionsApiService', () => {
   });
 
   it('active devuelve la sesion abierta', () => {
-    let activa: DjSession | null | undefined;
+    let isActive: DjSession | null | undefined;
 
-    service.active().subscribe((s) => (activa = s));
+    service.active().subscribe((s) => (isActive = s));
 
     http.expectOne(`${ROOT}/sessions/active`).flush(sesion({ id: 3 }));
-    expect(activa?.id).toBe(3);
+    expect(isActive?.id).toBe(3);
   });
 
   it('active devuelve null si no hay sesion abierta (404)', () => {
-    let activa: DjSession | null | undefined;
+    let isActive: DjSession | null | undefined;
 
-    service.active().subscribe((s) => (activa = s));
+    service.active().subscribe((s) => (isActive = s));
 
     http.expectOne(`${ROOT}/sessions/active`).flush({ error: 'No hay ninguna sesion abierta.' }, { status: 404, statusText: 'Not Found' });
-    expect(activa).toBeNull();
+    expect(isActive).toBeNull();
   });
 
   it('active propaga los demas errores', () => {

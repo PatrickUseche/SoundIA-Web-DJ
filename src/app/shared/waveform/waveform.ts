@@ -10,9 +10,9 @@ import { DEFAULT_WAVEFORM_COLORS, WaveformColors, drawWaveform } from '../../cor
       [attr.width]="width()"
       [attr.height]="height()"
       role="img"
-      [attr.aria-label]="etiqueta()"
+      [attr.aria-label]="labelText()"
       style="width: 100%; cursor: pointer; background: var(--fondo, #0a0a14); border-radius: 6px;"
-      (click)="alHacerClic($event)"
+      (click)="onClick($event)"
     ></canvas>
   `,
 })
@@ -25,7 +25,7 @@ export class WaveformComponent {
   readonly cues = input<number[]>([]);
   readonly width = input(600);
   readonly height = input(80);
-  readonly etiqueta = input('Forma de onda');
+  readonly labelText = input('Forma de onda');
   /** Colores del dibujo; por defecto los neutros. */
   readonly colors = input<WaveformColors>(DEFAULT_WAVEFORM_COLORS);
 
@@ -44,7 +44,7 @@ export class WaveformComponent {
     });
   }
 
-  alHacerClic(evento: MouseEvent): void {
+  onClick(domEvent: MouseEvent): void {
     if (!this.peaks()) {
       return; // sin pista no hay a donde saltar
     }
@@ -52,6 +52,6 @@ export class WaveformComponent {
     if (rect.width === 0) {
       return;
     }
-    this.seek.emit(Math.min(1, Math.max(0, (evento.clientX - rect.left) / rect.width)));
+    this.seek.emit(Math.min(1, Math.max(0, (domEvent.clientX - rect.left) / rect.width)));
   }
 }

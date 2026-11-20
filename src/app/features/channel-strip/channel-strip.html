@@ -2,17 +2,17 @@
     <h3 class="nombre">CH {{ deckId() }}</h3>
 
     <div class="perillas">
-        @for (banda of bandas; track banda) {
-            <app-knob [etiqueta]="nombreBanda[banda]" [valor]="deck().eq()[banda]"
-                (cambio)="deck().setEq(banda, $event)" />
+        @for (eqBand of eqBands; track eqBand) {
+            <app-knob [labelText]="bandName[eqBand]" [rawValue]="deck().eq()[eqBand]"
+                (change)="deck().setEq(eqBand, $event)" />
         }
     </div>
 
     <div class="fader-y-medidor">
-        <app-level-meter [etiqueta]="'Nivel del canal ' + deckId()" [nivel]="nivel()" [segmentos]="16" />
+        <app-level-meter [labelText]="'Nivel del canal ' + deckId()" [meterLevel]="meterLevel()" [segments]="16" />
         <div class="caja-fader">
             <input type="range" class="fader" min="0" max="1" step="0.01" [value]="deck().volume()"
-                (input)="alMoverVolumen($event)" aria-label="Volumen del deck" />
+                (input)="onVolumeMove($event)" aria-label="Volumen del deck" />
         </div>
     </div>
     <span class="etiqueta">Canal</span>

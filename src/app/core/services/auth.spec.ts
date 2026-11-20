@@ -18,11 +18,11 @@ class FakeStorage {
     }
     return this.datos.get(clave) ?? null;
   }
-  setItem(clave: string, valor: string): void {
+  setItem(clave: string, rawValue: string): void {
     if (this.fallar) {
       throw new DOMException('lleno', 'QuotaExceededError');
     }
-    this.datos.set(clave, valor);
+    this.datos.set(clave, rawValue);
   }
   removeItem(clave: string): void {
     if (this.fallar) {
@@ -59,12 +59,12 @@ describe('AuthService', () => {
 
     it('pregunta al API una sola vez y recuerda la respuesta', () => {
       const auth = crear();
-      let respuesta: boolean | undefined;
+      let reply: boolean | undefined;
 
-      auth.status().subscribe((enabled) => (respuesta = enabled));
+      auth.status().subscribe((enabled) => (reply = enabled));
       http.expectOne(`${BASE}/status`).flush({ enabled: true });
 
-      expect(respuesta).toBe(true);
+      expect(reply).toBe(true);
       expect(auth.enabled()).toBe(true);
 
       auth.status().subscribe();
@@ -82,12 +82,12 @@ describe('AuthService', () => {
 
     it('si no se puede saber da por no exigido el login, pero no lo recuerda', () => {
       const auth = crear();
-      let respuesta: boolean | undefined;
+      let reply: boolean | undefined;
 
-      auth.status().subscribe((enabled) => (respuesta = enabled));
+      auth.status().subscribe((enabled) => (reply = enabled));
       http.expectOne(`${BASE}/status`).flush('error', { status: 500, statusText: 'Server Error' });
 
-      expect(respuesta).toBe(false);
+      expect(reply).toBe(false);
       expect(auth.enabled()).toBeNull();
 
       auth.status().subscribe();

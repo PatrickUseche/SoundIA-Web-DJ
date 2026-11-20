@@ -1,42 +1,42 @@
 <section class="modelo-estilo" aria-labelledby="titulo-modelo-estilo">
     <h3 id="titulo-modelo-estilo">Modelo de tu estilo</h3>
-    @if (modelo.error(); as texto) {
-        <p role="alert" class="alerta">{{ texto }}</p>
+    @if (modelo.error(); as bodyText) {
+        <p role="alert" class="alerta">{{ bodyText }}</p>
     }
     @if (modelo.info(); as info) {
         <p class="ayuda">
             La IA aprende solo de tus mezclas buenas, nunca de las de otros DJ. Mezclas buenas:
             <strong>{{ info.goodRecordings }} de {{ info.required }}</strong> necesarias.
         </p>
-        <progress [value]="progreso()" [max]="info.required" aria-label="Mezclas buenas para entrenar el modelo"></progress>
+        <progress [value]="playbackProgress()" [max]="info.required" aria-label="Mezclas buenas para entrenar el modelo"></progress>
         @if (!info.ready) {
             <p class="ayuda">
-                Faltan {{ faltan() }} mezclas buenas para poder evaluar el modelo. Hasta entonces el Auto-DJ usa sus reglas.
+                Faltan {{ missingText() }} mezclas buenas para poder evaluar el modelo. Hasta entonces el Auto-DJ usa sus reglas.
             </p>
         } @else {
             <ul class="parametros-modelo">
-                @for (parametro of parametros(); track parametro.nombre) {
-                    <li [attr.data-gana]="parametro.gana">
-                        {{ parametro.nombre }}: {{ parametro.texto }}@if (parametro.enUso) { · en uso }
+                @for (parameter of parameters(); track parameter.displayName) {
+                    <li [attr.data-gana]="parameter.isWinner">
+                        {{ parameter.displayName }}: {{ parameter.bodyText }}@if (parameter.isUsed) { · en uso }
                     </li>
                 }
             </ul>
         }
-        @if (siguiente(); as s) {
+        @if (upcoming(); as s) {
             <p class="ayuda">
                 Qué pista sigue: aprende cada vez que eliges en la cola una pista distinta de la que propone la IA.
                 Correcciones: <strong>{{ s.correcciones }} de {{ s.necesarias }}</strong> necesarias.
-                @if (!s.lista) {
-                    Faltan {{ s.faltan }}.
-                } @else if (s.gana) {
-                    Con tus correcciones dejadas fuera habría acertado {{ s.aciertos }} %: ya gana a las reglas@if (s.enUso) { · en uso }.
+                @if (!s.itemList) {
+                    Faltan {{ s.missingText }}.
+                } @else if (s.isWinner) {
+                    Con tus correcciones dejadas fuera habría acertado {{ s.aciertos }} %: ya gana a las reglas@if (s.isUsed) { · en uso }.
                 } @else {
                     Todavía no gana a las reglas ({{ s.aciertos }} % de aciertos).
                 }
             </p>
         }
         <div class="interruptor-modelo">
-            <button type="button" (click)="alternar()" [attr.aria-pressed]="info.enabled" [disabled]="modelo.cambiando()">
+            <button type="button" (click)="toggleState()" [attr.aria-pressed]="info.enabled" [disabled]="modelo.changing()">
                 Usar mi estilo: {{ info.enabled ? 'activado' : 'apagado' }}
             </button>
             <span class="ayuda">

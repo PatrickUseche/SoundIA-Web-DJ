@@ -24,70 +24,70 @@ const ARC_LENGTH = RING_LENGTH * (SWEEP / 360);
 })
 export class KnobComponent {
   /** Nombre accesible del control (lo lee el lector de pantalla). */
-  readonly etiqueta = input.required<string>();
+  readonly labelText = input.required<string>();
   /** Texto corto que se ve bajo la perilla cuando el nombre accesible no cabe; por defecto, el mismo nombre. */
-  readonly etiquetaVisible = input<string | null>(null);
-  readonly valor = input.required<number>();
+  readonly visibleLabel = input<string | null>(null);
+  readonly rawValue = input.required<number>();
   readonly min = input(0);
   readonly max = input(1);
-  readonly paso = input(0.01);
+  readonly stepSize = input(0.01);
   /** Valor al que vuelve con doble clic (el centro: en el EQ es la banda plana). */
-  readonly reposo = input(0.5);
+  readonly restValue = input(0.5);
 
   /** Avisa del nuevo valor, ya limitado al rango y ajustado al paso. */
-  readonly cambio = output<number>();
+  readonly change = output<number>();
 
-  protected readonly activa = signal(false);
-  private arrastre: { y: number; valor: number } | null = null;
+  protected readonly isActive = signal(false);
+  private dragState: { y: number; rawValue: number } | null = null;
 
   /** Posicion de la perilla, de 0 (minimo) a 1 (maximo). */
-  private readonly fraccion = computed(() => {
-    const rango = this.max() - this.min();
-    return rango > 0 ? Math.min(1, Math.max(0, (this.valor() - this.min()) / rango)) : 0;
+  private readonly fraction = computed(() => {
+    const valueRange = this.max() - this.min();
+    return valueRange > 0 ? Math.min(1, Math.max(0, (this.rawValue() - this.min()) / valueRange)) : 0;
   });
-  protected readonly angulo = computed(() => MIN_ANGLE + SWEEP * this.fraccion());
-  protected readonly arco = computed(() => `${(ARC_LENGTH * this.fraccion()).toFixed(2)} ${RING_LENGTH.toFixed(2)}`);
-  protected readonly arcoTotal = `${ARC_LENGTH.toFixed(2)} ${RING_LENGTH.toFixed(2)}`;
+  protected readonly angle = computed(() => MIN_ANGLE + SWEEP * this.fraction());
+  protected readonly arc = computed(() => `${(ARC_LENGTH * this.fraction()).toFixed(2)} ${RING_LENGTH.toFixed(2)}`);
+  protected readonly totalArc = `${ARC_LENGTH.toFixed(2)} ${RING_LENGTH.toFixed(2)}`;
 
-  protected alPulsar(evento: PointerEvent): void {
-    evento.preventDefault();
-    this.arrastre = { y: evento.clientY, valor: this.valor() };
-    this.activa.set(true);
+  protected onPress(domEvent: PointerEvent): void {
+    domEvent.preventDefault();
+    this.dragState = { y: domEvent.clientY, rawValue: this.rawValue() };
+    this.isActive.set(true);
     try {
-      (evento.currentTarget as HTMLElement).setPointerCapture?.(evento.pointerId);
+      (domEvent.currentTarget as HTMLElement).setPointerCapture?.(domEvent.pointerId);
     } catch {
       // Un puntero sintetico (pruebas) no se puede capturar: el arrastre sigue funcionando sobre la perilla.
     }
     // El foco va al control nativo para que el teclado siga a partir de aqui.
-    ((evento.currentTarget as HTMLElement).parentElement?.querySelector('input') as HTMLElement | null)?.focus();
+    ((domEvent.currentTarget as HTMLElement).parentElement?.querySelector('input') as HTMLElement | null)?.focus();
   }
 
-  protected alMover(evento: PointerEvent): void {
-    if (!this.arrastre) {
+  protected onMove(domEvent: PointerEvent): void {
+    if (!this.dragState) {
       return;
     }
-    const factor = evento.shiftKey ? FINE_FACTOR : 1;
-    const desplazamiento = ((this.arrastre.y - evento.clientY) / DRAG_PIXELS) * (this.max() - this.min()) * factor;
-    this.cambio.emit(this.ajustar(this.arrastre.valor + desplazamiento));
+    const factor = domEvent.shiftKey ? FINE_FACTOR : 1;
+    const displacement = ((this.dragState.y - domEvent.clientY) / DRAG_PIXELS) * (this.max() - this.min()) * factor;
+    this.change.emit(this.adjust(this.dragState.rawValue + displacement));
   }
 
-  protected alSoltar(): void {
-    this.arrastre = null;
-    this.activa.set(false);
+  protected onRelease(): void {
+    this.dragState = null;
+    this.isActive.set(false);
   }
 
-  protected alDobleClic(): void {
-    this.cambio.emit(this.ajustar(this.reposo()));
+  protected onDoubleClick(): void {
+    this.change.emit(this.adjust(this.restValue()));
   }
 
-  protected alEntrada(evento: Event): void {
-    this.cambio.emit(Number((evento.target as HTMLInputElement).value));
+  protected onInput(domEvent: Event): void {
+    this.change.emit(Number((domEvent.target as HTMLInputElement).value));
   }
 
   /** Limita al rango y ajusta al paso (con redondeo para no arrastrar errores de coma flotante). */
-  private ajustar(valor: number): number {
-    const limitado = Math.min(this.max(), Math.max(this.min(), valor));
-    const pasos = Math.round((limitado - this.min()) / this.paso());
-    return Number(Math.min(this.max(), this.min() + pasos * this.paso()).toFixed(6));
+  private adjust(rawValue: number): number {
+    const clamped = Math.min(this.max(), Math.max(this.min(), rawValue));
+    const stepCount = Math.round((clamped - this.min()) / this.stepSize());
+    return Number(Math.min(this.max(), this.min() + stepCount * this.stepSize()).toFixed(6));
   }
 }

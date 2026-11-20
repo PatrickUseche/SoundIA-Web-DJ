@@ -169,9 +169,9 @@ export class TransitionRunnerService {
     // Solo suena la pista entrante: crossfader de su lado, EQ planos y la saliente detenida.
     this.mixer.setCrossfader(from === 'A' ? 1 : 0);
     outgoing.pause();
-    for (const banda of EQ_BANDS as readonly EqBand[]) {
-      outgoing.setEq(banda, 0.5);
-      incoming.setEq(banda, 0.5);
+    for (const eqBand of EQ_BANDS as readonly EqBand[]) {
+      outgoing.setEq(eqBand, 0.5);
+      incoming.setEq(eqBand, 0.5);
     }
     this.progress.set(1);
     this.running.set(false);

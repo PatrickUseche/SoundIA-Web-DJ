@@ -54,8 +54,8 @@ export class KeepAliveService {
       return;
     }
     this.lastActivity = this.now();
-    for (const evento of ACTIVITY_EVENTS) {
-      window.addEventListener(evento, this.onActivity, { passive: true });
+    for (const domEvent of ACTIVITY_EVENTS) {
+      window.addEventListener(domEvent, this.onActivity, { passive: true });
     }
     this.timer = setInterval(() => this.ping(), this.everyMs);
     this.destroyRef.onDestroy(() => this.stop());
@@ -66,16 +66,16 @@ export class KeepAliveService {
       clearInterval(this.timer);
       this.timer = null;
     }
-    for (const evento of ACTIVITY_EVENTS) {
-      window.removeEventListener(evento, this.onActivity);
+    for (const domEvent of ACTIVITY_EVENTS) {
+      window.removeEventListener(domEvent, this.onActivity);
     }
   }
 
   private ping(): void {
     // Sin sesion iniciada (con login encendido) la consulta daria 401 y cerraria la sesion de nuevo: no se hace.
-    const permitido = this.auth.enabled() === false || (this.auth.enabled() === true && this.auth.authenticated());
-    const activo = this.now() - this.lastActivity < this.idleMs;
-    if (!permitido || !activo) {
+    const isAllowed = this.auth.enabled() === false || (this.auth.enabled() === true && this.auth.authenticated());
+    const isActiveNow = this.now() - this.lastActivity < this.idleMs;
+    if (!isAllowed || !isActiveNow) {
       return;
     }
     // Lo que responda da igual: basta con que la peticion llegue y despierte a los servidores.

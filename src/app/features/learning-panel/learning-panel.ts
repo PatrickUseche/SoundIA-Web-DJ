@@ -9,11 +9,11 @@ import { MixRecorderService } from '../../core/services/mix-recorder';
 export class LearningPanelComponent {
   protected readonly recorder = inject(MixRecorderService);
 
-  protected alCambiar(evento: Event): void {
-    this.recorder.setEnabled((evento.target as HTMLInputElement).checked);
+  protected onChange(domEvent: Event): void {
+    this.recorder.setEnabled((domEvent.target as HTMLInputElement).checked);
   }
 
-  protected textoEstado(): string {
+  protected statusText(): string {
     if (!this.recorder.supported) {
       return 'Este navegador no puede reproducir audio, así que no hay mezclas que grabar.';
     }

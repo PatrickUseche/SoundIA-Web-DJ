@@ -14,11 +14,11 @@ describe('eqValueToDb', () => {
   });
 
   it('es creciente en todo el recorrido', () => {
-    let anterior = -Infinity;
+    let previousItem = -Infinity;
     for (let v = 0; v <= 1.0001; v += 0.05) {
       const db = eqValueToDb(v);
-      expect(db).toBeGreaterThanOrEqual(anterior);
-      anterior = db;
+      expect(db).toBeGreaterThanOrEqual(previousItem);
+      previousItem = db;
     }
   });
 

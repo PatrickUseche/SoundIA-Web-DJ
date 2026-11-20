@@ -72,8 +72,8 @@ describe('MidiBridgeService', () => {
   it('una rafaga de movimientos del mismo control envia solo el ultimo valor', () => {
     bridge.start();
 
-    for (let valor = 0; valor < 100; valor++) {
-      controlador.send(0xb0, 14, valor);
+    for (let rawValue = 0; rawValue < 100; rawValue++) {
+      controlador.send(0xb0, 14, rawValue);
     }
     avanzar(50);
 
@@ -123,9 +123,9 @@ describe('MidiBridgeService', () => {
     http.expectNone(EVENT_URL); // el primero sigue en vuelo
 
     aceptar(primero);
-    const segundo = http.expectOne(EVENT_URL);
-    expect(segundo.request.body).toEqual({ controlId: 14, value: 20 });
-    aceptar(segundo);
+    const wholeSecond = http.expectOne(EVENT_URL);
+    expect(wholeSecond.request.body).toEqual({ controlId: 14, value: 20 });
+    aceptar(wholeSecond);
   });
 
   it('un fallo del API se cuenta y no corta los envios siguientes', () => {

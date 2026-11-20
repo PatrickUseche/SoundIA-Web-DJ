@@ -12,8 +12,8 @@ export class MidiMappingComponent implements OnInit, OnDestroy {
   protected readonly mapper = inject(MidiMapperService);
   protected readonly midi = inject(MidiService);
 
-  protected readonly controles = MIXER_CONTROLS;
-  protected readonly etiqueta = controlLabel;
+  protected readonly controls = MIXER_CONTROLS;
+  protected readonly labelText = controlLabel;
 
   ngOnInit(): void {
     this.mapper.start();
@@ -27,17 +27,17 @@ export class MidiMappingComponent implements OnInit, OnDestroy {
    * Texto de la asignación de un control, por ejemplo "Canal 2 · CC 14" o "Sin asignar". Las asignaciones
    * guardadas antes de distinguir el canal valen para cualquiera y se muestran como "CC 14 (cualquier canal)".
    */
-  asignacion(control: MixerControl): string {
-    const asignado = this.mapper.assignedTo(control);
-    if (asignado === null) {
+  assignmentLabel(control: MixerControl): string {
+    const assignedControl = this.mapper.assignedTo(control);
+    if (assignedControl === null) {
       return 'Sin asignar';
     }
-    return asignado.channel === null
-      ? `${midiControlLabel(asignado.controlId)} (cualquier canal)`
-      : midiControlLabel(asignado.controlId, asignado.channel);
+    return assignedControl.channel === null
+      ? `${midiControlLabel(assignedControl.controlId)} (cualquier canal)`
+      : midiControlLabel(assignedControl.controlId, assignedControl.channel);
   }
 
-  asignar(control: MixerControl): void {
+  assignControl(control: MixerControl): void {
     // Pulsar Asignar otra vez sobre el mismo control cancela la espera.
     if (this.mapper.learning() === control) {
       this.mapper.cancelLearning();
@@ -46,15 +46,15 @@ export class MidiMappingComponent implements OnInit, OnDestroy {
     }
   }
 
-  quitar(control: MixerControl): void {
+  removeItem(control: MixerControl): void {
     this.mapper.clear(control);
   }
 
-  restablecer(): void {
+  resetValue(): void {
     this.mapper.reset();
   }
 
-  get hayAsignaciones(): boolean {
+  get hasAssignments(): boolean {
     return Object.keys(this.mapper.mapping()).length > 0;
   }
 }

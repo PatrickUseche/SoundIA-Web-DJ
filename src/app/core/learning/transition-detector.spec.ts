@@ -15,12 +15,12 @@ import {
   isAudible,
 } from './transition-detector';
 
-const deck = (cambios: Partial<DeckSample> = {}): DeckSample => ({
+const deck = (changes: Partial<DeckSample> = {}): DeckSample => ({
   trackId: 1, playing: true, position: 100, pitch: 1, volume: 1, gain: 1, eq: { low: 0.5, mid: 0.5, high: 0.5 },
-  ...cambios,
+  ...changes,
 });
 
-const mudo = (cambios: Partial<DeckSample> = {}) => deck({ playing: false, ...cambios });
+const mudo = (changes: Partial<DeckSample> = {}) => deck({ playing: false, ...changes });
 
 const muestra = (time: number, a: DeckSample, b: DeckSample, crossfader = 0.5): MixSample => ({
   time, crossfader, decks: { A: a, B: b },
@@ -80,27 +80,27 @@ describe('TransitionDetector', () => {
    * Una mezcla clasica: A suena sola `solo` segundos; entonces entra B y durante `solape` segundos el crossfader va
    * de A a B (y los graves de A se cortan a la mitad); despues A se apaga y B sigue sola `despues` segundos.
    */
-  function mezclaClasica(opciones: { solo?: number; solape?: number; despues?: number; paso?: number } = {}) {
-    const { solo = 5, solape = 16, despues = 3, paso = 0.05 } = opciones;
+  function mezclaClasica(opciones: { solo?: number; solape?: number; afterValue?: number; stepSize?: number } = {}) {
+    const { solo = 5, solape = 16, afterValue = 3, stepSize = 0.05 } = opciones;
     let t = 0;
-    for (; t < solo; t += paso) {
+    for (; t < solo; t += stepSize) {
       alimentar(muestra(t, deck({ trackId: 1, position: 100 + t }), mudo({ trackId: 2, position: 0 }), 0));
     }
-    const entrada = t;
-    for (; t < entrada + solape; t += paso) {
-      const p = (t - entrada) / solape;
+    const entry = t;
+    for (; t < entry + solape; t += stepSize) {
+      const p = (t - entry) / solape;
       const crossfader = p;
       alimentar(muestra(
         t,
         deck({ trackId: 1, position: 100 + t, gain: Math.cos((p * Math.PI) / 2), eq: { low: p < 0.5 ? 0.5 : 0, mid: 0.5, high: 0.5 } }),
-        deck({ trackId: 2, position: 4 + (t - entrada), pitch: 1.02, gain: Math.sin((p * Math.PI) / 2) }),
+        deck({ trackId: 2, position: 4 + (t - entry), pitch: 1.02, gain: Math.sin((p * Math.PI) / 2) }),
         crossfader,
       ));
     }
-    for (let i = 0; i * paso < despues; i++, t += paso) {
-      alimentar(muestra(t, mudo({ trackId: 1, position: 100 + t, gain: 0 }), deck({ trackId: 2, position: 4 + (t - entrada) }), 1));
+    for (let i = 0; i * stepSize < afterValue; i++, t += stepSize) {
+      alimentar(muestra(t, mudo({ trackId: 1, position: 100 + t, gain: 0 }), deck({ trackId: 2, position: 4 + (t - entry) }), 1));
     }
-    return { entrada, fin: entrada + solape };
+    return { entry, fin: entry + solape };
   }
 
   it('detecta una mezcla clasica con lo que hizo el DJ', () => {
@@ -157,9 +157,9 @@ describe('TransitionDetector', () => {
     for (; t < 3; t += 0.05) {
       alimentar(muestra(t, mudo({ trackId: 2 }), deck({ trackId: 1, position: 50 + t }), 1));
     }
-    const entrada = t;
-    for (; t < entrada + 8; t += 0.05) {
-      const p = (t - entrada) / 8;
+    const entry = t;
+    for (; t < entry + 8; t += 0.05) {
+      const p = (t - entry) / 8;
       // El crossfader va de B (1) hacia A (0).
       // Crossfader en 1 - p: la ganancia del deck A es cos(cf * pi / 2) y la del B sin(cf * pi / 2).
       alimentar(muestra(t, deck({ trackId: 2, gain: Math.cos(((1 - p) * Math.PI) / 2) }), deck({ trackId: 1, position: 50 + t, gain: Math.sin(((1 - p) * Math.PI) / 2) }), 1 - p));
@@ -200,9 +200,9 @@ describe('TransitionDetector', () => {
     for (; t < 44; t += 0.05) {
       alimentar(muestra(t, mudo({ trackId: 3 }), deck({ trackId: 2, position: 40 + t }), 1));
     }
-    const entrada = t;
-    for (; t < entrada + 6; t += 0.05) {
-      const p = (t - entrada) / 6;
+    const entry = t;
+    for (; t < entry + 6; t += 0.05) {
+      const p = (t - entry) / 6;
       alimentar(muestra(t, deck({ trackId: 3, gain: Math.cos(((1 - p) * Math.PI) / 2) }), deck({ trackId: 2, position: 40 + t, gain: Math.cos((p * Math.PI) / 2) }), 1 - p));
     }
     for (let i = 0; i < 40; i++, t += 0.05) {

@@ -9,16 +9,16 @@ import { TransitionRunnerService } from '../../core/services/transition-runner';
 import { QueueItem, TransitionPlan, WeightsInfo } from '../../core/models/autodj';
 import { Track } from '../../core/models/track';
 
-const pista = (id: number, title = `pista ${id}`): Track => ({
+const trackItem = (id: number, title = `pista ${id}`): Track => ({
   id, title, duration: 200, bpm: 126.5, key: 'A minor', camelot: '8A', energy: 0.6,
   cuePoints: [0], hasAudio: true, createdAt: 'x',
 });
 
-const plan = (cambios: Partial<TransitionPlan> = {}): TransitionPlan => ({
+const plan = (changes: Partial<TransitionPlan> = {}): TransitionPlan => ({
   fromTrackId: 1, toTrackId: 2, style: 'blend', bars: 16, seconds: 30, mixOutAt: 100, mixInAt: 0,
   tempoMatch: { ratio: 1, multiplier: 1, feasible: true },
   compatibility: { score: 0.934, tempo: 1, harmonic: 1, energy: 1, tempoMatch: { ratio: 1, multiplier: 1, feasible: true } },
-  automation: [], ...cambios,
+  automation: [], ...changes,
 });
 
 const elemento = (id: number, trackId: number): QueueItem => ({ id, sessionId: 5, trackId, addedAt: 'x' });
@@ -51,10 +51,10 @@ describe('AutoDjPanelComponent', () => {
     remove: vi.fn(async () => true),
   };
   const runner = { progress: signal(0) };
-  const tracks = { list: vi.fn(() => of([pista(10, 'Tema diez'), pista(20, 'Tema veinte')])) };
+  const tracks = { list: vi.fn(() => of([trackItem(10, 'Tema diez'), trackItem(20, 'Tema veinte')])) };
 
   const el = () => fixture.nativeElement as HTMLElement;
-  const texto = () => el().textContent ?? '';
+  const bodyText = () => el().textContent ?? '';
   const boton = (contiene: string) =>
     Array.from(el().querySelectorAll('button')).find((b) => b.textContent?.includes(contiene)) as HTMLButtonElement;
 
@@ -95,7 +95,7 @@ describe('AutoDjPanelComponent', () => {
     autodj.stop.mockClear();
     queue.refresh.mockClear();
     queue.remove.mockClear();
-    tracks.list.mockReturnValue(of([pista(10, 'Tema diez'), pista(20, 'Tema veinte')]));
+    tracks.list.mockReturnValue(of([trackItem(10, 'Tema diez'), trackItem(20, 'Tema veinte')]));
   });
 
   describe('cuenta atras y mezclar ahora', () => {
@@ -111,12 +111,12 @@ describe('AutoDjPanelComponent', () => {
       await crear();
 
       expect(boton('Mezclar ahora').disabled).toBe(true);
-      expect(texto()).not.toContain('Mezcla en');
+      expect(bodyText()).not.toContain('Mezcla en');
     });
 
     it('con la siguiente preparada muestra cuanto falta para mezclar', async () => {
       autodj.enabled.set(true);
-      autodj.next.set({ track: pista(2), plan: plan(), deck: 'B' });
+      autodj.next.set({ track: trackItem(2), plan: plan(), deck: 'B' });
       autodj.secondsToMix.set(125);
       await crear();
 
@@ -126,7 +126,7 @@ describe('AutoDjPanelComponent', () => {
 
     it('el boton mezcla ya', async () => {
       autodj.enabled.set(true);
-      autodj.next.set({ track: pista(2), plan: plan(), deck: 'B' });
+      autodj.next.set({ track: trackItem(2), plan: plan(), deck: 'B' });
       autodj.secondsToMix.set(125);
       await crear();
 
@@ -138,7 +138,7 @@ describe('AutoDjPanelComponent', () => {
     it('mientras se mezcla el boton esta desactivado', async () => {
       autodj.enabled.set(true);
       autodj.status.set('mezclando');
-      autodj.next.set({ track: pista(2), plan: plan(), deck: 'B' });
+      autodj.next.set({ track: trackItem(2), plan: plan(), deck: 'B' });
       await crear();
 
       expect(boton('Mezclar ahora').disabled).toBe(true);
@@ -148,12 +148,12 @@ describe('AutoDjPanelComponent', () => {
       autodj.enabled.set(true);
       await crear();
 
-      expect(texto()).toContain('le enseñas a la IA');
+      expect(bodyText()).toContain('le enseñas a la IA');
     });
 
     it('avisa cuando la IA ya adelanta sus mezclas por lo aprendido', async () => {
       autodj.enabled.set(true);
-      autodj.next.set({ track: pista(2), plan: plan({ mixOutAdvance: 40 }), deck: 'B' });
+      autodj.next.set({ track: trackItem(2), plan: plan({ mixOutAdvance: 40 }), deck: 'B' });
       await crear();
 
       expect(el().querySelector('.siguiente')?.textContent).toContain('adelanta sus mezclas 40 s');
@@ -161,7 +161,7 @@ describe('AutoDjPanelComponent', () => {
 
     it('avisa cuando la mezcla usa el estilo aprendido del DJ y dice los compases', async () => {
       autodj.enabled.set(true);
-      autodj.next.set({ track: pista(2), plan: plan({ source: 'model', learnedBars: true, bars: 8 }), deck: 'B' });
+      autodj.next.set({ track: trackItem(2), plan: plan({ source: 'model', learnedBars: true, bars: 8 }), deck: 'B' });
       await crear();
 
       expect(el().querySelector('.siguiente')?.textContent).toContain('Esta mezcla usa tu estilo');
@@ -170,7 +170,7 @@ describe('AutoDjPanelComponent', () => {
 
     it('explica por que es un fundido cuando una pista tiene tempo variable', async () => {
       autodj.enabled.set(true);
-      autodj.next.set({ track: pista(2), plan: plan({ style: 'fade', bars: 2, variableTempo: true }), deck: 'B' });
+      autodj.next.set({ track: trackItem(2), plan: plan({ style: 'fade', bars: 2, variableTempo: true }), deck: 'B' });
       await crear();
 
       expect(el().querySelector('.siguiente')?.textContent).toContain('tempo variable');
@@ -178,18 +178,18 @@ describe('AutoDjPanelComponent', () => {
 
     it('con las reglas no habla del estilo del DJ', async () => {
       autodj.enabled.set(true);
-      autodj.next.set({ track: pista(2), plan: plan({ source: 'rules' }), deck: 'B' });
+      autodj.next.set({ track: trackItem(2), plan: plan({ source: 'rules' }), deck: 'B' });
       await crear();
 
-      expect(texto()).not.toContain('usa tu estilo');
+      expect(bodyText()).not.toContain('usa tu estilo');
     });
 
     it('si aun no aprendio nada no menciona el adelanto', async () => {
       autodj.enabled.set(true);
-      autodj.next.set({ track: pista(2), plan: plan({ mixOutAdvance: 0 }), deck: 'B' });
+      autodj.next.set({ track: trackItem(2), plan: plan({ mixOutAdvance: 0 }), deck: 'B' });
       await crear();
 
-      expect(texto()).not.toContain('adelanta sus mezclas');
+      expect(bodyText()).not.toContain('adelanta sus mezclas');
     });
   });
 
@@ -242,8 +242,8 @@ describe('AutoDjPanelComponent', () => {
         ['mezclando', 'Mezclando'],
         ['error', 'Hay un problema'],
       ];
-      for (const [estado, fragmento] of esperado) {
-        autodj.status.set(estado);
+      for (const [currentStatus, fragmento] of esperado) {
+        autodj.status.set(currentStatus);
         fixture.detectChanges();
         expect(el().querySelector('.estado')?.textContent).toContain(fragmento);
       }
@@ -283,27 +283,27 @@ describe('AutoDjPanelComponent', () => {
     });
 
     it('resume la pista preparada, el deck, el estilo y la compatibilidad', async () => {
-      autodj.next.set({ track: pista(2, 'Tema dos'), plan: plan(), deck: 'B' });
+      autodj.next.set({ track: trackItem(2, 'Tema dos'), plan: plan(), deck: 'B' });
       await crear();
 
-      const siguiente = el().querySelector('.siguiente')?.textContent ?? '';
-      expect(siguiente).toContain('Tema dos');
-      expect(siguiente).toContain('deck B');
-      expect(siguiente).toContain('126.5 BPM');
-      expect(siguiente).toContain('8A');
-      expect(siguiente).toContain('mezcla de 16 compases');
-      expect(siguiente).toContain('compatibilidad 93%');
+      const upcoming = el().querySelector('.siguiente')?.textContent ?? '';
+      expect(upcoming).toContain('Tema dos');
+      expect(upcoming).toContain('deck B');
+      expect(upcoming).toContain('126.5 BPM');
+      expect(upcoming).toContain('8A');
+      expect(upcoming).toContain('mezcla de 16 compases');
+      expect(upcoming).toContain('compatibilidad 93%');
     });
 
     it('un fundido sin igualar el tempo se describe como tal', async () => {
-      autodj.next.set({ track: pista(2), plan: plan({ style: 'fade', bars: 2 }), deck: 'A' });
+      autodj.next.set({ track: trackItem(2), plan: plan({ style: 'fade', bars: 2 }), deck: 'A' });
       await crear();
 
       expect(el().querySelector('.siguiente')?.textContent).toContain('fundido de 2 compases');
     });
 
     it('un corte directo se describe como tal', async () => {
-      autodj.next.set({ track: pista(2), plan: plan({ style: 'cut', bars: 0 }), deck: 'A' });
+      autodj.next.set({ track: trackItem(2), plan: plan({ style: 'cut', bars: 0 }), deck: 'A' });
       await crear();
 
       expect(el().querySelector('.siguiente')?.textContent).toContain('corte directo');
@@ -311,7 +311,7 @@ describe('AutoDjPanelComponent', () => {
   });
 
   describe('valorar la ultima mezcla', () => {
-    const transicion = () => ({ from: pista(1, 'Tema uno'), to: pista(2, 'Tema dos') });
+    const transicion = () => ({ from: trackItem(1, 'Tema uno'), to: trackItem(2, 'Tema dos') });
 
     it('sin transicion no muestra la seccion', async () => {
       await crear();
@@ -437,7 +437,7 @@ describe('AutoDjPanelComponent', () => {
       await crear();
       queue.refresh.mockClear();
 
-      autodj.next.set({ track: pista(2), plan: plan(), deck: 'B' });
+      autodj.next.set({ track: trackItem(2), plan: plan(), deck: 'B' });
       fixture.detectChanges();
       await fixture.whenStable();
 
@@ -515,6 +515,6 @@ describe('AutoDjPanelComponent', () => {
     queue.items.set([elemento(1, 10)]);
     await crear();
 
-    expect(texto()).not.toContain('La cola esta vacia');
+    expect(bodyText()).not.toContain('La cola esta vacia');
   });
 });

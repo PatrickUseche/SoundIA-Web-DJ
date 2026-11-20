@@ -45,17 +45,17 @@ describe('App', () => {
   it('avisa de que los servidores pueden estar despertando solo cuando una peticion tarda', async () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
-    const aviso = TestBed.inject(WakeNoticeService);
+    const noticeText = TestBed.inject(WakeNoticeService);
     const html = fixture.nativeElement as HTMLElement;
     expect(html.querySelector('.aviso-despertando')).toBeNull();
 
-    aviso.slow.set(true);
+    noticeText.slow.set(true);
     fixture.detectChanges();
 
     expect(html.querySelector('.aviso-despertando')?.textContent).toContain('servidores');
     expect(html.querySelector('.aviso-despertando')?.getAttribute('role')).toBe('status');
 
-    aviso.slow.set(false);
+    noticeText.slow.set(false);
     fixture.detectChanges();
 
     expect(html.querySelector('.aviso-despertando')).toBeNull();
@@ -64,43 +64,43 @@ describe('App', () => {
   it('muestra si los servidores responden, con texto ademas del color', async () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
-    const aviso = TestBed.inject(WakeNoticeService);
+    const noticeText = TestBed.inject(WakeNoticeService);
     const html = fixture.nativeElement as HTMLElement;
     expect(html.querySelector('.estado-servidor')).toBeNull();
 
-    aviso.reachable.set(true);
+    noticeText.reachable.set(true);
     fixture.detectChanges();
     expect(html.querySelector('.estado-servidor')?.textContent?.trim()).toBe('Servidores listos');
     expect(html.querySelector('.estado-servidor')?.getAttribute('data-estado')).toBe('listo');
 
-    aviso.reachable.set(false);
+    noticeText.reachable.set(false);
     fixture.detectChanges();
     expect(html.querySelector('.estado-servidor')?.textContent?.trim()).toBe('Sin respuesta del servidor');
     expect(html.querySelector('.estado-servidor')?.getAttribute('data-estado')).toBe('caido');
   });
 
   it('muestra el estado del motor de IA con texto ademas del color y lo oculta si no se sabe', async () => {
-    const estado = signal<'UNKNOWN' | 'UP' | 'DOWN' | null>(null);
-    TestBed.overrideProvider(EngineStatusService, { useValue: { state: estado, start: () => undefined } });
+    const currentStatus = signal<'UNKNOWN' | 'UP' | 'DOWN' | null>(null);
+    TestBed.overrideProvider(EngineStatusService, { useValue: { state: currentStatus, start: () => undefined } });
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
     const html = fixture.nativeElement as HTMLElement;
-    const motor = () => html.querySelector('.estado-motor');
-    expect(motor()).toBeNull();
+    const engineStatus = () => html.querySelector('.estado-motor');
+    expect(engineStatus()).toBeNull();
 
-    estado.set('UP');
+    currentStatus.set('UP');
     fixture.detectChanges();
-    expect(motor()?.textContent?.trim()).toBe('Motor IA activo');
-    expect(motor()?.getAttribute('data-estado')).toBe('UP');
+    expect(engineStatus()?.textContent?.trim()).toBe('Motor IA activo');
+    expect(engineStatus()?.getAttribute('data-estado')).toBe('UP');
 
-    estado.set('DOWN');
+    currentStatus.set('DOWN');
     fixture.detectChanges();
-    expect(motor()?.textContent?.trim()).toBe('Motor IA sin respuesta: puede estar despertando');
-    expect(motor()?.getAttribute('data-estado')).toBe('DOWN');
+    expect(engineStatus()?.textContent?.trim()).toBe('Motor IA sin respuesta: puede estar despertando');
+    expect(engineStatus()?.getAttribute('data-estado')).toBe('DOWN');
 
-    estado.set('UNKNOWN');
+    currentStatus.set('UNKNOWN');
     fixture.detectChanges();
-    expect(motor()?.textContent?.trim()).toBe('Motor IA: sin datos todavía');
+    expect(engineStatus()?.textContent?.trim()).toBe('Motor IA: sin datos todavía');
   });
 
   it('empieza a consultar el estado del motor al abrirse', () => {

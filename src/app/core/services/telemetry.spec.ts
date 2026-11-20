@@ -28,7 +28,7 @@ describe('TelemetryService', () => {
     const logs = [{ id: 1, controlId: 14, value: 127 }];
     let recibido: unknown;
 
-    service.getLogs().subscribe((respuesta) => (recibido = respuesta));
+    service.getLogs().subscribe((reply) => (recibido = reply));
 
     const req = http.expectOne(`${BASE_URL}/logs`);
     expect(req.request.method).toBe('GET');
@@ -37,29 +37,29 @@ describe('TelemetryService', () => {
   });
 
   it('sendEvent hace POST a /event con el evento y espera texto plano', () => {
-    const evento: MidiEvent = { controlId: 21, value: 64 };
-    let respuesta: string | undefined;
+    const domEvent: MidiEvent = { controlId: 21, value: 64 };
+    let reply: string | undefined;
 
-    service.sendEvent(evento).subscribe((texto) => (respuesta = texto));
+    service.sendEvent(domEvent).subscribe((bodyText) => (reply = bodyText));
 
     const req = http.expectOne(`${BASE_URL}/event`);
     expect(req.request.method).toBe('POST');
-    expect(req.request.body).toEqual(evento);
+    expect(req.request.body).toEqual(domEvent);
     expect(req.request.responseType).toBe('text');
     req.flush('Evento MIDI procesado.');
-    expect(respuesta).toBe('Evento MIDI procesado.');
+    expect(reply).toBe('Evento MIDI procesado.');
   });
 
   it('predictMix hace POST del evento y devuelve la decision de la IA', () => {
-    const evento: MidiEvent = { controlId: 14, value: 127 };
+    const domEvent: MidiEvent = { controlId: 14, value: 127 };
     const decision: AiDecision = { status: 'success', action: 'Corte de EQ' };
     let recibido: AiDecision | undefined;
 
-    service.predictMix(evento).subscribe((respuesta) => (recibido = respuesta));
+    service.predictMix(domEvent).subscribe((reply) => (recibido = reply));
 
     const req = http.expectOne(`${BASE_URL}/ai/predict`);
     expect(req.request.method).toBe('POST');
-    expect(req.request.body).toEqual(evento);
+    expect(req.request.body).toEqual(domEvent);
     req.flush(decision);
     expect(recibido).toEqual(decision);
   });

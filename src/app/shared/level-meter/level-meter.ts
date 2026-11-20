@@ -1,9 +1,9 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { litSegments, segmentZone, SegmentZone } from '../../core/audio/level';
 
-interface Segmento {
-  encendido: boolean;
-  zona: SegmentZone;
+interface Segment {
+  lit: boolean;
+  zone: SegmentZone;
 }
 
 /**
@@ -17,16 +17,16 @@ interface Segmento {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LevelMeterComponent {
-  readonly etiqueta = input.required<string>();
-  readonly nivel = input.required<number>();
-  readonly segmentos = input(12);
+  readonly labelText = input.required<string>();
+  readonly meterLevel = input.required<number>();
+  readonly segments = input(12);
 
-  protected readonly porcentaje = computed(() => Math.round(Math.min(1, Math.max(0, this.nivel())) * 100));
+  protected readonly percentage = computed(() => Math.round(Math.min(1, Math.max(0, this.meterLevel())) * 100));
 
   /** De arriba hacia abajo (como se dibuja), con el segmento 0 de la lista siendo el de abajo del medidor. */
-  protected readonly lista = computed<Segmento[]>(() => {
-    const total = this.segmentos();
-    const encendidos = litSegments(this.nivel(), total);
-    return Array.from({ length: total }, (_, i) => ({ encendido: i < encendidos, zona: segmentZone(i, total) }));
+  protected readonly itemList = computed<Segment[]>(() => {
+    const total = this.segments();
+    const litCount = litSegments(this.meterLevel(), total);
+    return Array.from({ length: total }, (_, i) => ({ lit: i < litCount, zone: segmentZone(i, total) }));
   });
 }

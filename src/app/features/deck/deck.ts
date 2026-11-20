@@ -10,7 +10,7 @@ import { MIN_DOWNBEAT_CONFIDENCE } from '../../core/audio/beatgrid';
 import { TrackApiService } from '../../core/services/tracks';
 
 /** Cuando quedan estos segundos o menos de una pista que suena, el contador se resalta. */
-export const QUEDA_POCO_SEGUNDOS = 30;
+export const LOW_TIME_LEFT_SECONDS = 30;
 
 // Cada cuanto se lee la posicion de reproduccion para refrescar el reloj y la forma de onda.
 const POSITION_REFRESH_MS = 50;
@@ -29,7 +29,7 @@ export class DeckComponent {
   private readonly tracks = inject(TrackApiService);
   protected readonly deck = computed(() => this.mixer.deck(this.deckId()));
 
-  protected readonly colores = computed(() => DECK_WAVEFORM_COLORS[this.deckId()]);
+  protected readonly waveformColors = computed(() => DECK_WAVEFORM_COLORS[this.deckId()]);
   protected readonly formatTime = formatTime;
   protected readonly formatBpm = formatBpm;
   protected readonly formatPitch = formatPitch;
@@ -37,13 +37,13 @@ export class DeckComponent {
   /** Posicion actual en segundos; se refresca con un temporizador porque el reloj de audio avanza solo. */
   protected readonly position = signal(0);
   /** Resultado del ultimo intento de sincronizar el tempo, para mostrarlo al usuario. */
-  protected readonly mensajeSync = signal<string | null>(null);
+  protected readonly syncMessage = signal<string | null>(null);
   /** Resultado del ultimo intento de fijar el primer tiempo a mano. */
-  protected readonly mensajeUno = signal<{ texto: string; error: boolean } | null>(null);
-  protected readonly fijandoUno = signal(false);
+  protected readonly downbeatMessage = signal<{ bodyText: string; error: boolean } | null>(null);
+  protected readonly settingDownbeat = signal(false);
 
-  protected readonly progreso = computed(() => {
-    // La posicion se lee siempre: la duracion no es una se�al, y si solo se leyera con pista cargada, un deck creado
+  protected readonly playbackProgress = computed(() => {
+    // La posicion se lee siempre: la duracion no es una se�al, y si solo se leyera con pista cargada, un deck creado
     // vacio nunca se suscribiria a la posicion y la barra se quedaria en 0.
     const position = this.position();
     const duration = this.deck().duration;
@@ -51,10 +51,10 @@ export class DeckComponent {
   });
 
   /** Segundos que le quedan a la pista; con poco tiempo se resalta para avisar de que hay que preparar la siguiente. */
-  protected readonly queda = computed(() => Math.max(0, this.deck().duration - this.position()));
-  protected readonly quedaPoco = computed(() => this.deck().playing() && this.queda() <= QUEDA_POCO_SEGUNDOS);
+  protected readonly timeLeft = computed(() => Math.max(0, this.deck().duration - this.position()));
+  protected readonly lowTimeLeft = computed(() => this.deck().playing() && this.timeLeft() <= LOW_TIME_LEFT_SECONDS);
 
-  protected readonly marcasCue = computed(() => {
+  protected readonly cueMarks = computed(() => {
     const duration = this.deck().duration;
     const track = this.deck().track();
     return duration > 0 && track ? track.cuePoints.map((cue) => cue / duration) : [];
@@ -67,7 +67,7 @@ export class DeckComponent {
     }
   }
 
-  async alternarReproduccion(): Promise<void> {
+  async togglePlayback(): Promise<void> {
     const deck = this.deck();
     if (deck.playing()) {
       deck.pause();
@@ -78,28 +78,28 @@ export class DeckComponent {
     this.position.set(deck.position());
   }
 
-  ponerCue(): void {
+  setCueMarker(): void {
     this.deck().setCue();
   }
 
-  irAlCue(): void {
+  jumpToCue(): void {
     this.deck().goToCue();
     this.position.set(this.deck().position());
   }
 
-  sincronizar(): void {
+  syncDeck(): void {
     const match = this.mixer.sync(this.deckId());
     if (match === null) {
-      this.mensajeSync.set('Carga una pista con BPM en los dos decks para sincronizar.');
+      this.syncMessage.set('Carga una pista con BPM en los dos decks para sincronizar.');
     } else if (!match.feasible) {
-      this.mensajeSync.set('Los tempos están demasiado lejos: el pitch llegó al límite de +-8 %.');
+      this.syncMessage.set('Los tempos están demasiado lejos: el pitch llegó al límite de +-8 %.');
     } else {
-      this.mensajeSync.set(null);
+      this.syncMessage.set(null);
     }
   }
 
   /** Como de fiable es el primer tiempo de la pista cargada, en palabras. */
-  protected estadoDelUno(): string | null {
+  protected downbeatStatus(): string | null {
     const grid = this.deck().track()?.grid;
     if (!grid) {
       return null;
@@ -116,43 +116,43 @@ export class DeckComponent {
    * Fija como primer tiempo el punto donde está la pista ahora. Se puede pausar o buscar para acertar; el motor lo
    * ajusta al pulso mas cercano, asi que basta con estar a menos de medio pulso.
    */
-  marcarElUno(): void {
+  markDownbeat(): void {
     const track = this.deck().track();
-    if (!track?.grid || this.fijandoUno()) {
+    if (!track?.grid || this.settingDownbeat()) {
       return;
     }
-    const segundo = this.deck().position();
-    this.fijandoUno.set(true);
-    this.mensajeUno.set(null);
-    this.tracks.setDownbeat(track.id, segundo).subscribe({
-      next: (actualizada) => {
-        this.mixer.updateTrack(actualizada);
-        this.mensajeUno.set({ texto: 'Primer tiempo fijado.', error: false });
-        this.fijandoUno.set(false);
+    const wholeSecond = this.deck().position();
+    this.settingDownbeat.set(true);
+    this.downbeatMessage.set(null);
+    this.tracks.setDownbeat(track.id, wholeSecond).subscribe({
+      next: (updatedTrackInfo) => {
+        this.mixer.updateTrack(updatedTrackInfo);
+        this.downbeatMessage.set({ bodyText: 'Primer tiempo fijado.', error: false });
+        this.settingDownbeat.set(false);
       },
       error: (err: unknown) => {
-        this.mensajeUno.set({ texto: httpErrorMessage(err, 'No se pudo fijar el primer tiempo.'), error: true });
-        this.fijandoUno.set(false);
+        this.downbeatMessage.set({ bodyText: httpErrorMessage(err, 'No se pudo fijar el primer tiempo.'), error: true });
+        this.settingDownbeat.set(false);
       },
     });
   }
 
-  alBuscar(fraccion: number): void {
-    this.deck().seek(fraccion * this.deck().duration);
+  onSeek(fraction: number): void {
+    this.deck().seek(fraction * this.deck().duration);
     this.position.set(this.deck().position());
   }
 
-  alMoverPitch(evento: Event): void {
-    this.deck().setPitch(this.valorDe(evento));
+  onPitchMove(domEvent: Event): void {
+    this.deck().setPitch(this.readValue(domEvent));
   }
 
-  expulsar(): void {
+  ejectDeck(): void {
     this.deck().eject();
     this.position.set(0);
-    this.mensajeSync.set(null);
+    this.syncMessage.set(null);
   }
 
-  private valorDe(evento: Event): number {
-    return Number((evento.target as HTMLInputElement).value);
+  private readValue(domEvent: Event): number {
+    return Number((domEvent.target as HTMLInputElement).value);
   }
 }

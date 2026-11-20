@@ -13,7 +13,7 @@ export class StyleModelService {
 
   readonly info = signal<StyleModelInfo | null>(null);
   readonly error = signal<string | null>(null);
-  readonly cambiando = signal(false);
+  readonly changing = signal(false);
 
   load(): void {
     this.api.styleModel().subscribe({
@@ -27,16 +27,16 @@ export class StyleModelService {
 
   /** Enciende o apaga el modelo. Apagarlo es la vuelta atras: el Auto-DJ vuelve a usar solo las reglas. */
   setEnabled(enabled: boolean): void {
-    this.cambiando.set(true);
+    this.changing.set(true);
     this.api.setStyleModel(enabled).subscribe({
       next: (info) => {
         this.info.set(info);
         this.error.set(null);
-        this.cambiando.set(false);
+        this.changing.set(false);
       },
       error: (err) => {
         this.error.set(httpErrorMessage(err, 'No se pudo cambiar el modelo de tu estilo.'));
-        this.cambiando.set(false);
+        this.changing.set(false);
       },
     });
   }

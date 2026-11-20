@@ -7,9 +7,9 @@ import { AudioDecodeError, AudioUnsupportedError, TrackWithoutAudioError } from 
 import { FakeAudioBuffer, FakeAudioContext, provideFakeAudio } from '../testing/fake-audio';
 import { environment } from '../../../environments/environment';
 
-const pista = (cambios: Partial<Track> = {}): Track => ({
+const trackItem = (changes: Partial<Track> = {}): Track => ({
   id: 1, title: 'tema.wav', duration: 200, bpm: 128, key: 'C major', camelot: '8B', energy: 0.6,
-  cuePoints: [0.5, 60], hasAudio: true, createdAt: '2026-10-21T18:30:00+00:00', ...cambios,
+  cuePoints: [0.5, 60], hasAudio: true, createdAt: '2026-10-21T18:30:00+00:00', ...changes,
 });
 
 function crear(ctx: FakeAudioContext | null): { mixer: MixerService; http: HttpTestingController } {
@@ -19,7 +19,7 @@ function crear(ctx: FakeAudioContext | null): { mixer: MixerService; http: HttpT
   return { mixer: TestBed.inject(MixerService), http: TestBed.inject(HttpTestingController) };
 }
 
-const buffer = (segundos = 10) => new FakeAudioBuffer(segundos) as unknown as AudioBuffer;
+const buffer = (secondsValue = 10) => new FakeAudioBuffer(secondsValue) as unknown as AudioBuffer;
 
 describe('MixerService', () => {
   describe('nivel de salida', () => {
@@ -155,7 +155,7 @@ describe('MixerService', () => {
     it('loadBuffer carga un audio ya decodificado en el deck indicado', () => {
       const { mixer } = crear(new FakeAudioContext());
 
-      mixer.loadBuffer('B', buffer(8), pista());
+      mixer.loadBuffer('B', buffer(8), trackItem());
 
       expect(mixer.deck('B').loaded).toBe(true);
       expect(mixer.deck('B').duration).toBe(8);
@@ -167,7 +167,7 @@ describe('MixerService', () => {
       ctx.decodedSeconds = 42;
       const { mixer } = crear(ctx);
 
-      await mixer.loadArrayBuffer('A', new Uint8Array([1, 2, 3]).buffer, pista());
+      await mixer.loadArrayBuffer('A', new Uint8Array([1, 2, 3]).buffer, trackItem());
 
       expect(mixer.deck('A').duration).toBe(42);
       expect(mixer.deck('A').track()?.id).toBe(1);
@@ -175,7 +175,7 @@ describe('MixerService', () => {
 
     it('si no se puede decodificar lanza AudioDecodeError y no toca el deck', async () => {
       const { mixer } = crear(new FakeAudioContext());
-      mixer.loadBuffer('A', buffer(5), pista({ id: 9 }));
+      mixer.loadBuffer('A', buffer(5), trackItem({ id: 9 }));
 
       await expect(mixer.loadArrayBuffer('A', new ArrayBuffer(0))).rejects.toBeInstanceOf(AudioDecodeError);
 
@@ -184,9 +184,9 @@ describe('MixerService', () => {
 
     it('loadFile lee un archivo del disco y lo carga sin pista asociada', async () => {
       const { mixer } = crear(new FakeAudioContext());
-      const archivo = new File([new Uint8Array([1, 2, 3, 4])], 'tema.wav');
+      const audioFile = new File([new Uint8Array([1, 2, 3, 4])], 'tema.wav');
 
-      await mixer.loadFile('A', archivo);
+      await mixer.loadFile('A', audioFile);
 
       expect(mixer.deck('A').loaded).toBe(true);
       expect(mixer.deck('A').track()).toBeNull();
@@ -197,7 +197,7 @@ describe('MixerService', () => {
     it('descarga el audio del servidor y lo carga con su pista', async () => {
       const { mixer, http } = crear(new FakeAudioContext());
 
-      const carga = mixer.loadTrack('A', pista({ id: 7 }));
+      const carga = mixer.loadTrack('A', trackItem({ id: 7 }));
       http.expectOne(`${environment.apiRootUrl}/tracks/7/audio`).flush(new Uint8Array([1, 2, 3]).buffer);
       await carga;
 
@@ -209,7 +209,7 @@ describe('MixerService', () => {
     it('una pista sin audio guardado falla antes de pedir nada al servidor', async () => {
       const { mixer, http } = crear(new FakeAudioContext());
 
-      await expect(mixer.loadTrack('A', pista({ hasAudio: false }))).rejects.toBeInstanceOf(TrackWithoutAudioError);
+      await expect(mixer.loadTrack('A', trackItem({ hasAudio: false }))).rejects.toBeInstanceOf(TrackWithoutAudioError);
 
       http.expectNone(() => true);
     });
@@ -217,7 +217,7 @@ describe('MixerService', () => {
     it('si el servidor falla propaga el error y el deck queda como estaba', async () => {
       const { mixer, http } = crear(new FakeAudioContext());
 
-      const carga = mixer.loadTrack('A', pista({ id: 7 }));
+      const carga = mixer.loadTrack('A', trackItem({ id: 7 }));
       http.expectOne(`${environment.apiRootUrl}/tracks/7/audio`).error(new ProgressEvent('error'), { status: 502 });
 
       await expect(carga).rejects.toBeTruthy();
@@ -228,8 +228,8 @@ describe('MixerService', () => {
   describe('sincronizar tempos', () => {
     it('lleva el deck al tempo del otro', () => {
       const { mixer } = crear(new FakeAudioContext());
-      mixer.loadBuffer('A', buffer(), pista({ bpm: 128 }));
-      mixer.loadBuffer('B', buffer(), pista({ id: 2, bpm: 124 }));
+      mixer.loadBuffer('A', buffer(), trackItem({ bpm: 128 }));
+      mixer.loadBuffer('B', buffer(), trackItem({ id: 2, bpm: 124 }));
 
       const match = mixer.sync('B');
 
@@ -239,8 +239,8 @@ describe('MixerService', () => {
 
     it('tiene en cuenta el pitch actual del otro deck', () => {
       const { mixer } = crear(new FakeAudioContext());
-      mixer.loadBuffer('A', buffer(), pista({ bpm: 120 }));
-      mixer.loadBuffer('B', buffer(), pista({ id: 2, bpm: 120 }));
+      mixer.loadBuffer('A', buffer(), trackItem({ bpm: 120 }));
+      mixer.loadBuffer('B', buffer(), trackItem({ id: 2, bpm: 120 }));
       mixer.deck('A').setPitch(1.05); // A suena a 126
 
       mixer.sync('B');
@@ -250,8 +250,8 @@ describe('MixerService', () => {
 
     it('si el ajuste no cabe en el fader queda al limite y lo avisa', () => {
       const { mixer } = crear(new FakeAudioContext());
-      mixer.loadBuffer('A', buffer(), pista({ bpm: 128 }));
-      mixer.loadBuffer('B', buffer(), pista({ id: 2, bpm: 115 })); // pide +11 %
+      mixer.loadBuffer('A', buffer(), trackItem({ bpm: 128 }));
+      mixer.loadBuffer('B', buffer(), trackItem({ id: 2, bpm: 115 })); // pide +11 %
 
       const match = mixer.sync('B');
 
@@ -268,8 +268,8 @@ describe('MixerService', () => {
       beforeEach(() => {
         ctx = new FakeAudioContext();
         mixer = crear(ctx).mixer;
-        mixer.loadBuffer('A', buffer(30), pista({ bpm: 120, grid: rejilla }));
-        mixer.loadBuffer('B', buffer(30), pista({ id: 2, bpm: 120, grid: rejilla }));
+        mixer.loadBuffer('A', buffer(30), trackItem({ bpm: 120, grid: rejilla }));
+        mixer.loadBuffer('B', buffer(30), trackItem({ id: 2, bpm: 120, grid: rejilla }));
         mixer.deck('A').play();
         ctx.currentTime = 0.1;
         mixer.deck('B').play();
@@ -303,11 +303,11 @@ describe('MixerService', () => {
 
       it('si el deck no suena solo iguala el tempo', () => {
         mixer.deck('B').pause();
-        const posicion = mixer.deck('B').position();
+        const currentPosition = mixer.deck('B').position();
 
         mixer.sync('B');
 
-        expect(mixer.deck('B').position()).toBeCloseTo(posicion);
+        expect(mixer.deck('B').position()).toBeCloseTo(currentPosition);
       });
 
       it('si el otro deck no suena solo iguala el tempo', () => {
@@ -319,7 +319,7 @@ describe('MixerService', () => {
       });
 
       it('sin rejilla en alguna pista solo iguala el tempo', () => {
-        mixer.loadBuffer('B', buffer(30), pista({ id: 2, bpm: 120 }));
+        mixer.loadBuffer('B', buffer(30), trackItem({ id: 2, bpm: 120 }));
         mixer.deck('B').play();
 
         mixer.sync('B');
@@ -328,28 +328,28 @@ describe('MixerService', () => {
       });
 
       it('si el ajuste no cabe en el fader no mueve la pista', () => {
-        mixer.loadBuffer('B', buffer(30), pista({ id: 2, bpm: 100, grid: rejilla })); // pide +20 %
+        mixer.loadBuffer('B', buffer(30), trackItem({ id: 2, bpm: 100, grid: rejilla })); // pide +20 %
         ctx.currentTime = 10.4;
         mixer.deck('B').play();
         ctx.currentTime = 20.4;
-        const posicion = mixer.deck('B').position();
+        const currentPosition = mixer.deck('B').position();
 
         mixer.sync('B');
 
-        expect(mixer.deck('B').position()).toBeCloseTo(posicion);
+        expect(mixer.deck('B').position()).toBeCloseTo(currentPosition);
       });
     });
 
     it('devuelve null si el otro deck esta vacio', () => {
       const { mixer } = crear(new FakeAudioContext());
-      mixer.loadBuffer('B', buffer(), pista());
+      mixer.loadBuffer('B', buffer(), trackItem());
 
       expect(mixer.sync('B')).toBeNull();
     });
 
     it('devuelve null si el deck no tiene una pista con BPM conocido (archivo local)', () => {
       const { mixer } = crear(new FakeAudioContext());
-      mixer.loadBuffer('A', buffer(), pista());
+      mixer.loadBuffer('A', buffer(), trackItem());
       mixer.loadBuffer('B', buffer(), null);
 
       expect(mixer.sync('B')).toBeNull();
@@ -358,12 +358,12 @@ describe('MixerService', () => {
 
   describe('updateTrack', () => {
     const conRejilla = (downbeat: number) =>
-      pista({ grid: { offset: 0.1, downbeat, confidence: 1, manual: true } });
+      trackItem({ grid: { offset: 0.1, downbeat, confidence: 1, manual: true } });
 
     it('propaga la pista nueva al deck donde esta cargada y avisa al resto de la aplicacion', () => {
       const { mixer } = crear(new FakeAudioContext());
-      mixer.loadBuffer('A', buffer(), pista());
-      mixer.loadBuffer('B', buffer(), pista({ id: 2 }));
+      mixer.loadBuffer('A', buffer(), trackItem());
+      mixer.loadBuffer('B', buffer(), trackItem({ id: 2 }));
 
       mixer.updateTrack(conRejilla(0.6));
 
@@ -375,8 +375,8 @@ describe('MixerService', () => {
 
     it('la actualiza en los dos decks si la misma pista esta cargada en ambos', () => {
       const { mixer } = crear(new FakeAudioContext());
-      mixer.loadBuffer('A', buffer(), pista());
-      mixer.loadBuffer('B', buffer(), pista());
+      mixer.loadBuffer('A', buffer(), trackItem());
+      mixer.loadBuffer('B', buffer(), trackItem());
 
       mixer.updateTrack(conRejilla(0.6));
 

@@ -67,19 +67,19 @@ describe('nivel de un medidor', () => {
     });
 
     it('baja poco a poco, no de golpe', () => {
-      const siguiente = smoothLevel(0.8, 0);
+      const upcoming = smoothLevel(0.8, 0);
 
-      expect(siguiente).toBeGreaterThan(0.5);
-      expect(siguiente).toBeLessThan(0.8);
+      expect(upcoming).toBeGreaterThan(0.5);
+      expect(upcoming).toBeLessThan(0.8);
     });
 
     it('termina en 0 y no se queda arrastrando un nivel casi invisible', () => {
-      let nivel = 1;
+      let meterLevel = 1;
       for (let i = 0; i < 60; i++) {
-        nivel = smoothLevel(nivel, 0);
+        meterLevel = smoothLevel(meterLevel, 0);
       }
 
-      expect(nivel).toBe(0);
+      expect(meterLevel).toBe(0);
     });
   });
 

@@ -48,7 +48,7 @@ describe('DashboardComponent', () => {
     fixture.detectChanges();
     http.expectOne(`${BASE_URL}/logs`).flush([]);
 
-    fixture.componentInstance.simularMezclaAutomatica();
+    fixture.componentInstance.simulateAutoMix();
     const req = http.expectOne(`${BASE_URL}/ai/predict`);
     expect(req.request.body).toEqual({ controlId: 14, value: 127 });
     req.flush({ status: 'success', action: 'Corte de EQ en deck 14' });
@@ -56,17 +56,17 @@ describe('DashboardComponent', () => {
     await fixture.whenStable();
     fixture.detectChanges();
 
-    const texto = (fixture.nativeElement as HTMLElement).textContent;
-    expect(texto).toContain('success');
-    expect(texto).toContain('Corte de EQ en deck 14');
-    expect(texto).not.toContain('[object Object]');
+    const bodyText = (fixture.nativeElement as HTMLElement).textContent;
+    expect(bodyText).toContain('success');
+    expect(bodyText).toContain('Corte de EQ en deck 14');
+    expect(bodyText).not.toContain('[object Object]');
   });
 
   it('refresca el historial despues de disparar el evento', async () => {
     fixture.detectChanges();
     http.expectOne(`${BASE_URL}/logs`).flush([]);
 
-    fixture.componentInstance.simularMezclaAutomatica();
+    fixture.componentInstance.simulateAutoMix();
     http.expectOne(`${BASE_URL}/ai/predict`).flush({ status: 'success', action: 'Corte de EQ' });
     http.expectOne(`${BASE_URL}/logs`).flush([
       { id: 7, controlId: 14, value: 127, createdIn: '2026-10-21T10:05:00' },
@@ -92,7 +92,7 @@ describe('DashboardComponent', () => {
   });
 
   describe('estados de carga y error', () => {
-    const texto = () => (fixture.nativeElement as HTMLElement).textContent ?? '';
+    const bodyText = () => (fixture.nativeElement as HTMLElement).textContent ?? '';
 
     beforeEach(() => {
       vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -103,7 +103,7 @@ describe('DashboardComponent', () => {
     it('muestra un indicador mientras carga el historial', () => {
       fixture.detectChanges();
 
-      expect(texto()).toContain('Cargando historial');
+      expect(bodyText()).toContain('Cargando historial');
       http.expectOne(`${BASE_URL}/logs`).flush([]);
     });
 
@@ -113,8 +113,8 @@ describe('DashboardComponent', () => {
       await fixture.whenStable();
       fixture.detectChanges();
 
-      expect(texto()).not.toContain('Cargando historial');
-      expect(texto()).toContain('Sin eventos registrados');
+      expect(bodyText()).not.toContain('Cargando historial');
+      expect(bodyText()).toContain('Sin eventos registrados');
     });
 
     it('muestra un error si falla la carga del historial', async () => {
@@ -127,7 +127,7 @@ describe('DashboardComponent', () => {
 
       const alerta = (fixture.nativeElement as HTMLElement).querySelector('[role="alert"]');
       expect(alerta?.textContent).toContain('No se pudo cargar el historial');
-      expect(texto()).not.toContain('Sin eventos registrados');
+      expect(bodyText()).not.toContain('Sin eventos registrados');
     });
 
     it('deshabilita el boton mientras se calcula la mezcla', () => {
@@ -170,7 +170,7 @@ describe('DashboardComponent', () => {
 
   describe('en vivo (SSE)', () => {
     const el = () => fixture.nativeElement as HTMLElement;
-    const texto = () => el().textContent ?? '';
+    const bodyText = () => el().textContent ?? '';
 
     async function iniciar(historial: unknown[] = []) {
       fixture.detectChanges();
@@ -236,7 +236,7 @@ describe('DashboardComponent', () => {
       });
 
       expect(el().querySelectorAll('li.historial').length).toBe(1);
-      expect(texto()).toContain('Corte de EQ en deck 14');
+      expect(bodyText()).toContain('Corte de EQ en deck 14');
       http.expectNone(`${BASE_URL}/logs`);
     });
 
@@ -248,7 +248,7 @@ describe('DashboardComponent', () => {
         action: 'Corte de EQ en deck 14', createdIn: '2026-10-21T10:00:00',
       });
 
-      expect(fixture.componentInstance.ultimaDecision()).toEqual({
+      expect(fixture.componentInstance.latestDecision()).toEqual({
         status: 'success', action: 'Corte de EQ en deck 14',
       });
     });
@@ -261,8 +261,8 @@ describe('DashboardComponent', () => {
         action: null, createdIn: '2026-10-21T10:01:00',
       });
 
-      expect(texto()).toContain('unavailable');
-      expect(texto()).toContain('Sin decisión de la IA');
+      expect(bodyText()).toContain('unavailable');
+      expect(bodyText()).toContain('Sin decisión de la IA');
     });
 
     it('no duplica una decision que ya estaba en el historial', async () => {
@@ -274,7 +274,7 @@ describe('DashboardComponent', () => {
       });
 
       expect(el().querySelectorAll('li.historial').length).toBe(1);
-      expect(texto()).toContain('Corte de EQ en deck 14');
+      expect(bodyText()).toContain('Corte de EQ en deck 14');
     });
 
     it('mantiene el historial en 50 eventos como maximo', async () => {
@@ -306,7 +306,7 @@ describe('DashboardComponent', () => {
       FakeEventSource.last.open();
       fixture.detectChanges();
 
-      fixture.componentInstance.simularMezclaAutomatica();
+      fixture.componentInstance.simulateAutoMix();
       http.expectOne(`${BASE_URL}/ai/predict`).flush({ status: 'success', action: 'x' });
       await fixture.whenStable();
 

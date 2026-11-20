@@ -116,10 +116,10 @@ describe('valueToPitch', () => {
   });
 
   it('es creciente', () => {
-    let anterior = 0;
+    let previousItem = 0;
     for (let v = 0; v <= 127; v++) {
-      expect(valueToPitch(v)).toBeGreaterThanOrEqual(anterior);
-      anterior = valueToPitch(v);
+      expect(valueToPitch(v)).toBeGreaterThanOrEqual(previousItem);
+      previousItem = valueToPitch(v);
     }
   });
 

@@ -49,9 +49,9 @@ describe('MixRecorderService', () => {
   }
 
   /** Avanza el reloj y deja correr los muestreos del temporizador. */
-  function avanzar(segundos: number) {
-    const pasos = Math.round((segundos * 1000) / RECORDER_SAMPLE_MS);
-    for (let i = 0; i < pasos; i++) {
+  function avanzar(secondsValue: number) {
+    const stepCount = Math.round((secondsValue * 1000) / RECORDER_SAMPLE_MS);
+    for (let i = 0; i < stepCount; i++) {
       ahora += RECORDER_SAMPLE_MS / 1000;
       vi.advanceTimersByTime(RECORDER_SAMPLE_MS);
     }
@@ -65,9 +65,9 @@ describe('MixRecorderService', () => {
     avanzar(3);
     deckB.playing.set(true);
     deckB.position.set(2);
-    const pasos = Math.round(solape / 0.5);
-    for (let i = 1; i <= pasos; i++) {
-      crossfader.set(i / pasos);
+    const stepCount = Math.round(solape / 0.5);
+    for (let i = 1; i <= stepCount; i++) {
+      crossfader.set(i / stepCount);
       avanzar(0.5);
     }
     deckA.playing.set(false);
@@ -327,20 +327,20 @@ describe('MixRecorderService', () => {
       mezclarAMano();
       expect(recorder.pendingCount()).toBe(1);
 
-      const evento = new Event('beforeunload', { cancelable: true });
-      window.dispatchEvent(evento);
+      const domEvent = new Event('beforeunload', { cancelable: true });
+      window.dispatchEvent(domEvent);
 
-      expect(evento.defaultPrevented).toBe(true);
+      expect(domEvent.defaultPrevented).toBe(true);
     });
 
     it('no avisa al cerrar la pagina si no hay nada pendiente ni en curso', () => {
       const recorder = crear();
       recorder.setEnabled(true);
 
-      const evento = new Event('beforeunload', { cancelable: true });
-      window.dispatchEvent(evento);
+      const domEvent = new Event('beforeunload', { cancelable: true });
+      window.dispatchEvent(domEvent);
 
-      expect(evento.defaultPrevented).toBe(false);
+      expect(domEvent.defaultPrevented).toBe(false);
     });
   });
 

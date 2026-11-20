@@ -41,9 +41,9 @@ describe('drawWaveform', () => {
 
   it('dibuja barras separadas por un hueco, mas la linea de reproduccion', () => {
     const ctx = new FakeCanvas2D();
-    const paso = BAR_WIDTH + BAR_GAP;
+    const stepSize = BAR_WIDTH + BAR_GAP;
 
-    drawWaveform(ctx, new Float32Array([0.5, 0.5]), paso * 10, 40, 0);
+    drawWaveform(ctx, new Float32Array([0.5, 0.5]), stepSize * 10, 40, 0);
 
     const barras = ctx.rects.filter((r) => r.color !== C.playhead);
     expect(barras.length).toBe(10);

@@ -1,16 +1,16 @@
 <div class="telemetria">
     <h2>Panel de Telemetría DJ AI</h2>
-    <p role="status" [attr.data-estado]="estadoConexion()">{{ textoEstado(estadoConexion()) }}</p>
-    <button (click)="simularMezclaAutomatica()" [disabled]="calculandoMezcla()">
-        {{ calculandoMezcla() ? 'Calculando...' : 'Disparar Evento MIDI' }}
+    <p role="status" [attr.data-estado]="connectionStatus()">{{ statusText(connectionStatus()) }}</p>
+    <button (click)="simulateAutoMix()" [disabled]="calculatingMix()">
+        {{ calculatingMix() ? 'Calculando...' : 'Disparar Evento MIDI' }}
     </button>
 
-    @if (errorMezcla(); as mensaje) {
-        <p role="alert" class="alerta">{{ mensaje }}</p>
+    @if (mixError(); as messageText) {
+        <p role="alert" class="alerta">{{ messageText }}</p>
     }
 
     <!-- Bloque condicional: Solo se renderiza si Django responde -->
-    @if (ultimaDecision(); as decision) {
+    @if (latestDecision(); as decision) {
         <div class="panel decision">
             <h3>Decisión del Motor IA (Django)</h3>
             <p><strong>Estado:</strong> {{decision.status}}</p>
@@ -22,15 +22,15 @@
 
     <h3>En vivo</h3>
     <ul aria-live="polite">
-        @for (entrada of feed(); track entrada.id) {
-            <li>{{ entrada.texto }}</li>
+        @for (entry of feed(); track entry.id) {
+            <li>{{ entry.bodyText }}</li>
         }
     </ul>
 
     <h3>Historial en PostgreSQL (Vía Spring Boot)</h3>
-    @if (errorHistorial(); as mensaje) {
-        <p role="alert" class="alerta">{{ mensaje }}</p>
-    } @else if (cargandoHistorial() && logs().length === 0) {
+    @if (historyError(); as messageText) {
+        <p role="alert" class="alerta">{{ messageText }}</p>
+    } @else if (loadingHistory() && logs().length === 0) {
         <p>Cargando historial...</p>
     } @else if (logs().length === 0) {
         <p>Sin eventos registrados todavía.</p>

@@ -12,7 +12,7 @@ export const METER_REFRESH_MS = 50;
 
 /** De arriba abajo, como en una mezcladora: agudos, medios y graves. */
 const EQ_ORDER: EqBand[] = ['high', 'mid', 'low'];
-const NOMBRE_BANDA: Record<EqBand, string> = { low: 'Graves', mid: 'Medios', high: 'Agudos' };
+const BAND_NAME: Record<EqBand, string> = { low: 'Graves', mid: 'Medios', high: 'Agudos' };
 
 /** Canal de un deck en la mezcladora: perillas del EQ, medidor de nivel y fader de volumen. */
 @Component({
@@ -27,21 +27,21 @@ export class ChannelStripComponent {
 
   private readonly mixer = inject(MixerService);
   protected readonly deck = computed(() => this.mixer.deck(this.deckId()));
-  protected readonly bandas = EQ_ORDER;
-  protected readonly nombreBanda = NOMBRE_BANDA;
-  protected readonly nivel = signal(0);
+  protected readonly eqBands = EQ_ORDER;
+  protected readonly bandName = BAND_NAME;
+  protected readonly meterLevel = signal(0);
 
   constructor() {
     if (isPlatformBrowser(inject(PLATFORM_ID))) {
-      const temporizador = setInterval(
-        () => this.nivel.update((anterior) => smoothLevel(anterior, this.deck().level())),
+      const timerHandle = setInterval(
+        () => this.meterLevel.update((previousItem) => smoothLevel(previousItem, this.deck().level())),
         METER_REFRESH_MS,
       );
-      inject(DestroyRef).onDestroy(() => clearInterval(temporizador));
+      inject(DestroyRef).onDestroy(() => clearInterval(timerHandle));
     }
   }
 
-  protected alMoverVolumen(evento: Event): void {
-    this.deck().setVolume(Number((evento.target as HTMLInputElement).value));
+  protected onVolumeMove(domEvent: Event): void {
+    this.deck().setVolume(Number((domEvent.target as HTMLInputElement).value));
   }
 }

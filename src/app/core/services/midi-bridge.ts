@@ -39,8 +39,8 @@ export class MidiBridgeService {
     this.subscription = this.midi.events$
       .pipe(
         groupBy((event) => event.controlId),
-        mergeMap((porControl) =>
-          porControl.pipe(
+        mergeMap((byControl) =>
+          byControl.pipe(
             // Conserva solo el ultimo valor de cada ventana, para que el fader no quede desfasado.
             auditTime(this.throttleMs),
             // Envio ordenado por control: un valor viejo nunca pisa a uno mas nuevo.

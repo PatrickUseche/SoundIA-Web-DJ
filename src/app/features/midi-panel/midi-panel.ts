@@ -11,16 +11,16 @@ export class MidiPanelComponent {
   protected readonly midi = inject(MidiService);
   protected readonly bridge = inject(MidiBridgeService);
 
-  conectar(): void {
+  openConnection(): void {
     void this.midi.requestAccess();
   }
 
-  alElegirControlador(evento: Event): void {
-    const id = (evento.target as HTMLSelectElement).value;
+  onControllerChosen(domEvent: Event): void {
+    const id = (domEvent.target as HTMLSelectElement).value;
     this.midi.selectInput(id === '' ? null : id);
   }
 
-  alternarEnvio(): void {
+  toggleSending(): void {
     if (this.bridge.active()) {
       this.bridge.stop();
     } else {

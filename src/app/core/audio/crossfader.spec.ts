@@ -30,12 +30,12 @@ describe('crossfaderGains', () => {
   });
 
   it('al mover hacia B, A baja y B sube', () => {
-    let anterior = crossfaderGains(0);
+    let previousItem = crossfaderGains(0);
     for (let p = 0.05; p <= 1.0001; p += 0.05) {
-      const actual = crossfaderGains(p);
-      expect(actual.a).toBeLessThanOrEqual(anterior.a);
-      expect(actual.b).toBeGreaterThanOrEqual(anterior.b);
-      anterior = actual;
+      const currentItem = crossfaderGains(p);
+      expect(currentItem.a).toBeLessThanOrEqual(previousItem.a);
+      expect(currentItem.b).toBeGreaterThanOrEqual(previousItem.b);
+      previousItem = currentItem;
     }
   });
 

@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { ESPERAS_SERVIDOR, LibraryComponent, REFRESCO_VOZ_MS } from './library';
+import { SERVER_WAIT_DELAYS, LibraryComponent, VOICE_REFRESH_MS } from './library';
 import { MixerService } from '../../core/services/mixer';
 import { QueueService } from '../../core/services/queue';
 import { Track } from '../../core/models/track';
@@ -10,9 +10,9 @@ import { environment } from '../../../environments/environment';
 
 const TRACKS = `${environment.apiRootUrl}/tracks`;
 
-const pista = (cambios: Partial<Track> = {}): Track => ({
+const trackItem = (changes: Partial<Track> = {}): Track => ({
   id: 1, title: 'Tema uno', duration: 215, bpm: 127.98, key: 'C major', camelot: '8B', energy: 0.62,
-  cuePoints: [0.4], hasAudio: true, createdAt: '2026-10-21T18:30:00+00:00', ...cambios,
+  cuePoints: [0.4], hasAudio: true, createdAt: '2026-10-21T18:30:00+00:00', ...changes,
 });
 
 describe('LibraryComponent', () => {
@@ -21,10 +21,10 @@ describe('LibraryComponent', () => {
   let mixer: MixerService;
 
   const el = () => fixture.nativeElement as HTMLElement;
-  const texto = () => el().textContent ?? '';
+  const bodyText = () => el().textContent ?? '';
   const filas = () => Array.from(el().querySelectorAll('tbody tr'));
-  const botonEn = (fila: Element, nombre: string) =>
-    Array.from(fila.querySelectorAll('button')).find((b) => b.textContent?.includes(nombre)) as HTMLButtonElement;
+  const botonEn = (fila: Element, displayName: string) =>
+    Array.from(fila.querySelectorAll('button')).find((b) => b.textContent?.includes(displayName)) as HTMLButtonElement;
 
   // La logica de la cola se prueba en su propio spec: aqui solo se verifica que la biblioteca la use.
   const colaDoble = {
@@ -44,7 +44,7 @@ describe('LibraryComponent', () => {
         provideHttpClient(), provideHttpClientTesting(), provideFakeAudio(ctx),
         { provide: QueueService, useValue: colaDoble },
         // Esperas de 1 ms: en produccion son de 5 a 60 s.
-        { provide: ESPERAS_SERVIDOR, useValue: [1, 1] },
+        { provide: SERVER_WAIT_DELAYS, useValue: [1, 1] },
       ],
     });
     http = TestBed.inject(HttpTestingController);
@@ -69,7 +69,7 @@ describe('LibraryComponent', () => {
   describe('tempo variable', () => {
     it('marca las pistas cuyo tempo no es fijo y solo esas', async () => {
       await crear();
-      await responderLista([pista({ variableTempo: true }), pista({ id: 2, title: 'Tema dos' })]);
+      await responderLista([trackItem({ variableTempo: true }), trackItem({ id: 2, title: 'Tema dos' })]);
 
       const filas = Array.from(el().querySelectorAll('tbody tr'));
       expect(filas[0].textContent).toContain('tempo variable');
@@ -80,16 +80,16 @@ describe('LibraryComponent', () => {
   describe('listado', () => {
     it('muestra que esta cargando y luego el estado vacio', async () => {
       crear();
-      expect(texto()).toContain('Cargando biblioteca');
+      expect(bodyText()).toContain('Cargando biblioteca');
 
       await responderLista([]);
 
-      expect(texto()).toContain('Todavía no hay pistas');
+      expect(bodyText()).toContain('Todavía no hay pistas');
     });
 
     it('muestra una fila por pista con BPM, tonalidad, Camelot y duracion', async () => {
       crear();
-      await responderLista([pista(), pista({ id: 2, title: 'Tema dos', bpm: 100, camelot: '5A', key: 'A minor', duration: 65 })]);
+      await responderLista([trackItem(), trackItem({ id: 2, title: 'Tema dos', bpm: 100, camelot: '5A', key: 'A minor', duration: 65 })]);
 
       expect(filas().length).toBe(2);
       const primera = filas()[0].textContent ?? '';
@@ -103,11 +103,11 @@ describe('LibraryComponent', () => {
 
     it('muestra la energia con un medidor accesible', async () => {
       crear();
-      await responderLista([pista({ energy: 0.62 })]);
+      await responderLista([trackItem({ energy: 0.62 })]);
 
-      const medidor = el().querySelector('meter') as HTMLMeterElement;
-      expect(medidor.value).toBe(0.62);
-      expect(medidor.getAttribute('aria-label')).toBe('Energia de Tema uno');
+      const meterTimer = el().querySelector('meter') as HTMLMeterElement;
+      expect(meterTimer.value).toBe(0.62);
+      expect(meterTimer.getAttribute('aria-label')).toBe('Energia de Tema uno');
     });
 
     it('si falla la carga muestra el error del API', async () => {
@@ -120,10 +120,10 @@ describe('LibraryComponent', () => {
 
     it('Actualizar vuelve a pedir la lista', async () => {
       crear();
-      await responderLista([pista()]);
+      await responderLista([trackItem()]);
 
       (Array.from(el().querySelectorAll('button')).find((b) => b.textContent?.includes('Actualizar')) as HTMLButtonElement).click();
-      await responderLista([pista(), pista({ id: 2, title: 'Nueva' })]);
+      await responderLista([trackItem(), trackItem({ id: 2, title: 'Nueva' })]);
 
       expect(filas().length).toBe(2);
     });
@@ -132,7 +132,7 @@ describe('LibraryComponent', () => {
   describe('cargar en un deck', () => {
     it('descarga el audio y lo carga en el deck elegido', async () => {
       crear();
-      await responderLista([pista({ id: 7 })]);
+      await responderLista([trackItem({ id: 7 })]);
 
       botonEn(filas()[0], 'Deck B').click();
       http.expectOne(`${TRACKS}/7/audio`).flush(new Uint8Array([1, 2, 3]).buffer);
@@ -145,7 +145,7 @@ describe('LibraryComponent', () => {
 
     it('mientras descarga deshabilita los botones y muestra Cargando', async () => {
       crear();
-      await responderLista([pista({ id: 7 })]);
+      await responderLista([trackItem({ id: 7 })]);
 
       botonEn(filas()[0], 'Deck A').click();
       fixture.detectChanges();
@@ -158,7 +158,7 @@ describe('LibraryComponent', () => {
 
     it('si falla la descarga muestra el error y rehabilita los botones', async () => {
       crear();
-      await responderLista([pista({ id: 7 })]);
+      await responderLista([trackItem({ id: 7 })]);
 
       botonEn(filas()[0], 'Deck A').click();
       // Un error de una descarga binaria llega como ArrayBuffer con el JSON dentro.
@@ -172,7 +172,7 @@ describe('LibraryComponent', () => {
 
     it('una pista sin audio guardado no ofrece botones de carga y lo explica', async () => {
       crear();
-      await responderLista([pista({ hasAudio: false })]);
+      await responderLista([trackItem({ hasAudio: false })]);
 
       expect(botonEn(filas()[0], 'Deck A')).toBeUndefined();
       expect(filas()[0].querySelector('.sin-audio')).not.toBeNull();
@@ -180,15 +180,15 @@ describe('LibraryComponent', () => {
 
     it('sin Web Audio no ofrece botones de carga', async () => {
       crear(null);
-      await responderLista([pista()]);
+      await responderLista([trackItem()]);
 
       expect(botonEn(filas()[0], 'Deck A')).toBeUndefined();
     });
 
     it('marca la pista que ya esta en un deck', async () => {
       crear();
-      mixer.loadBuffer('A', new FakeAudioBuffer(5) as unknown as AudioBuffer, pista({ id: 1 }));
-      await responderLista([pista({ id: 1 }), pista({ id: 2, title: 'Otra' })]);
+      mixer.loadBuffer('A', new FakeAudioBuffer(5) as unknown as AudioBuffer, trackItem({ id: 1 }));
+      await responderLista([trackItem({ id: 1 }), trackItem({ id: 2, title: 'Otra' })]);
 
       expect(filas()[0].classList.contains('en-deck')).toBe(true);
       expect(filas()[1].classList.contains('en-deck')).toBe(false);
@@ -198,7 +198,7 @@ describe('LibraryComponent', () => {
   describe('agregar a la cola', () => {
     it('cada pista con audio tiene un boton A la cola', async () => {
       crear();
-      await responderLista([pista({ id: 1 }), pista({ id: 2, title: 'Dos' })]);
+      await responderLista([trackItem({ id: 1 }), trackItem({ id: 2, title: 'Dos' })]);
 
       expect(botonEn(filas()[0], 'A la cola').disabled).toBe(false);
       expect(botonEn(filas()[1], 'A la cola').disabled).toBe(false);
@@ -206,21 +206,21 @@ describe('LibraryComponent', () => {
 
     it('el boton tiene una etiqueta accesible con el titulo', async () => {
       crear();
-      await responderLista([pista({ title: 'Tema uno' })]);
+      await responderLista([trackItem({ title: 'Tema uno' })]);
 
       expect(botonEn(filas()[0], 'A la cola').getAttribute('aria-label')).toBe('Agregar Tema uno a la cola');
     });
 
     it('una pista sin audio no se puede encolar (el Auto-DJ no podria reproducirla)', async () => {
       crear();
-      await responderLista([pista({ hasAudio: false })]);
+      await responderLista([trackItem({ hasAudio: false })]);
 
       expect(botonEn(filas()[0], 'A la cola').disabled).toBe(true);
     });
 
     it('al pulsarlo agrega la pista a la cola y lo confirma', async () => {
       crear();
-      await responderLista([pista({ id: 7, title: 'Tema siete' })]);
+      await responderLista([trackItem({ id: 7, title: 'Tema siete' })]);
 
       botonEn(filas()[0], 'A la cola').click();
       await esperar();
@@ -234,7 +234,7 @@ describe('LibraryComponent', () => {
       crear();
       colaDoble.enqueue.mockResolvedValue(false);
       colaDoble.error.mockReturnValue('La cola de la sesion 5 esta llena (maximo 100).');
-      await responderLista([pista({ id: 7 })]);
+      await responderLista([trackItem({ id: 7 })]);
 
       botonEn(filas()[0], 'A la cola').click();
       await esperar();
@@ -245,7 +245,7 @@ describe('LibraryComponent', () => {
 
     it('un aviso nuevo reemplaza al anterior', async () => {
       crear();
-      await responderLista([pista({ id: 1, title: 'Uno' }), pista({ id: 2, title: 'Dos' })]);
+      await responderLista([trackItem({ id: 1, title: 'Uno' }), trackItem({ id: 2, title: 'Dos' })]);
 
       botonEn(filas()[0], 'A la cola').click();
       await esperar();
@@ -258,23 +258,23 @@ describe('LibraryComponent', () => {
   });
 
   describe('buscar y ordenar', () => {
-    const titulos = () => filas().map((f) => f.querySelector('td')?.childNodes[0]?.textContent?.trim());
-    const escribir = async (texto: string) => {
+    const titles = () => filas().map((f) => f.querySelector('td')?.childNodes[0]?.textContent?.trim());
+    const escribir = async (bodyText: string) => {
       const caja = el().querySelector('input[aria-label="Buscar pista"]') as HTMLInputElement;
-      caja.value = texto;
+      caja.value = bodyText;
       caja.dispatchEvent(new Event('input'));
       await esperar();
     };
-    const ordenar = async (valor: string) => {
+    const ordenar = async (rawValue: string) => {
       const select = el().querySelector('select[aria-label="Ordenar pistas"]') as HTMLSelectElement;
-      select.value = valor;
+      select.value = rawValue;
       select.dispatchEvent(new Event('change'));
       await esperar();
     };
     const tres = () => [
-      pista({ id: 1, title: 'Cumbia', bpm: 100, camelot: '8B' }),
-      pista({ id: 2, title: 'Bachata', bpm: 130, camelot: '2A' }),
-      pista({ id: 3, title: 'Salsa', bpm: 115, camelot: '8A' }),
+      trackItem({ id: 1, title: 'Cumbia', bpm: 100, camelot: '8B' }),
+      trackItem({ id: 2, title: 'Bachata', bpm: 130, camelot: '2A' }),
+      trackItem({ id: 3, title: 'Salsa', bpm: 115, camelot: '8A' }),
     ];
 
     it('sin lista no muestra los filtros', async () => {
@@ -288,7 +288,7 @@ describe('LibraryComponent', () => {
       crear();
       await responderLista(tres());
 
-      expect(titulos()).toEqual(['Cumbia', 'Bachata', 'Salsa']);
+      expect(titles()).toEqual(['Cumbia', 'Bachata', 'Salsa']);
     });
 
     it('busca por el titulo sin distinguir mayusculas', async () => {
@@ -297,7 +297,7 @@ describe('LibraryComponent', () => {
 
       await escribir('ACH');
 
-      expect(titulos()).toEqual(['Bachata']);
+      expect(titles()).toEqual(['Bachata']);
     });
 
     it('si nada coincide lo dice', async () => {
@@ -307,7 +307,7 @@ describe('LibraryComponent', () => {
       await escribir('zzz');
 
       expect(filas().length).toBe(0);
-      expect(texto()).toContain('Ninguna pista coincide con el filtro');
+      expect(bodyText()).toContain('Ninguna pista coincide con el filtro');
     });
 
     it('ordena por BPM de menor a mayor y de mayor a menor', async () => {
@@ -315,10 +315,10 @@ describe('LibraryComponent', () => {
       await responderLista(tres());
 
       await ordenar('bpm-asc');
-      expect(titulos()).toEqual(['Cumbia', 'Salsa', 'Bachata']);
+      expect(titles()).toEqual(['Cumbia', 'Salsa', 'Bachata']);
 
       await ordenar('bpm-desc');
-      expect(titulos()).toEqual(['Bachata', 'Salsa', 'Cumbia']);
+      expect(titles()).toEqual(['Bachata', 'Salsa', 'Cumbia']);
     });
 
     it('ordena por tonalidad segun la rueda Camelot (2A, 8A, 8B)', async () => {
@@ -327,16 +327,16 @@ describe('LibraryComponent', () => {
 
       await ordenar('camelot');
 
-      expect(titulos()).toEqual(['Bachata', 'Salsa', 'Cumbia']);
+      expect(titles()).toEqual(['Bachata', 'Salsa', 'Cumbia']);
     });
 
     it('ordena por titulo', async () => {
       crear();
       await responderLista(tres());
 
-      await ordenar('titulo');
+      await ordenar('title');
 
-      expect(titulos()).toEqual(['Bachata', 'Cumbia', 'Salsa']);
+      expect(titles()).toEqual(['Bachata', 'Cumbia', 'Salsa']);
     });
 
     it('buscar y ordenar se combinan', async () => {
@@ -346,7 +346,7 @@ describe('LibraryComponent', () => {
       await escribir('a');
       await ordenar('bpm-desc');
 
-      expect(titulos()).toEqual(['Bachata', 'Salsa', 'Cumbia']);
+      expect(titles()).toEqual(['Bachata', 'Salsa', 'Cumbia']);
     });
 
     it('solo compatibles esta desactivado mientras no haya una pista en un deck', async () => {
@@ -360,7 +360,7 @@ describe('LibraryComponent', () => {
 
     it('con una pista en un deck, solo compatibles deja las que mezclan bien con ella', async () => {
       crear();
-      await responderLista([pista({ id: 1, title: 'Cargada', camelot: '8A' }), ...tres().slice(1)]);
+      await responderLista([trackItem({ id: 1, title: 'Cargada', camelot: '8A' }), ...tres().slice(1)]);
       botonEn(filas()[0], 'Deck A').click();
       http.expectOne(`${TRACKS}/1/audio`).flush(new Uint8Array([1, 2, 3]).buffer);
       await esperar();
@@ -372,65 +372,65 @@ describe('LibraryComponent', () => {
       await esperar();
 
       // 8A es compatible con 8A (la propia), 8B (mismo numero) y 7A/9A; Bachata (2A) no, Salsa (8A) si.
-      expect(titulos()).toEqual(['Cargada', 'Salsa']);
+      expect(titles()).toEqual(['Cargada', 'Salsa']);
     });
   });
 
   describe('genero de la pista', () => {
-    const campo = (fila: Element) => fila.querySelector('input.genero') as HTMLInputElement;
-    const escribir = async (fila: Element, valor: string) => {
-      const input = campo(fila);
-      input.value = valor;
+    const field = (fila: Element) => fila.querySelector('input.genero') as HTMLInputElement;
+    const escribir = async (fila: Element, rawValue: string) => {
+      const input = field(fila);
+      input.value = rawValue;
       input.dispatchEvent(new Event('change'));
       await esperar();
     };
 
     it('cada pista tiene su campo de genero, con una etiqueta accesible y sugerencias', async () => {
       crear();
-      await responderLista([pista({ id: 1, title: 'Tema uno', genre: 'salsa' })]);
+      await responderLista([trackItem({ id: 1, title: 'Tema uno', genre: 'salsa' })]);
 
-      expect(campo(filas()[0]).value).toBe('salsa');
-      expect(campo(filas()[0]).getAttribute('aria-label')).toBe('Género de Tema uno');
+      expect(field(filas()[0]).value).toBe('salsa');
+      expect(field(filas()[0]).getAttribute('aria-label')).toBe('Género de Tema uno');
       expect(el().querySelectorAll('#generos-sugeridos option').length).toBeGreaterThan(4);
     });
 
     it('una pista sin genero deja el campo vacio', async () => {
       crear();
-      await responderLista([pista({ id: 1 })]);
+      await responderLista([trackItem({ id: 1 })]);
 
-      expect(campo(filas()[0]).value).toBe('');
+      expect(field(filas()[0]).value).toBe('');
     });
 
     it('al cambiarlo lo guarda en el API y actualiza la fila', async () => {
       crear();
-      await responderLista([pista({ id: 7 })]);
+      await responderLista([trackItem({ id: 7 })]);
 
       await escribir(filas()[0], '  Bachata ');
       const req = http.expectOne(`${TRACKS}/7`);
       expect(req.request.method).toBe('PUT');
       expect(req.request.body).toEqual({ genre: 'bachata' });
-      req.flush(pista({ id: 7, genre: 'bachata' }));
+      req.flush(trackItem({ id: 7, genre: 'bachata' }));
       await esperar();
 
-      expect(campo(filas()[0]).value).toBe('bachata');
+      expect(field(filas()[0]).value).toBe('bachata');
     });
 
     it('un genero vacio lo quita', async () => {
       crear();
-      await responderLista([pista({ id: 7, genre: 'salsa' })]);
+      await responderLista([trackItem({ id: 7, genre: 'salsa' })]);
 
       await escribir(filas()[0], '');
       const req = http.expectOne(`${TRACKS}/7`);
       expect(req.request.body).toEqual({ genre: '' });
-      req.flush(pista({ id: 7, genre: '' }));
+      req.flush(trackItem({ id: 7, genre: '' }));
       await esperar();
 
-      expect(campo(filas()[0]).value).toBe('');
+      expect(field(filas()[0]).value).toBe('');
     });
 
     it('si no cambia nada no llama al API', async () => {
       crear();
-      await responderLista([pista({ id: 7, genre: 'salsa' })]);
+      await responderLista([trackItem({ id: 7, genre: 'salsa' })]);
 
       await escribir(filas()[0], ' SALSA ');
 
@@ -439,21 +439,21 @@ describe('LibraryComponent', () => {
 
     it('si falla vuelve al genero anterior y explica el motivo', async () => {
       crear();
-      await responderLista([pista({ id: 7, title: 'Tema siete', genre: 'salsa' })]);
+      await responderLista([trackItem({ id: 7, title: 'Tema siete', genre: 'salsa' })]);
 
       await escribir(filas()[0], 'merengue');
-      http.expectOne(`${TRACKS}/7`).flush({ error: "'genre' no puede pasar de 40 caracteres." }, { status: 400, statusText: 'Bad Request' });
+      http.expectOne(`${TRACKS}/7`).flush({ error: "'genero' no puede pasar de 40 caracteres." }, { status: 400, statusText: 'Bad Request' });
       await esperar();
 
-      expect(campo(filas()[0]).value).toBe('salsa');
+      expect(field(filas()[0]).value).toBe('salsa');
       expect(el().querySelector('.genero-error')?.textContent).toContain('no puede pasar de 40');
     });
 
     it('la busqueda tambien encuentra por genero', async () => {
       crear();
       await responderLista([
-        pista({ id: 1, title: 'Uno', genre: 'salsa' }),
-        pista({ id: 2, title: 'Dos', genre: 'bachata' }),
+        trackItem({ id: 1, title: 'Uno', genre: 'salsa' }),
+        trackItem({ id: 2, title: 'Dos', genre: 'bachata' }),
       ]);
       const caja = el().querySelector('input[aria-label="Buscar pista"]') as HTMLInputElement;
 
@@ -468,13 +468,13 @@ describe('LibraryComponent', () => {
     it('ordenar por genero deja al final las pistas sin genero', async () => {
       crear();
       await responderLista([
-        pista({ id: 1, title: 'Sin', genre: '' }),
-        pista({ id: 2, title: 'Salsera', genre: 'salsa' }),
-        pista({ id: 3, title: 'Bachatera', genre: 'bachata' }),
+        trackItem({ id: 1, title: 'Sin', genre: '' }),
+        trackItem({ id: 2, title: 'Salsera', genre: 'salsa' }),
+        trackItem({ id: 3, title: 'Bachatera', genre: 'bachata' }),
       ]);
       const select = el().querySelector('select[aria-label="Ordenar pistas"]') as HTMLSelectElement;
 
-      select.value = 'genero';
+      select.value = 'genre';
       select.dispatchEvent(new Event('change'));
       await esperar();
 
@@ -490,39 +490,39 @@ describe('LibraryComponent', () => {
 
     it('cada pista tiene un boton Borrar con una etiqueta accesible', async () => {
       crear();
-      await responderLista([pista({ title: 'Tema uno' })]);
+      await responderLista([trackItem({ title: 'Tema uno' })]);
 
       expect(botonEn(filas()[0], 'Borrar').getAttribute('aria-label')).toBe('Borrar Tema uno');
     });
 
     it('al pulsarlo pide confirmacion y todavia no borra nada', async () => {
       crear();
-      await responderLista([pista({ id: 7 })]);
+      await responderLista([trackItem({ id: 7 })]);
 
       botonEn(filas()[0], 'Borrar').click();
       await esperar();
 
-      expect(texto()).toContain('Borrar también su audio');
+      expect(bodyText()).toContain('Borrar también su audio');
       http.expectNone(`${TRACKS}/7`);
     });
 
     it('si se responde que no, la pista se queda y vuelve el boton', async () => {
       crear();
-      await responderLista([pista({ id: 7 })]);
+      await responderLista([trackItem({ id: 7 })]);
       botonEn(filas()[0], 'Borrar').click();
       await esperar();
 
       botonEn(filas()[0], 'No').click();
       await esperar();
 
-      expect(texto()).not.toContain('Borrar también su audio');
+      expect(bodyText()).not.toContain('Borrar también su audio');
       expect(filas().length).toBe(1);
       expect(botonEn(filas()[0], 'Borrar')).toBeTruthy();
     });
 
     it('al confirmar borra la pista en el API, la quita de la lista y lo avisa', async () => {
       crear();
-      await responderLista([pista({ id: 7, title: 'Tema siete' }), pista({ id: 8, title: 'Tema ocho' })]);
+      await responderLista([trackItem({ id: 7, title: 'Tema siete' }), trackItem({ id: 8, title: 'Tema ocho' })]);
       botonEn(filas()[0], 'Borrar').click();
       await esperar();
 
@@ -539,7 +539,7 @@ describe('LibraryComponent', () => {
 
     it('al borrar vuelve a leer la cola, porque el API quita la pista de ella', async () => {
       crear();
-      await responderLista([pista({ id: 7 })]);
+      await responderLista([trackItem({ id: 7 })]);
       botonEn(filas()[0], 'Borrar').click();
       await esperar();
 
@@ -552,7 +552,7 @@ describe('LibraryComponent', () => {
 
     it('mientras borra muestra Borrando y bloquea los demas botones Borrar', async () => {
       crear();
-      await responderLista([pista({ id: 7 }), pista({ id: 8, title: 'Tema ocho' })]);
+      await responderLista([trackItem({ id: 7 }), trackItem({ id: 8, title: 'Tema ocho' })]);
       botonEn(filas()[0], 'Borrar').click();
       await esperar();
 
@@ -566,7 +566,7 @@ describe('LibraryComponent', () => {
 
     it('si falla muestra el motivo y la pista se conserva', async () => {
       crear();
-      await responderLista([pista({ id: 7, title: 'Tema siete' })]);
+      await responderLista([trackItem({ id: 7, title: 'Tema siete' })]);
       botonEn(filas()[0], 'Borrar').click();
       await esperar();
 
@@ -581,7 +581,7 @@ describe('LibraryComponent', () => {
 
     it('una pista cargada en un deck no se puede borrar', async () => {
       crear();
-      await responderLista([pista({ id: 7 })]);
+      await responderLista([trackItem({ id: 7 })]);
       botonEn(filas()[0], 'Deck A').click();
       http.expectOne(`${TRACKS}/7/audio`).flush(new Uint8Array([1, 2, 3]).buffer);
       await esperar();
@@ -594,7 +594,7 @@ describe('LibraryComponent', () => {
 
     it('un aviso de borrado nuevo reemplaza al anterior', async () => {
       crear();
-      await responderLista([pista({ id: 7, title: 'Uno' }), pista({ id: 8, title: 'Dos' })]);
+      await responderLista([trackItem({ id: 7, title: 'Uno' }), trackItem({ id: 8, title: 'Dos' })]);
       botonEn(filas()[0], 'Borrar').click();
       await esperar();
       await confirmar();
@@ -611,12 +611,12 @@ describe('LibraryComponent', () => {
   describe('compatibilidad armonica', () => {
     it('resalta las pistas que mezclan bien con la cargada en un deck', async () => {
       crear();
-      mixer.loadBuffer('A', new FakeAudioBuffer(5) as unknown as AudioBuffer, pista({ id: 1, camelot: '8B' }));
+      mixer.loadBuffer('A', new FakeAudioBuffer(5) as unknown as AudioBuffer, trackItem({ id: 1, camelot: '8B' }));
       await responderLista([
-        pista({ id: 1, camelot: '8B' }),
-        pista({ id: 2, title: 'Vecina', camelot: '9B' }),
-        pista({ id: 3, title: 'Relativa', camelot: '8A' }),
-        pista({ id: 4, title: 'Lejana', camelot: '3A' }),
+        trackItem({ id: 1, camelot: '8B' }),
+        trackItem({ id: 2, title: 'Vecina', camelot: '9B' }),
+        trackItem({ id: 3, title: 'Relativa', camelot: '8A' }),
+        trackItem({ id: 4, title: 'Lejana', camelot: '3A' }),
       ]);
 
       expect(filas()[1].classList.contains('compatible')).toBe(true);
@@ -628,11 +628,11 @@ describe('LibraryComponent', () => {
     it('avisa mientras la voz de una pista se esta analizando', async () => {
       crear();
       await responderLista([
-        pista({ id: 1, title: 'En cola', vocals: { status: 'pending', lastEnd: null } }),
-        pista({ id: 2, title: 'Analizando', vocals: { status: 'running', lastEnd: null } }),
-        pista({ id: 3, title: 'Lista', vocals: { status: 'done', lastEnd: 229.7 } }),
-        pista({ id: 4, title: 'Sin modelo', vocals: { status: 'unavailable', lastEnd: null } }),
-        pista({ id: 5, title: 'Antigua' }),
+        trackItem({ id: 1, title: 'En cola', vocals: { status: 'pending', lastEnd: null } }),
+        trackItem({ id: 2, title: 'Analizando', vocals: { status: 'running', lastEnd: null } }),
+        trackItem({ id: 3, title: 'Lista', vocals: { status: 'done', lastEnd: 229.7 } }),
+        trackItem({ id: 4, title: 'Sin modelo', vocals: { status: 'unavailable', lastEnd: null } }),
+        trackItem({ id: 5, title: 'Antigua' }),
       ]);
 
       expect(filas()[0].querySelector('.analizando-voz')).not.toBeNull();
@@ -644,35 +644,35 @@ describe('LibraryComponent', () => {
 
     it('sin pistas cargadas no resalta nada', async () => {
       crear();
-      await responderLista([pista({ camelot: '8B' }), pista({ id: 2, camelot: '9B' })]);
+      await responderLista([trackItem({ camelot: '8B' }), trackItem({ id: 2, camelot: '9B' })]);
 
       expect(el().querySelectorAll('tr.compatible').length).toBe(0);
     });
 
     it('la pista que ya esta en el deck no se etiqueta como compatible consigo misma', async () => {
       crear();
-      mixer.loadBuffer('A', new FakeAudioBuffer(5) as unknown as AudioBuffer, pista({ id: 1, camelot: '8B' }));
-      await responderLista([pista({ id: 1, camelot: '8B' })]);
+      mixer.loadBuffer('A', new FakeAudioBuffer(5) as unknown as AudioBuffer, trackItem({ id: 1, camelot: '8B' }));
+      await responderLista([trackItem({ id: 1, camelot: '8B' })]);
 
       expect(filas()[0].querySelector('.etiqueta-compatible')).toBeNull();
     });
   });
 
   describe('subir una pista', () => {
-    const elegir = (archivo: File) => {
+    const elegir = (audioFile: File) => {
       const input = el().querySelector('input[type="file"]') as HTMLInputElement;
-      Object.defineProperty(input, 'files', { value: [archivo], configurable: true });
+      Object.defineProperty(input, 'files', { value: [audioFile], configurable: true });
       input.dispatchEvent(new Event('change'));
     };
 
     it('analiza el archivo, lo agrega al principio de la lista y muestra el resultado', async () => {
       crear();
-      await responderLista([pista({ id: 1 })]);
+      await responderLista([trackItem({ id: 1 })]);
 
       elegir(new File(['RIFFdatos'], 'nueva.wav', { type: 'audio/wav' }));
       fixture.detectChanges();
-      expect(texto()).toContain('Analizando la pista');
-      http.expectOne(`${TRACKS}/analyze`).flush(pista({ id: 9, title: 'nueva.wav', bpm: 124, camelot: '5A', key: 'A minor' }));
+      expect(bodyText()).toContain('Analizando la pista');
+      http.expectOne(`${TRACKS}/analyze`).flush(trackItem({ id: 9, title: 'nueva.wav', bpm: 124, camelot: '5A', key: 'A minor' }));
       await esperar();
 
       expect(filas().length).toBe(2);
@@ -689,7 +689,7 @@ describe('LibraryComponent', () => {
       const req = http.expectOne(`${TRACKS}/analyze`);
 
       expect(((req.request.body as FormData).get('file') as File).name).toBe('mi_tema.mp3');
-      req.flush(pista());
+      req.flush(trackItem());
       await esperar();
     });
 
@@ -702,7 +702,7 @@ describe('LibraryComponent', () => {
       await esperar();
 
       expect(el().querySelector('.subida-error')?.textContent).toContain('El audio es silencio');
-      expect(texto()).not.toContain('Analizando la pista');
+      expect(bodyText()).not.toContain('Analizando la pista');
     });
 
     it('no analiza nada si se cancela la seleccion', async () => {
@@ -718,10 +718,10 @@ describe('LibraryComponent', () => {
 
     it('si el archivo ya estaba analizado reemplaza la fila en lugar de duplicarla', async () => {
       crear();
-      await responderLista([pista({ id: 5, title: 'Vieja' })]);
+      await responderLista([trackItem({ id: 5, title: 'Vieja' })]);
 
       elegir(new File(['x'], 'a.wav'));
-      http.expectOne(`${TRACKS}/analyze`).flush(pista({ id: 5, title: 'Actualizada' }));
+      http.expectOne(`${TRACKS}/analyze`).flush(trackItem({ id: 5, title: 'Actualizada' }));
       await esperar();
 
       expect(filas().length).toBe(1);
@@ -730,18 +730,18 @@ describe('LibraryComponent', () => {
   });
 
   describe('en que deck esta cada pista', () => {
-    const etiqueta = (fila: Element) => fila.querySelector('.etiqueta-deck');
+    const labelText = (fila: Element) => fila.querySelector('.etiqueta-deck');
 
     it('una pista que no esta en ningun deck no lleva etiqueta', async () => {
       crear();
-      await responderLista([pista({ id: 1 })]);
+      await responderLista([trackItem({ id: 1 })]);
 
-      expect(etiqueta(filas()[0])).toBeNull();
+      expect(labelText(filas()[0])).toBeNull();
     });
 
     it('una pista cargada en el deck A y otra en el B llevan su etiqueta con el nombre del deck', async () => {
       crear();
-      await responderLista([pista({ id: 1, title: 'Uno' }), pista({ id: 2, title: 'Dos' })]);
+      await responderLista([trackItem({ id: 1, title: 'Uno' }), trackItem({ id: 2, title: 'Dos' })]);
 
       botonEn(filas()[0], 'Deck A').click();
       http.expectOne(`${TRACKS}/1/audio`).flush(new Uint8Array([1, 2, 3]).buffer);
@@ -750,34 +750,34 @@ describe('LibraryComponent', () => {
       http.expectOne(`${TRACKS}/2/audio`).flush(new Uint8Array([1, 2, 3]).buffer);
       await esperar();
 
-      expect(etiqueta(filas()[0])?.textContent?.trim()).toBe('Deck A');
-      expect(etiqueta(filas()[0])?.getAttribute('data-deck')).toBe('A');
-      expect(etiqueta(filas()[1])?.textContent?.trim()).toBe('Deck B');
-      expect(etiqueta(filas()[1])?.getAttribute('data-deck')).toBe('B');
+      expect(labelText(filas()[0])?.textContent?.trim()).toBe('Deck A');
+      expect(labelText(filas()[0])?.getAttribute('data-deck')).toBe('A');
+      expect(labelText(filas()[1])?.textContent?.trim()).toBe('Deck B');
+      expect(labelText(filas()[1])?.getAttribute('data-deck')).toBe('B');
     });
 
     it('al expulsar la pista del deck la etiqueta desaparece', async () => {
       crear();
-      await responderLista([pista({ id: 1 })]);
+      await responderLista([trackItem({ id: 1 })]);
       botonEn(filas()[0], 'Deck A').click();
       http.expectOne(`${TRACKS}/1/audio`).flush(new Uint8Array([1, 2, 3]).buffer);
       await esperar();
-      expect(etiqueta(filas()[0])).not.toBeNull();
+      expect(labelText(filas()[0])).not.toBeNull();
 
       mixer.deck('A').eject();
       await esperar();
 
-      expect(etiqueta(filas()[0])).toBeNull();
+      expect(labelText(filas()[0])).toBeNull();
     });
   });
 
   describe('subir varias pistas', () => {
-    const elegirVarios = (archivos: File[]) => {
+    const elegirVarios = (audioFiles: File[]) => {
       const input = el().querySelector('input[type="file"]') as HTMLInputElement;
-      Object.defineProperty(input, 'files', { value: archivos, configurable: true });
+      Object.defineProperty(input, 'files', { value: audioFiles, configurable: true });
       input.dispatchEvent(new Event('change'));
     };
-    const archivo = (nombre: string) => new File(['x'], nombre, { type: 'audio/mpeg' });
+    const audioFile = (displayName: string) => new File(['x'], displayName, { type: 'audio/mpeg' });
     /** Responde a la subida en curso y deja que arranque la siguiente. */
     const responder = async (cuerpo: Track | { error: string }, status = 200) => {
       const req = http.expectOne(`${TRACKS}/analyze`);
@@ -792,14 +792,14 @@ describe('LibraryComponent', () => {
     it('un archivo de mas de 20 MB avisa de que el servidor gratuito puede no aguantarlo, pero lo intenta', async () => {
       crear();
       await responderLista([]);
-      const grande = archivo('pesado.wav');
+      const grande = audioFile('pesado.wav');
       Object.defineProperty(grande, 'size', { value: 30 * 1024 * 1024 });
 
       elegirVarios([grande]);
       fixture.detectChanges();
 
       expect(el().querySelector('.subida-avisos')?.textContent).toContain('pesado.wav pesa 30 MB');
-      await responder(pista({ id: 1, title: 'pesado.wav' }));
+      await responder(trackItem({ id: 1, title: 'pesado.wav' }));
       expect(el().querySelector('.subida-avisos')).toBeNull();
     });
 
@@ -807,11 +807,11 @@ describe('LibraryComponent', () => {
       crear();
       await responderLista([]);
 
-      elegirVarios([archivo('normal.mp3')]);
+      elegirVarios([audioFile('normal.mp3')]);
       fixture.detectChanges();
 
       expect(el().querySelector('.subida-avisos')).toBeNull();
-      await responder(pista({ id: 1 }));
+      await responder(trackItem({ id: 1 }));
     });
 
     it('el campo de archivo permite elegir varios', async () => {
@@ -825,43 +825,43 @@ describe('LibraryComponent', () => {
       crear();
       await responderLista([]);
 
-      elegirVarios([archivo('uno.mp3'), archivo('dos.mp3'), archivo('tres.mp3')]);
+      elegirVarios([audioFile('uno.mp3'), audioFile('dos.mp3'), audioFile('tres.mp3')]);
       const primera = http.expectOne(`${TRACKS}/analyze`);
       expect(((primera.request.body as FormData).get('file') as File).name).toBe('uno.mp3');
       http.expectNone(`${TRACKS}/analyze`);
 
-      primera.flush(pista({ id: 1, title: 'uno.mp3' }));
+      primera.flush(trackItem({ id: 1, title: 'uno.mp3' }));
       await esperar();
       const segunda = http.expectOne(`${TRACKS}/analyze`);
       expect(((segunda.request.body as FormData).get('file') as File).name).toBe('dos.mp3');
-      segunda.flush(pista({ id: 2, title: 'dos.mp3' }));
+      segunda.flush(trackItem({ id: 2, title: 'dos.mp3' }));
       await esperar();
-      await responder(pista({ id: 3, title: 'tres.mp3' }));
+      await responder(trackItem({ id: 3, title: 'tres.mp3' }));
     });
 
     it('muestra en cual va y deshabilita el campo mientras sube', async () => {
       crear();
       await responderLista([]);
 
-      elegirVarios([archivo('uno.mp3'), archivo('dos.mp3')]);
+      elegirVarios([audioFile('uno.mp3'), audioFile('dos.mp3')]);
       fixture.detectChanges();
 
       expect(el().querySelector('.progreso-subida')?.textContent).toContain('Analizando la pista 1 de 2 (uno.mp3)');
       expect((el().querySelector('input[type="file"]') as HTMLInputElement).disabled).toBe(true);
       expect(el().querySelector('progress')).not.toBeNull();
-      await responder(pista({ id: 1 }));
+      await responder(trackItem({ id: 1 }));
       expect(el().querySelector('.progreso-subida')?.textContent).toContain('2 de 2 (dos.mp3)');
-      await responder(pista({ id: 2 }));
+      await responder(trackItem({ id: 2 }));
     });
 
     it('al terminar resume cuantas se analizaron y agrega todas a la lista', async () => {
       crear();
       await responderLista([]);
 
-      elegirVarios([archivo('uno.mp3'), archivo('dos.mp3'), archivo('tres.mp3')]);
-      await responder(pista({ id: 1, title: 'uno.mp3' }));
-      await responder(pista({ id: 2, title: 'dos.mp3' }));
-      await responder(pista({ id: 3, title: 'tres.mp3' }));
+      elegirVarios([audioFile('uno.mp3'), audioFile('dos.mp3'), audioFile('tres.mp3')]);
+      await responder(trackItem({ id: 1, title: 'uno.mp3' }));
+      await responder(trackItem({ id: 2, title: 'dos.mp3' }));
+      await responder(trackItem({ id: 3, title: 'tres.mp3' }));
 
       expect(el().querySelector('.subida-ok')?.textContent).toContain('3 pistas analizadas.');
       expect(el().querySelector('.subida-error')).toBeNull();
@@ -874,10 +874,10 @@ describe('LibraryComponent', () => {
       crear();
       await responderLista([]);
 
-      elegirVarios([archivo('uno.mp3'), archivo('silencio.wav'), archivo('tres.mp3')]);
-      await responder(pista({ id: 1, title: 'uno.mp3' }));
+      elegirVarios([audioFile('uno.mp3'), audioFile('silencio.wav'), audioFile('tres.mp3')]);
+      await responder(trackItem({ id: 1, title: 'uno.mp3' }));
       await responder({ error: 'El audio es silencio; no hay nada que analizar.' }, 422);
-      await responder(pista({ id: 3, title: 'tres.mp3' }));
+      await responder(trackItem({ id: 3, title: 'tres.mp3' }));
 
       expect(el().querySelector('.subida-ok')?.textContent).toContain('2 de 3 pistas analizadas.');
       expect(el().querySelector('.subida-error')?.textContent).toContain('No se pudieron analizar 1 de 3 archivos');
@@ -889,7 +889,7 @@ describe('LibraryComponent', () => {
       crear();
       await responderLista([]);
 
-      elegirVarios([archivo('a.wav'), archivo('b.wav')]);
+      elegirVarios([audioFile('a.wav'), audioFile('b.wav')]);
       await responder({ error: 'mal' }, 400);
       await responder({ error: 'mal' }, 400);
 
@@ -900,12 +900,12 @@ describe('LibraryComponent', () => {
     it('un archivo de mas de 50 MB no se envia y se avisa', async () => {
       crear();
       await responderLista([]);
-      const grande = archivo('enorme.wav');
+      const grande = audioFile('enorme.wav');
       Object.defineProperty(grande, 'size', { value: 60 * 1024 * 1024 });
 
-      elegirVarios([grande, archivo('normal.mp3')]);
+      elegirVarios([grande, audioFile('normal.mp3')]);
       await esperar();
-      await responder(pista({ id: 1, title: 'normal.mp3' }));
+      await responder(trackItem({ id: 1, title: 'normal.mp3' }));
 
       expect(el().querySelector('.subida-errores')?.textContent).toContain('enorme.wav: supera el máximo de 50 MB');
       expect(el().querySelector('.subida-ok')?.textContent).toContain('1 de 2 pistas analizadas.');
@@ -914,7 +914,7 @@ describe('LibraryComponent', () => {
     it('un solo archivo de mas de 50 MB tampoco se envia', async () => {
       crear();
       await responderLista([]);
-      const grande = archivo('enorme.wav');
+      const grande = audioFile('enorme.wav');
       Object.defineProperty(grande, 'size', { value: 60 * 1024 * 1024 });
 
       elegirVarios([grande]);
@@ -926,12 +926,12 @@ describe('LibraryComponent', () => {
   });
 
   describe('cuando el servidor deja de responder en medio de una tanda', () => {
-    const elegirVarios = (archivos: File[]) => {
+    const elegirVarios = (audioFiles: File[]) => {
       const input = el().querySelector('input[type="file"]') as HTMLInputElement;
-      Object.defineProperty(input, 'files', { value: archivos, configurable: true });
+      Object.defineProperty(input, 'files', { value: audioFiles, configurable: true });
       input.dispatchEvent(new Event('change'));
     };
-    const archivo = (nombre: string) => new File(['x'], nombre, { type: 'audio/mpeg' });
+    const audioFile = (displayName: string) => new File(['x'], displayName, { type: 'audio/mpeg' });
     const nombreEnCurso = (req: { request: { body: unknown } }) => ((req.request.body as FormData).get('file') as File).name;
     const fallar = async (status: number, cuerpo: unknown = null) => {
       http.expectOne(`${TRACKS}/analyze`).flush(cuerpo as Record<string, unknown> | null, { status, statusText: 'Error' });
@@ -950,14 +950,14 @@ describe('LibraryComponent', () => {
       crear();
       await responderLista([]);
 
-      elegirVarios([archivo('uno.mp3'), archivo('dos.mp3')]);
+      elegirVarios([audioFile('uno.mp3'), audioFile('dos.mp3')]);
       await fallar(503);
       await esperarReintento();
       const reintento = http.expectOne(`${TRACKS}/analyze`);
       expect(nombreEnCurso(reintento)).toBe('uno.mp3');
-      reintento.flush(pista({ id: 1, title: 'uno.mp3' }));
+      reintento.flush(trackItem({ id: 1, title: 'uno.mp3' }));
       await esperar();
-      await exito(pista({ id: 2, title: 'dos.mp3' }));
+      await exito(trackItem({ id: 2, title: 'dos.mp3' }));
 
       expect(el().querySelector('.subida-ok')?.textContent).toContain('2 pistas analizadas.');
       expect(el().querySelector('.subida-error')).toBeNull();
@@ -970,10 +970,10 @@ describe('LibraryComponent', () => {
         crear();
         await responderLista([]);
 
-        elegirVarios([archivo('uno.mp3')]);
+        elegirVarios([audioFile('uno.mp3')]);
         await fallar(status);
         await esperarReintento();
-        http.expectOne(`${TRACKS}/analyze`).flush(pista({ id: 1, title: 'uno.mp3' }));
+        http.expectOne(`${TRACKS}/analyze`).flush(trackItem({ id: 1, title: 'uno.mp3' }));
         await esperar();
 
         expect(el().querySelector('.subida-error')).toBeNull();
@@ -985,17 +985,17 @@ describe('LibraryComponent', () => {
       crear();
       await responderLista([]);
 
-      elegirVarios([archivo('uno.mp3')]);
+      elegirVarios([audioFile('uno.mp3')]);
       http.expectOne(`${TRACKS}/analyze`).flush(null, { status: 503, statusText: 'Unavailable' });
       await Promise.resolve();
       fixture.detectChanges();
 
-      const aviso = el().querySelector('.subida-espera')?.textContent ?? '';
-      expect(aviso).toContain('El servidor no responde');
-      expect(aviso).toContain('uno.mp3');
-      expect(aviso).toContain('intento 1 de 2');
+      const noticeText = el().querySelector('.subida-espera')?.textContent ?? '';
+      expect(noticeText).toContain('El servidor no responde');
+      expect(noticeText).toContain('uno.mp3');
+      expect(noticeText).toContain('intento 1 de 2');
       await esperarReintento();
-      await exito(pista({ id: 1 }));
+      await exito(trackItem({ id: 1 }));
       expect(el().querySelector('.subida-espera')).toBeNull();
     });
 
@@ -1003,9 +1003,9 @@ describe('LibraryComponent', () => {
       crear();
       await responderLista([]);
 
-      elegirVarios([archivo('silencio.wav'), archivo('dos.mp3')]);
+      elegirVarios([audioFile('silencio.wav'), audioFile('dos.mp3')]);
       await fallar(422, { error: 'El audio es silencio; no hay nada que analizar.' });
-      await exito(pista({ id: 2, title: 'dos.mp3' }));
+      await exito(trackItem({ id: 2, title: 'dos.mp3' }));
 
       expect(el().querySelector('.subida-errores')?.textContent).toContain('silencio.wav: El audio es silencio');
       expect(el().querySelector('.subida-espera')).toBeNull();
@@ -1014,8 +1014,8 @@ describe('LibraryComponent', () => {
     describe('si el servidor sigue sin responder tras todos los reintentos', () => {
       /** uno.mp3 sube bien; dos.mp3 falla 3 veces (el intento y 2 reintentos) y la tanda se detiene. */
       const cortarEnLaSegunda = async () => {
-        elegirVarios([archivo('uno.mp3'), archivo('dos.mp3'), archivo('tres.mp3'), archivo('cuatro.mp3')]);
-        await exito(pista({ id: 1, title: 'uno.mp3' }));
+        elegirVarios([audioFile('uno.mp3'), audioFile('dos.mp3'), audioFile('tres.mp3'), audioFile('cuatro.mp3')]);
+        await exito(trackItem({ id: 1, title: 'uno.mp3' }));
         await fallar(503);
         await esperarReintento();
         await fallar(503);
@@ -1033,8 +1033,8 @@ describe('LibraryComponent', () => {
         expect(el().querySelector('.subida-ok')?.textContent).toContain('1 de 4 pistas analizadas.');
         expect(el().querySelector('.subida-error')?.textContent).toContain('El servidor no responde');
         expect(el().querySelector('.subida-error')?.textContent).toContain('3 archivos sin subir');
-        const pendientes = Array.from(el().querySelectorAll('.subida-pendientes li')).map((li) => li.textContent?.trim());
-        expect(pendientes).toEqual(['dos.mp3', 'tres.mp3', 'cuatro.mp3']);
+        const pendingFiles = Array.from(el().querySelectorAll('.subida-pendientes li')).map((li) => li.textContent?.trim());
+        expect(pendingFiles).toEqual(['dos.mp3', 'tres.mp3', 'cuatro.mp3']);
         expect(el().querySelector('.subida-errores')).toBeNull();
         expect((el().querySelector('input[type="file"]') as HTMLInputElement).disabled).toBe(false);
       });
@@ -1047,10 +1047,10 @@ describe('LibraryComponent', () => {
 
         (el().querySelector('.reintentar-pendientes') as HTMLButtonElement).click();
         await esperar();
-        for (const [id, nombre] of [[2, 'dos.mp3'], [3, 'tres.mp3'], [4, 'cuatro.mp3']] as const) {
+        for (const [id, displayName] of [[2, 'dos.mp3'], [3, 'tres.mp3'], [4, 'cuatro.mp3']] as const) {
           const req = http.expectOne(`${TRACKS}/analyze`);
-          expect(nombreEnCurso(req)).toBe(nombre);
-          req.flush(pista({ id, title: nombre }));
+          expect(nombreEnCurso(req)).toBe(displayName);
+          req.flush(trackItem({ id, title: displayName }));
           await esperar();
         }
 
@@ -1082,7 +1082,7 @@ describe('LibraryComponent', () => {
         crear();
         await responderLista([]);
 
-        elegirVarios([archivo('solo.mp3')]);
+        elegirVarios([audioFile('solo.mp3')]);
         await fallar(503);
         await esperarReintento();
         await fallar(503);
@@ -1109,47 +1109,47 @@ describe('LibraryComponent', () => {
 
     it('vuelve a pedir la lista mientras una pista analiza la voz y se detiene al terminar', async () => {
       crear();
-      await listar([pista({ vocals: voz('running') })]);
-      expect(texto()).toContain('analizando voz');
+      await listar([trackItem({ vocals: voz('running') })]);
+      expect(bodyText()).toContain('analizando voz');
 
-      await vi.advanceTimersByTimeAsync(REFRESCO_VOZ_MS);
-      await listar([pista({ vocals: voz('running') })]);
-      expect(texto()).toContain('analizando voz');
+      await vi.advanceTimersByTimeAsync(VOICE_REFRESH_MS);
+      await listar([trackItem({ vocals: voz('running') })]);
+      expect(bodyText()).toContain('analizando voz');
 
-      await vi.advanceTimersByTimeAsync(REFRESCO_VOZ_MS);
-      await listar([pista({ vocals: voz('done') })]);
-      expect(texto()).not.toContain('analizando voz');
+      await vi.advanceTimersByTimeAsync(VOICE_REFRESH_MS);
+      await listar([trackItem({ vocals: voz('done') })]);
+      expect(bodyText()).not.toContain('analizando voz');
 
-      await vi.advanceTimersByTimeAsync(REFRESCO_VOZ_MS * 3);
+      await vi.advanceTimersByTimeAsync(VOICE_REFRESH_MS * 3);
       http.expectNone(TRACKS);
     });
 
     it('no vuelve a pedir la lista si ninguna pista analiza la voz', async () => {
       crear();
-      await listar([pista({ vocals: voz('done') }), pista({ id: 2 })]);
+      await listar([trackItem({ vocals: voz('done') }), trackItem({ id: 2 })]);
 
-      await vi.advanceTimersByTimeAsync(REFRESCO_VOZ_MS * 3);
+      await vi.advanceTimersByTimeAsync(VOICE_REFRESH_MS * 3);
 
       http.expectNone(TRACKS);
     });
 
     it('no muestra el estado de carga en el refresco automatico', async () => {
       crear();
-      await listar([pista({ vocals: voz('pending') })]);
+      await listar([trackItem({ vocals: voz('pending') })]);
 
-      await vi.advanceTimersByTimeAsync(REFRESCO_VOZ_MS);
+      await vi.advanceTimersByTimeAsync(VOICE_REFRESH_MS);
 
-      expect(texto()).not.toContain('Cargando biblioteca');
+      expect(bodyText()).not.toContain('Cargando biblioteca');
       expect(filas().length).toBe(1);
-      http.expectOne(TRACKS).flush({ tracks: [pista({ vocals: voz('pending') })] });
+      http.expectOne(TRACKS).flush({ tracks: [trackItem({ vocals: voz('pending') })] });
     });
 
     it('deja de pedir la lista al destruir el componente', async () => {
       crear();
-      await listar([pista({ vocals: voz('running') })]);
+      await listar([trackItem({ vocals: voz('running') })]);
 
       fixture.destroy();
-      await vi.advanceTimersByTimeAsync(REFRESCO_VOZ_MS * 2);
+      await vi.advanceTimersByTimeAsync(VOICE_REFRESH_MS * 2);
 
       http.expectNone(TRACKS);
     });
@@ -1157,11 +1157,11 @@ describe('LibraryComponent', () => {
     // El refresco es de fondo: un fallo del servidor no debe mostrar un error ni dejar un reintento en marcha.
     it('si el refresco falla conserva la lista y deja de insistir', async () => {
       crear();
-      await listar([pista({ vocals: voz('running') })]);
+      await listar([trackItem({ vocals: voz('running') })]);
 
-      await vi.advanceTimersByTimeAsync(REFRESCO_VOZ_MS);
+      await vi.advanceTimersByTimeAsync(VOICE_REFRESH_MS);
       http.expectOne(TRACKS).flush('error', { status: 500, statusText: 'Server Error' });
-      await vi.advanceTimersByTimeAsync(REFRESCO_VOZ_MS * 3);
+      await vi.advanceTimersByTimeAsync(VOICE_REFRESH_MS * 3);
 
       http.expectNone(TRACKS);
       expect(filas().length).toBe(1);
@@ -1171,20 +1171,20 @@ describe('LibraryComponent', () => {
   describe('pistas sin audio', () => {
     it('avisa cuantas pistas no tienen el audio guardado', async () => {
       crear();
-      await responderLista([pista({ hasAudio: false }), pista({ id: 2, hasAudio: false }), pista({ id: 3 })]);
+      await responderLista([trackItem({ hasAudio: false }), trackItem({ id: 2, hasAudio: false }), trackItem({ id: 3 })]);
 
       expect(el().querySelector('.aviso-sin-audio')?.textContent).toContain('2 pistas no tienen el audio guardado');
     });
 
     it('usa el singular cuando es una sola pista', async () => {
       crear();
-      await responderLista([pista({ hasAudio: false })]);
+      await responderLista([trackItem({ hasAudio: false })]);
       expect(el().querySelector('.aviso-sin-audio')?.textContent).toContain('1 pista no tiene el audio guardado');
     });
 
     it('no avisa si todas las pistas tienen audio', async () => {
       crear();
-      await responderLista([pista(), pista({ id: 2 })]);
+      await responderLista([trackItem(), trackItem({ id: 2 })]);
       expect(el().querySelector('.aviso-sin-audio')).toBeNull();
     });
   });
@@ -1192,9 +1192,9 @@ describe('LibraryComponent', () => {
   describe('cambios de una pista hechos en otra parte', () => {
     it('actualiza su fila cuando se corrige la pista (por ejemplo su primer tiempo desde un deck)', async () => {
       crear();
-      await responderLista([pista({ id: 1, title: 'Tema uno' }), pista({ id: 2, title: 'Tema dos' })]);
+      await responderLista([trackItem({ id: 1, title: 'Tema uno' }), trackItem({ id: 2, title: 'Tema dos' })]);
 
-      mixer.updateTrack(pista({ id: 2, title: 'Tema dos', bpm: 99, grid: { offset: 0, downbeat: 0.5, confidence: 1, manual: true } }));
+      mixer.updateTrack(trackItem({ id: 2, title: 'Tema dos', bpm: 99, grid: { offset: 0, downbeat: 0.5, confidence: 1, manual: true } }));
       await esperar();
 
       expect(filas()[1].textContent).toContain('99.0');
@@ -1203,13 +1203,13 @@ describe('LibraryComponent', () => {
 
     it('ignora una pista que no esta en la lista', async () => {
       crear();
-      await responderLista([pista({ id: 1 })]);
+      await responderLista([trackItem({ id: 1 })]);
 
-      mixer.updateTrack(pista({ id: 99, title: 'Otra' }));
+      mixer.updateTrack(trackItem({ id: 99, title: 'Otra' }));
       await esperar();
 
       expect(filas().length).toBe(1);
-      expect(texto()).not.toContain('Otra');
+      expect(bodyText()).not.toContain('Otra');
     });
   });
 });

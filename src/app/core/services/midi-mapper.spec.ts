@@ -8,7 +8,7 @@ import { Track } from '../models/track';
 import { FakeAudioBuffer, FakeAudioContext, provideFakeAudio } from '../testing/fake-audio';
 import { FakeMidiAccess, FakeMidiInput, provideFakeMidi } from '../testing/fake-midi';
 
-const pista = (id: number, bpm = 128): Track => ({
+const trackItem = (id: number, bpm = 128): Track => ({
   id, title: `pista ${id}`, duration: 100, bpm, key: 'C major', camelot: '8B', energy: 0.6,
   cuePoints: [10], hasAudio: true, createdAt: 'x',
 });
@@ -20,11 +20,11 @@ class FakeStorage {
   getItem(clave: string): string | null {
     return this.datos.get(clave) ?? null;
   }
-  setItem(clave: string, valor: string): void {
+  setItem(clave: string, rawValue: string): void {
     if (this.fallar) {
       throw new DOMException('lleno', 'QuotaExceededError');
     }
-    this.datos.set(clave, valor);
+    this.datos.set(clave, rawValue);
   }
 }
 
@@ -56,9 +56,9 @@ describe('MidiMapperService', () => {
     mapper.start();
   }
 
-  const mover = (cc: number, valor: number) => controlador.send(0xb0, cc, valor);
+  const mover = (cc: number, rawValue: number) => controlador.send(0xb0, cc, rawValue);
   const pulsar = (nota: number) => controlador.send(0x90, nota, 100);
-  const cargarEnA = () => mixer.loadBuffer('A', new FakeAudioBuffer(100) as unknown as AudioBuffer, pista(1));
+  const cargarEnA = () => mixer.loadBuffer('A', new FakeAudioBuffer(100) as unknown as AudioBuffer, trackItem(1));
 
   describe('aprender asignaciones', () => {
     beforeEach(() => crear());
@@ -273,8 +273,8 @@ describe('MidiMapperService', () => {
     });
 
     it('sync iguala el tempo con el otro deck', () => {
-      mixer.loadBuffer('A', new FakeAudioBuffer(100) as unknown as AudioBuffer, pista(1, 128));
-      mixer.loadBuffer('B', new FakeAudioBuffer(100) as unknown as AudioBuffer, pista(2, 124));
+      mixer.loadBuffer('A', new FakeAudioBuffer(100) as unknown as AudioBuffer, trackItem(1, 128));
+      mixer.loadBuffer('B', new FakeAudioBuffer(100) as unknown as AudioBuffer, trackItem(2, 124));
 
       mover(10, 127);
 
@@ -307,16 +307,16 @@ describe('MidiMapperService', () => {
     it('start dos veces no aplica cada movimiento dos veces', async () => {
       await crear({ guardado: { 1: 'crossfader' } });
       mapper.start();
-      const cambios: number[] = [];
+      const changes: number[] = [];
       const original = mixer.setCrossfader.bind(mixer);
       mixer.setCrossfader = (v: number) => {
-        cambios.push(v);
+        changes.push(v);
         original(v);
       };
 
       mover(1, 127);
 
-      expect(cambios.length).toBe(1);
+      expect(changes.length).toBe(1);
     });
 
     it('tras detenerlo deja de reaccionar al aparato', async () => {
@@ -393,7 +393,7 @@ describe('MidiMapperService', () => {
   });
 
   describe('canal MIDI', () => {
-    const moverEnCanal = (canal: number, cc: number, valor: number) => controlador.send(0xb0 | canal, cc, valor);
+    const moverEnCanal = (canal: number, cc: number, rawValue: number) => controlador.send(0xb0 | canal, cc, rawValue);
 
     it('el mismo CC en canales distintos se asigna a controles distintos', async () => {
       await crear();

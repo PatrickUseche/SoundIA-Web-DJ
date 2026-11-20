@@ -46,7 +46,7 @@ export class EngineStatusService {
     }
     this.timer = setInterval(() => this.refresh(), this.everyMs);
     // Consulta nada mas saber si se puede (al conocerse la configuracion del login o al iniciar sesion).
-    const efecto = effect(
+    const effectRef = effect(
       () => {
         if (this.allowed()) {
           untracked(() => this.refresh());
@@ -57,7 +57,7 @@ export class EngineStatusService {
       { injector: this.injector },
     );
     this.destroyRef.onDestroy(() => {
-      efecto.destroy();
+      effectRef.destroy();
       this.stop();
     });
   }

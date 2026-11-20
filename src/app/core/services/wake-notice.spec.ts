@@ -9,72 +9,72 @@ const API = environment.apiRootUrl;
 const ESPERA = 8000;
 
 describe('WakeNoticeService', () => {
-  let aviso: WakeNoticeService;
+  let noticeText: WakeNoticeService;
 
   beforeEach(() => {
     vi.useFakeTimers();
-    aviso = TestBed.inject(WakeNoticeService);
+    noticeText = TestBed.inject(WakeNoticeService);
   });
 
   afterEach(() => vi.useRealTimers());
 
   it('empieza sin avisar', () => {
-    expect(aviso.slow()).toBe(false);
+    expect(noticeText.slow()).toBe(false);
   });
 
   it('una peticion rapida no avisa', () => {
-    aviso.begin();
+    noticeText.begin();
     vi.advanceTimersByTime(ESPERA - 1);
-    aviso.end();
+    noticeText.end();
     vi.advanceTimersByTime(ESPERA * 2);
 
-    expect(aviso.slow()).toBe(false);
+    expect(noticeText.slow()).toBe(false);
   });
 
   it('una peticion que tarda mas del limite avisa', () => {
-    aviso.begin();
+    noticeText.begin();
     vi.advanceTimersByTime(ESPERA);
 
-    expect(aviso.slow()).toBe(true);
+    expect(noticeText.slow()).toBe(true);
   });
 
   it('el aviso se quita al terminar la peticion', () => {
-    aviso.begin();
+    noticeText.begin();
     vi.advanceTimersByTime(ESPERA);
-    aviso.end();
+    noticeText.end();
 
-    expect(aviso.slow()).toBe(false);
+    expect(noticeText.slow()).toBe(false);
   });
 
   it('con varias peticiones el aviso sigue hasta que acaba la ultima', () => {
-    aviso.begin();
-    aviso.begin();
+    noticeText.begin();
+    noticeText.begin();
     vi.advanceTimersByTime(ESPERA);
-    aviso.end();
+    noticeText.end();
 
-    expect(aviso.slow()).toBe(true);
+    expect(noticeText.slow()).toBe(true);
 
-    aviso.end();
-    expect(aviso.slow()).toBe(false);
+    noticeText.end();
+    expect(noticeText.slow()).toBe(false);
   });
 
   it('una peticion nueva despues de avisar vuelve a empezar la cuenta', () => {
-    aviso.begin();
+    noticeText.begin();
     vi.advanceTimersByTime(ESPERA);
-    aviso.end();
+    noticeText.end();
 
-    aviso.begin();
+    noticeText.begin();
     vi.advanceTimersByTime(ESPERA - 1);
 
-    expect(aviso.slow()).toBe(false);
+    expect(noticeText.slow()).toBe(false);
   });
 
   it('un end de mas no deja la cuenta en negativo', () => {
-    aviso.end();
-    aviso.begin();
+    noticeText.end();
+    noticeText.begin();
     vi.advanceTimersByTime(ESPERA);
 
-    expect(aviso.slow()).toBe(true);
+    expect(noticeText.slow()).toBe(true);
   });
 
   it('el limite se puede cambiar', () => {
@@ -92,7 +92,7 @@ describe('WakeNoticeService', () => {
 describe('wakeNoticeInterceptor', () => {
   let http: HttpClient;
   let backend: HttpTestingController;
-  let aviso: WakeNoticeService;
+  let noticeText: WakeNoticeService;
 
   beforeEach(() => {
     vi.useFakeTimers();
@@ -101,7 +101,7 @@ describe('wakeNoticeInterceptor', () => {
     });
     http = TestBed.inject(HttpClient);
     backend = TestBed.inject(HttpTestingController);
-    aviso = TestBed.inject(WakeNoticeService);
+    noticeText = TestBed.inject(WakeNoticeService);
   });
 
   afterEach(() => {
@@ -112,11 +112,11 @@ describe('wakeNoticeInterceptor', () => {
   it('avisa si una peticion al API tarda y lo quita cuando responde', () => {
     http.get(`${API}/tracks`).subscribe();
     vi.advanceTimersByTime(ESPERA);
-    expect(aviso.slow()).toBe(true);
+    expect(noticeText.slow()).toBe(true);
 
     backend.expectOne(`${API}/tracks`).flush({});
 
-    expect(aviso.slow()).toBe(false);
+    expect(noticeText.slow()).toBe(false);
   });
 
   it('tambien lo quita si la peticion falla', () => {
@@ -125,7 +125,7 @@ describe('wakeNoticeInterceptor', () => {
 
     backend.expectOne(`${API}/tracks`).flush('mal', { status: 502, statusText: 'Bad Gateway' });
 
-    expect(aviso.slow()).toBe(false);
+    expect(noticeText.slow()).toBe(false);
   });
 
   it('tambien lo quita si la peticion se cancela', () => {
@@ -134,17 +134,17 @@ describe('wakeNoticeInterceptor', () => {
 
     suscripcion.unsubscribe();
 
-    expect(aviso.slow()).toBe(false);
+    expect(noticeText.slow()).toBe(false);
     backend.expectOne(`${API}/tracks`);
   });
 
   it('al responder el API queda marcado como alcanzable', () => {
-    expect(aviso.reachable()).toBeNull();
+    expect(noticeText.reachable()).toBeNull();
 
     http.get(`${API}/tracks`).subscribe();
     backend.expectOne(`${API}/tracks`).flush({});
 
-    expect(aviso.reachable()).toBe(true);
+    expect(noticeText.reachable()).toBe(true);
   });
 
   it('un 401 o un 404 tambien son respuestas del servidor: esta alcanzable', () => {
@@ -152,7 +152,7 @@ describe('wakeNoticeInterceptor', () => {
       http.get(`${API}/tracks`).subscribe({ error: () => undefined });
       backend.expectOne(`${API}/tracks`).flush('x', { status, statusText: 'x' });
 
-      expect(aviso.reachable(), `codigo ${status}`).toBe(true);
+      expect(noticeText.reachable(), `codigo ${status}`).toBe(true);
     }
   });
 
@@ -161,26 +161,26 @@ describe('wakeNoticeInterceptor', () => {
       http.get(`${API}/tracks`).subscribe({ error: () => undefined });
       backend.expectOne(`${API}/tracks`).flush('x', { status, statusText: 'x' });
 
-      expect(aviso.reachable(), `codigo ${status}`).toBe(false);
+      expect(noticeText.reachable(), `codigo ${status}`).toBe(false);
     }
   });
 
   it('vuelve a alcanzable en cuanto responde otra vez', () => {
     http.get(`${API}/tracks`).subscribe({ error: () => undefined });
     backend.expectOne(`${API}/tracks`).flush('x', { status: 502, statusText: 'Bad Gateway' });
-    expect(aviso.reachable()).toBe(false);
+    expect(noticeText.reachable()).toBe(false);
 
     http.get(`${API}/tracks`).subscribe();
     backend.expectOne(`${API}/tracks`).flush({});
 
-    expect(aviso.reachable()).toBe(true);
+    expect(noticeText.reachable()).toBe(true);
   });
 
   it('ignora las peticiones que no son del API', () => {
     http.get('https://otro-servidor.example/dato').subscribe();
     vi.advanceTimersByTime(ESPERA * 2);
 
-    expect(aviso.slow()).toBe(false);
+    expect(noticeText.slow()).toBe(false);
     backend.expectOne('https://otro-servidor.example/dato');
   });
 });

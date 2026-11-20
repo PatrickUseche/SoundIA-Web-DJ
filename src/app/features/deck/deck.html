@@ -2,17 +2,17 @@
     <h3>Deck {{ deckId() }}</h3>
 
     <div class="pantalla">
-        @if (deck().track(); as pista) {
-            <p class="titulo"><strong>{{ pista.title }}</strong></p>
+        @if (deck().track(); as trackItem) {
+            <p class="titulo"><strong>{{ trackItem.title }}</strong></p>
             <p class="datos">
-                <span class="bpm">{{ formatBpm(pista.bpm) }}</span> BPM
+                <span class="bpm">{{ formatBpm(trackItem.bpm) }}</span> BPM
                 @if (deck().pitch() !== 1) {
-                    (suena a {{ formatBpm(deck().effectiveBpm ?? pista.bpm) }})
+                    (suena a {{ formatBpm(deck().effectiveBpm ?? trackItem.bpm) }})
                 }
-                | {{ pista.key }} | <span class="camelot">{{ pista.camelot }}</span>
+                | {{ trackItem.key }} | <span class="camelot">{{ trackItem.camelot }}</span>
             </p>
-            @if (estadoDelUno(); as estado) {
-                <p class="primer-tiempo">Primer tiempo: {{ estado }}</p>
+            @if (downbeatStatus(); as currentStatus) {
+                <p class="primer-tiempo">Primer tiempo: {{ currentStatus }}</p>
             }
         } @else if (deck().loaded) {
             <p class="titulo">Archivo local (sin analizar)</p>
@@ -23,19 +23,19 @@
         <div class="tiempos">
             <p class="reloj" aria-live="off">{{ formatTime(position()) }} / {{ formatTime(deck().duration) }}</p>
             @if (deck().loaded) {
-                <p class="restante" aria-live="off" [attr.data-poco]="quedaPoco()">Quedan {{ formatTime(queda()) }}</p>
+                <p class="restante" aria-live="off" [attr.data-poco]="lowTimeLeft()">Quedan {{ formatTime(timeLeft()) }}</p>
             }
         </div>
     </div>
 
     <app-waveform
         [peaks]="deck().peaks()"
-        [progress]="progreso()"
-        [cues]="marcasCue()"
-        [etiqueta]="'Forma de onda del deck ' + deckId()"
-        [colors]="colores()"
+        [progress]="playbackProgress()"
+        [cues]="cueMarks()"
+        [labelText]="'Forma de onda del deck ' + deckId()"
+        [colors]="waveformColors()"
         [height]="190"
-        (seek)="alBuscar($event)" />
+        (seek)="onSeek($event)" />
 
     <div class="mando">
         <div class="plato" aria-hidden="true" [attr.data-sonando]="deck().playing()"
@@ -46,29 +46,29 @@
         </div>
 
         <div class="transporte">
-            <button type="button" class="play" (click)="alternarReproduccion()" [disabled]="!deck().loaded"
+            <button type="button" class="play" (click)="togglePlayback()" [disabled]="!deck().loaded"
                 [attr.aria-pressed]="deck().playing()">
                 {{ deck().playing() ? 'Pausa' : 'Play' }}
             </button>
-            <button type="button" class="cue" (click)="ponerCue()" [disabled]="!deck().loaded">Marcar cue</button>
-            <button type="button" (click)="irAlCue()" [disabled]="!deck().loaded">Ir al cue</button>
-            <button type="button" class="sync" (click)="sincronizar()" [disabled]="!deck().track()">Sync</button>
-            <button type="button" (click)="marcarElUno()" [disabled]="!deck().track()?.grid || fijandoUno()"
+            <button type="button" class="cue" (click)="setCueMarker()" [disabled]="!deck().loaded">Marcar cue</button>
+            <button type="button" (click)="jumpToCue()" [disabled]="!deck().loaded">Ir al cue</button>
+            <button type="button" class="sync" (click)="syncDeck()" [disabled]="!deck().track()">Sync</button>
+            <button type="button" (click)="markDownbeat()" [disabled]="!deck().track()?.grid || settingDownbeat()"
                 title="Fija como primer tiempo (un 1) el punto donde está la pista ahora">Marcar el 1</button>
-            <button type="button" (click)="expulsar()" [disabled]="!deck().loaded">Expulsar</button>
+            <button type="button" (click)="ejectDeck()" [disabled]="!deck().loaded">Expulsar</button>
         </div>
 
         <label class="pitch">
             <span class="pitch-valor">Pitch {{ formatPitch(deck().pitch()) }}</span>
             <input type="range" class="fader-pitch" min="0.92" max="1.08" step="0.001" [value]="deck().pitch()"
-                (input)="alMoverPitch($event)" aria-label="Pitch" />
+                (input)="onPitchMove($event)" aria-label="Pitch" />
         </label>
     </div>
 
-    @if (mensajeSync(); as mensaje) {
-        <p role="status" class="mensaje-sync">{{ mensaje }}</p>
+    @if (syncMessage(); as messageText) {
+        <p role="status" class="mensaje-sync">{{ messageText }}</p>
     }
-    @if (mensajeUno(); as mensaje) {
-        <p [attr.role]="mensaje.error ? 'alert' : 'status'" class="mensaje-uno" [class.alerta]="mensaje.error">{{ mensaje.texto }}</p>
+    @if (downbeatMessage(); as messageText) {
+        <p [attr.role]="messageText.error ? 'alert' : 'status'" class="mensaje-uno" [class.alerta]="messageText.error">{{ messageText.bodyText }}</p>
     }
 </section>

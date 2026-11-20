@@ -6,12 +6,12 @@
     <a routerLink="/grabaciones" routerLinkActive="activo" ariaCurrentWhenActive="page">Grabaciones</a>
     <a routerLink="/dashboard" routerLinkActive="activo" ariaCurrentWhenActive="page">Telemetría</a>
   }
-  @if (aviso.reachable() !== null) {
-    <span class="estado-servidor" [attr.data-estado]="aviso.reachable() ? 'listo' : 'caido'" role="status">
-      {{ aviso.reachable() ? 'Servidores listos' : 'Sin respuesta del servidor' }}
+  @if (noticeText.reachable() !== null) {
+    <span class="estado-servidor" [attr.data-estado]="noticeText.reachable() ? 'listo' : 'caido'" role="status">
+      {{ noticeText.reachable() ? 'Servidores listos' : 'Sin respuesta del servidor' }}
     </span>
   }
-  @if (motor.state(); as estadoMotor) {
+  @if (engineStatus.state(); as estadoMotor) {
     <!-- Dormido y caido se ven igual desde aqui: el estado es lo ultimo que le paso al Auto-DJ con el motor. -->
     <span class="estado-motor" [attr.data-estado]="estadoMotor" role="status">
       @switch (estadoMotor) {
@@ -22,10 +22,10 @@
     </span>
   }
   @if (auth.enabled() && auth.authenticated()) {
-    <button type="button" class="cerrar-sesion" (click)="cerrarSesion()">Cerrar sesión</button>
+    <button type="button" class="cerrar-sesion" (click)="signOut()">Cerrar sesión</button>
   }
 </nav>
-@if (aviso.slow()) {
+@if (noticeText.slow()) {
   <p class="aviso-despertando" role="status">
     Esto está tardando más de lo normal. Si los servidores estaban dormidos (plan gratuito), pueden tardar hasta tres
     minutos en despertar. No cierres la página.

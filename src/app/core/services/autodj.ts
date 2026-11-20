@@ -163,15 +163,15 @@ export class AutoDjService {
     if (!current || !prepared || !outgoing) {
       return;
     }
-    const actual = current.position();
+    const currentItem = current.position();
     const planned = prepared.plan.mixOutAt;
 
     await this.transition(current, prepared);
-    if (this.status() === 'error' || actual >= planned) {
+    if (this.status() === 'error' || currentItem >= planned) {
       return;
     }
     try {
-      await firstValueFrom(this.autodj.sendMixTiming(outgoing.id, prepared.track.id, planned, actual));
+      await firstValueFrom(this.autodj.sendMixTiming(outgoing.id, prepared.track.id, planned, currentItem));
     } catch {
       // Es informacion complementaria: si no llega, la mezcla ya se hizo y el DJ no tiene que enterarse.
     }

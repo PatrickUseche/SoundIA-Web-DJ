@@ -10,9 +10,9 @@ import { Track } from '../../core/models/track';
 import { FakeAudioBuffer, FakeAudioContext, provideFakeAudio } from '../../core/testing/fake-audio';
 import { environment } from '../../../environments/environment';
 
-const pista = (cambios: Partial<Track> = {}): Track => ({
+const trackItem = (changes: Partial<Track> = {}): Track => ({
   id: 1, title: 'Mi tema.wav', duration: 200, bpm: 128, key: 'C major', camelot: '8B', energy: 0.6,
-  cuePoints: [4, 60], hasAudio: true, createdAt: '2026-10-21T18:30:00+00:00', ...cambios,
+  cuePoints: [4, 60], hasAudio: true, createdAt: '2026-10-21T18:30:00+00:00', ...changes,
 });
 
 describe('DeckComponent', () => {
@@ -20,12 +20,12 @@ describe('DeckComponent', () => {
   let ctx: FakeAudioContext;
   let mixer: MixerService;
 
-  const buffer = (segundos = 100) => new FakeAudioBuffer(segundos) as unknown as AudioBuffer;
+  const buffer = (secondsValue = 100) => new FakeAudioBuffer(secondsValue) as unknown as AudioBuffer;
   const el = () => fixture.nativeElement as HTMLElement;
-  const texto = () => el().textContent ?? '';
+  const bodyText = () => el().textContent ?? '';
   const boton = (contiene: string) =>
     Array.from(el().querySelectorAll('button')).find((b) => b.textContent?.includes(contiene)) as HTMLButtonElement;
-  const slider = (etiqueta: string) => el().querySelector(`input[aria-label="${etiqueta}"]`) as HTMLInputElement;
+  const slider = (labelText: string) => el().querySelector(`input[aria-label="${labelText}"]`) as HTMLInputElement;
 
   function crear(id: DeckId = 'A') {
     TestBed.configureTestingModule({
@@ -61,9 +61,9 @@ describe('DeckComponent', () => {
     it('invita a cargar una pista y deshabilita los controles', () => {
       crear();
 
-      expect(texto()).toContain('Deck vacío');
-      for (const nombre of ['Play', 'Marcar cue', 'Ir al cue', 'Sync', 'Expulsar']) {
-        expect(boton(nombre).disabled).toBe(true);
+      expect(bodyText()).toContain('Deck vacío');
+      for (const displayName of ['Play', 'Marcar cue', 'Ir al cue', 'Sync', 'Expulsar']) {
+        expect(boton(displayName).disabled).toBe(true);
       }
     });
 
@@ -93,7 +93,7 @@ describe('DeckComponent', () => {
   describe('con una pista cargada', () => {
     beforeEach(async () => {
       crear();
-      mixer.loadBuffer('A', buffer(100), pista());
+      mixer.loadBuffer('A', buffer(100), trackItem());
       await refrescar();
     });
 
@@ -105,8 +105,8 @@ describe('DeckComponent', () => {
     });
 
     it('habilita los controles', () => {
-      for (const nombre of ['Play', 'Marcar cue', 'Ir al cue', 'Sync', 'Expulsar']) {
-        expect(boton(nombre).disabled).toBe(false);
+      for (const displayName of ['Play', 'Marcar cue', 'Ir al cue', 'Sync', 'Expulsar']) {
+        expect(boton(displayName).disabled).toBe(false);
       }
     });
 
@@ -133,7 +133,7 @@ describe('DeckComponent', () => {
   describe('reproduccion', () => {
     beforeEach(async () => {
       crear();
-      mixer.loadBuffer('A', buffer(100), pista());
+      mixer.loadBuffer('A', buffer(100), trackItem());
       await refrescar();
     });
 
@@ -173,7 +173,7 @@ describe('DeckComponent', () => {
 
     it('con una pista cargada dice cuanto le queda', async () => {
       crear();
-      mixer.loadBuffer('A', buffer(100), pista());
+      mixer.loadBuffer('A', buffer(100), trackItem());
       await refrescar();
 
       expect(el().querySelector('.restante')?.textContent).toContain('Quedan 1:40');
@@ -182,7 +182,7 @@ describe('DeckComponent', () => {
     it('baja mientras suena y se resalta cuando quedan 30 segundos o menos', async () => {
       vi.useFakeTimers();
       crear();
-      mixer.loadBuffer('A', buffer(100), pista());
+      mixer.loadBuffer('A', buffer(100), trackItem());
       fixture.detectChanges();
       boton('Play').click();
       await vi.advanceTimersByTimeAsync(0);
@@ -202,7 +202,7 @@ describe('DeckComponent', () => {
 
     it('en pausa no se resalta aunque quede poco', async () => {
       crear();
-      mixer.loadBuffer('A', buffer(20), pista({ duration: 20 }));
+      mixer.loadBuffer('A', buffer(20), trackItem({ duration: 20 }));
       await refrescar();
 
       expect(el().querySelector('.restante')?.getAttribute('data-poco')).toBe('false');
@@ -214,7 +214,7 @@ describe('DeckComponent', () => {
       // Los timers falsos se activan antes de crear el componente: su temporizador debe ser el falso.
       vi.useFakeTimers();
       crear();
-      mixer.loadBuffer('A', buffer(100), pista());
+      mixer.loadBuffer('A', buffer(100), trackItem());
       fixture.detectChanges(); // sin esto el boton Play seguiria deshabilitado
       boton('Play').click();
       await vi.advanceTimersByTimeAsync(0);
@@ -232,7 +232,7 @@ describe('DeckComponent', () => {
       vi.useFakeTimers();
       crear(); // deck vacio: la duracion es 0 al crearse
       fixture.detectChanges();
-      mixer.loadBuffer('A', buffer(100), pista());
+      mixer.loadBuffer('A', buffer(100), trackItem());
       fixture.detectChanges();
       boton('Play').click();
       await vi.advanceTimersByTimeAsync(0);
@@ -250,7 +250,7 @@ describe('DeckComponent', () => {
   describe('cue', () => {
     beforeEach(async () => {
       crear();
-      mixer.loadBuffer('A', buffer(100), pista({ cuePoints: [4] }));
+      mixer.loadBuffer('A', buffer(100), trackItem({ cuePoints: [4] }));
       await refrescar();
     });
 
@@ -274,7 +274,7 @@ describe('DeckComponent', () => {
   describe('sincronizacion', () => {
     it('sin pista en el otro deck explica que hace falta cargarla', async () => {
       crear('B');
-      mixer.loadBuffer('B', buffer(), pista());
+      mixer.loadBuffer('B', buffer(), trackItem());
       await refrescar();
 
       boton('Sync').click();
@@ -285,8 +285,8 @@ describe('DeckComponent', () => {
 
     it('con tempos compatibles iguala el BPM y no muestra aviso', async () => {
       crear('B');
-      mixer.loadBuffer('A', buffer(), pista({ bpm: 128 }));
-      mixer.loadBuffer('B', buffer(), pista({ id: 2, bpm: 124 }));
+      mixer.loadBuffer('A', buffer(), trackItem({ bpm: 128 }));
+      mixer.loadBuffer('B', buffer(), trackItem({ id: 2, bpm: 124 }));
       await refrescar();
 
       boton('Sync').click();
@@ -298,8 +298,8 @@ describe('DeckComponent', () => {
 
     it('si el tempo esta fuera del rango del fader lo avisa', async () => {
       crear('B');
-      mixer.loadBuffer('A', buffer(), pista({ bpm: 128 }));
-      mixer.loadBuffer('B', buffer(), pista({ id: 2, bpm: 100 }));
+      mixer.loadBuffer('A', buffer(), trackItem({ bpm: 128 }));
+      mixer.loadBuffer('B', buffer(), trackItem({ id: 2, bpm: 100 }));
       await refrescar();
 
       boton('Sync').click();
@@ -310,8 +310,8 @@ describe('DeckComponent', () => {
 
     it('muestra a que BPM suena realmente cuando hay pitch', async () => {
       crear('B');
-      mixer.loadBuffer('A', buffer(), pista({ bpm: 126 }));
-      mixer.loadBuffer('B', buffer(), pista({ id: 2, bpm: 120 }));
+      mixer.loadBuffer('A', buffer(), trackItem({ bpm: 126 }));
+      mixer.loadBuffer('B', buffer(), trackItem({ id: 2, bpm: 120 }));
       mixer.sync('B');
       await refrescar();
 
@@ -324,7 +324,7 @@ describe('DeckComponent', () => {
 
     beforeEach(async () => {
       crear();
-      mixer.loadBuffer('A', buffer(), pista());
+      mixer.loadBuffer('A', buffer(), trackItem());
       await refrescar();
     });
 
@@ -356,12 +356,12 @@ describe('DeckComponent', () => {
   describe('controles deslizantes', () => {
     beforeEach(async () => {
       crear();
-      mixer.loadBuffer('A', buffer(), pista());
+      mixer.loadBuffer('A', buffer(), trackItem());
       await refrescar();
     });
 
-    const mover = (input: HTMLInputElement, valor: number) => {
-      input.value = String(valor);
+    const mover = (input: HTMLInputElement, rawValue: number) => {
+      input.value = String(rawValue);
       input.dispatchEvent(new Event('input'));
     };
 
@@ -370,12 +370,12 @@ describe('DeckComponent', () => {
       await refrescar();
 
       expect(mixer.deck('A').pitch()).toBeCloseTo(1.05);
-      expect(texto()).toContain('+5.0%');
+      expect(bodyText()).toContain('+5.0%');
     });
 
     it('el EQ y el volumen ya no estan en el deck: viven en el canal de la mezcladora', () => {
-      for (const nombre of ['Graves', 'Medios', 'Agudos', 'Volumen del deck']) {
-        expect(slider(nombre)).toBeNull();
+      for (const displayName of ['Graves', 'Medios', 'Agudos', 'Volumen del deck']) {
+        expect(slider(displayName)).toBeNull();
       }
     });
 
@@ -388,7 +388,7 @@ describe('DeckComponent', () => {
   describe('buscar y expulsar', () => {
     beforeEach(async () => {
       crear();
-      mixer.loadBuffer('A', buffer(100), pista());
+      mixer.loadBuffer('A', buffer(100), trackItem());
       await refrescar();
     });
 
@@ -407,7 +407,7 @@ describe('DeckComponent', () => {
       await refrescar();
 
       expect(mixer.deck('A').loaded).toBe(false);
-      expect(texto()).toContain('Deck vacío');
+      expect(bodyText()).toContain('Deck vacío');
     });
   });
 
@@ -422,7 +422,7 @@ describe('DeckComponent', () => {
 
   describe('Marcar el 1', () => {
     const conRejilla = (confianza: number, manual = false) =>
-      pista({ grid: { offset: 0.1, downbeat: 0.1, confidence: confianza, manual } });
+      trackItem({ grid: { offset: 0.1, downbeat: 0.1, confidence: confianza, manual } });
     const PUT = (id = 1) => `${environment.apiRootUrl}/tracks/${id}/grid`;
     let backend: HttpTestingController;
 
@@ -439,7 +439,7 @@ describe('DeckComponent', () => {
       crear();
       expect(boton('Marcar el 1').disabled).toBe(true);
 
-      mixer.loadBuffer('A', buffer(), pista());
+      mixer.loadBuffer('A', buffer(), trackItem());
       fixture.detectChanges();
       expect(boton('Marcar el 1').disabled).toBe(true);
     });
@@ -452,23 +452,23 @@ describe('DeckComponent', () => {
 
     it('explica como de fiable es el primer tiempo', () => {
       cargarConRejilla(conRejilla(0.03));
-      expect(texto()).toContain('incierto');
+      expect(bodyText()).toContain('incierto');
 
       mixer.updateTrack(conRejilla(0.59));
       fixture.detectChanges();
-      expect(texto()).toContain('detectado (confianza 59 %)');
+      expect(bodyText()).toContain('detectado (confianza 59 %)');
 
       mixer.updateTrack(conRejilla(1, true));
       fixture.detectChanges();
-      expect(texto()).toContain('fijado a mano');
+      expect(bodyText()).toContain('fijado a mano');
     });
 
     it('no muestra nada del primer tiempo si la pista no tiene rejilla', () => {
       crear();
-      mixer.loadBuffer('A', buffer(), pista());
+      mixer.loadBuffer('A', buffer(), trackItem());
       fixture.detectChanges();
 
-      expect(texto()).not.toContain('Primer tiempo');
+      expect(bodyText()).not.toContain('Primer tiempo');
     });
 
     it('al pulsarlo envia la posicion actual del deck, y con la respuesta actualiza el deck y avisa', () => {
@@ -483,8 +483,8 @@ describe('DeckComponent', () => {
       fixture.detectChanges();
 
       expect(mixer.deck('A').track()?.grid?.manual).toBe(true);
-      expect(texto()).toContain('Primer tiempo fijado.');
-      expect(texto()).toContain('fijado a mano');
+      expect(bodyText()).toContain('Primer tiempo fijado.');
+      expect(bodyText()).toContain('fijado a mano');
     });
 
     it('mientras espera la respuesta no se envia dos veces', () => {
@@ -508,9 +508,9 @@ describe('DeckComponent', () => {
       );
       fixture.detectChanges();
 
-      const aviso = el().querySelector('.mensaje-uno');
-      expect(aviso?.getAttribute('role')).toBe('alert');
-      expect(aviso?.textContent).toContain('no tiene una rejilla de pulsos');
+      const noticeText = el().querySelector('.mensaje-uno');
+      expect(noticeText?.getAttribute('role')).toBe('alert');
+      expect(noticeText?.textContent).toContain('no tiene una rejilla de pulsos');
       expect(mixer.deck('A').track()?.grid?.manual).toBeFalsy();
       expect(boton('Marcar el 1').disabled).toBe(false);
     });

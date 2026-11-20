@@ -58,8 +58,8 @@ export class MidiService {
     try {
       this.access = await this.api.requestAccess();
     } catch (err) {
-      const nombre = err instanceof DOMException ? err.name : '';
-      this._state.set(nombre === 'SecurityError' || nombre === 'NotAllowedError' ? 'denied' : 'error');
+      const displayName = err instanceof DOMException ? err.name : '';
+      this._state.set(displayName === 'SecurityError' || displayName === 'NotAllowedError' ? 'denied' : 'error');
       return;
     }
 

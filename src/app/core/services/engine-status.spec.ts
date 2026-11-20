@@ -9,7 +9,7 @@ import { ENGINE_STATUS_POLL_MS, EngineStatusService } from './engine-status';
 const URL = `${environment.apiRootUrl}/engine/status`;
 const CADA = 30_000;
 
-function respuesta(state: string) {
+function reply(state: string) {
   return { state, consecutiveFailures: 0, lastSuccessAt: null, lastFailureAt: null, lastError: null };
 }
 
@@ -55,7 +55,7 @@ describe('EngineStatusService', () => {
     servicio.start();
     TestBed.tick();
 
-    http.expectOne(URL).flush(respuesta('UP'));
+    http.expectOne(URL).flush(reply('UP'));
 
     expect(servicio.state()).toBe('UP');
   });
@@ -64,10 +64,10 @@ describe('EngineStatusService', () => {
     const servicio = crear();
     servicio.start();
     TestBed.tick();
-    http.expectOne(URL).flush(respuesta('UP'));
+    http.expectOne(URL).flush(reply('UP'));
 
     vi.advanceTimersByTime(CADA);
-    http.expectOne(URL).flush(respuesta('DOWN'));
+    http.expectOne(URL).flush(reply('DOWN'));
 
     expect(servicio.state()).toBe('DOWN');
   });
@@ -76,7 +76,7 @@ describe('EngineStatusService', () => {
     const servicio = crear();
     servicio.start();
     TestBed.tick();
-    http.expectOne(URL).flush(respuesta('UP'));
+    http.expectOne(URL).flush(reply('UP'));
 
     vi.advanceTimersByTime(CADA);
     http.expectOne(URL).error(new ProgressEvent('error'));
@@ -104,7 +104,7 @@ describe('EngineStatusService', () => {
     authenticated.set(true);
     TestBed.tick();
 
-    http.expectOne(URL).flush(respuesta('UNKNOWN'));
+    http.expectOne(URL).flush(reply('UNKNOWN'));
     expect(servicio.state()).toBe('UNKNOWN');
   });
 
@@ -112,7 +112,7 @@ describe('EngineStatusService', () => {
     const servicio = crear();
     servicio.start();
     TestBed.tick();
-    http.expectOne(URL).flush(respuesta('UP'));
+    http.expectOne(URL).flush(reply('UP'));
     const oculto = vi.spyOn(document, 'hidden', 'get').mockReturnValue(true);
 
     vi.advanceTimersByTime(CADA * 3);

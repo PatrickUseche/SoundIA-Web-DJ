@@ -6,22 +6,22 @@ import { ConnectionState, DecisionMessage, StreamEvent } from '../../core/models
 import { MidiPanelComponent } from '../midi-panel/midi-panel';
 
 /** Decision de la IA tal como se muestra en el panel (la accion es null si la IA no respondio). */
-export interface DecisionVista {
+export interface DecisionView {
   status: string;
   action: string | null;
 }
 
 /** Linea del feed en vivo. */
-export interface EntradaFeed {
+export interface FeedEntry {
   id: number;
-  texto: string;
+  bodyText: string;
 }
 
 // El historial replica el limite del API (ultimos 50) y el feed muestra solo lo mas reciente.
-const MAX_HISTORIAL = 50;
+const MAX_HISTORY = 50;
 const MAX_FEED = 20;
 
-const TEXTO_ESTADO: Record<ConnectionState, string> = {
+const STATUS_TEXT: Record<ConnectionState, string> = {
   connecting: 'Conectando...',
   open: 'En vivo',
   reconnecting: 'Reconectando...',
@@ -42,42 +42,42 @@ export class DashboardComponent implements OnInit {
 
   // El estado de la vista vive en signals: la plantilla se actualiza sola al cambiarlos.
   readonly logs = signal<DjSessionLog[]>([]);
-  readonly ultimaDecision = signal<DecisionVista | null>(null);
-  readonly feed = signal<EntradaFeed[]>([]);
+  readonly latestDecision = signal<DecisionView | null>(null);
+  readonly feed = signal<FeedEntry[]>([]);
 
   // Estados de las dos llamadas al API Gateway.
-  readonly cargandoHistorial = signal(false);
-  readonly errorHistorial = signal<string | null>(null);
-  readonly calculandoMezcla = signal(false);
-  readonly errorMezcla = signal<string | null>(null);
+  readonly loadingHistory = signal(false);
+  readonly historyError = signal<string | null>(null);
+  readonly calculatingMix = signal(false);
+  readonly mixError = signal<string | null>(null);
 
-  readonly estadoConexion = this.stream.state;
-  readonly textoEstado = (estado: ConnectionState) => TEXTO_ESTADO[estado];
+  readonly connectionStatus = this.stream.state;
+  readonly statusText = (currentStatus: ConnectionState) => STATUS_TEXT[currentStatus];
 
-  private siguienteIdFeed = 0;
-  private huboConexion = false;
+  private nextFeedId = 0;
+  private hadConnection = false;
 
   constructor() {
     // Al volver la conexion tras un corte se recarga el historial: se pudieron perder eventos.
     effect(() => {
-      if (this.estadoConexion() !== 'open') {
+      if (this.connectionStatus() !== 'open') {
         return;
       }
-      if (this.huboConexion) {
-        untracked(() => this.cargarHistorial());
+      if (this.hadConnection) {
+        untracked(() => this.loadHistory());
       }
-      this.huboConexion = true;
+      this.hadConnection = true;
     });
   }
 
   ngOnInit(): void {
-    this.cargarHistorial();
-    this.conectarEnVivo();
+    this.loadHistory();
+    this.connectLive();
   }
 
-  cargarHistorial(): void {
-    this.cargandoHistorial.set(true);
-    this.errorHistorial.set(null);
+  loadHistory(): void {
+    this.loadingHistory.set(true);
+    this.historyError.set(null);
     // takeUntilDestroyed cancela la suscripcion si el componente se destruye antes de la respuesta.
     this.telemetryService
       .getLogs()
@@ -85,58 +85,58 @@ export class DashboardComponent implements OnInit {
       .subscribe({
         next: (logs) => {
           this.logs.set(logs);
-          this.cargandoHistorial.set(false);
+          this.loadingHistory.set(false);
         },
         error: (err) => {
           console.error('[API Gateway] No se pudo cargar el historial:', err);
-          this.errorHistorial.set('No se pudo cargar el historial. Verifica que el API esté activo.');
-          this.cargandoHistorial.set(false);
+          this.historyError.set('No se pudo cargar el historial. Verifica que el API esté activo.');
+          this.loadingHistory.set(false);
         }
       });
   }
 
-  simularMezclaAutomatica(): void {
-    const eventoPrueba: MidiEvent = { controlId: 14, value: 127 };
-    this.calculandoMezcla.set(true);
-    this.errorMezcla.set(null);
+  simulateAutoMix(): void {
+    const testEvent: MidiEvent = { controlId: 14, value: 127 };
+    this.calculatingMix.set(true);
+    this.mixError.set(null);
 
     this.telemetryService
-      .predictMix(eventoPrueba)
+      .predictMix(testEvent)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (decision) => {
-          this.ultimaDecision.set(decision);
-          this.calculandoMezcla.set(false);
+          this.latestDecision.set(decision);
+          this.calculatingMix.set(false);
           // Con la conexion en vivo abierta el evento ya llega por el stream; si no, se refresca a mano.
-          if (this.estadoConexion() !== 'open') {
-            this.cargarHistorial();
+          if (this.connectionStatus() !== 'open') {
+            this.loadHistory();
           }
         },
         error: (err) => {
           console.error('[API Gateway] Fallo de conexion:', err);
-          this.errorMezcla.set('No se pudo calcular la mezcla. Intenta de nuevo.');
-          this.calculandoMezcla.set(false);
+          this.mixError.set('No se pudo calcular la mezcla. Intenta de nuevo.');
+          this.calculatingMix.set(false);
         }
       });
   }
 
-  private conectarEnVivo(): void {
+  private connectLive(): void {
     this.stream
       .connect()
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((evento) => this.alRecibirEvento(evento));
+      .subscribe((domEvent) => this.onEventReceived(domEvent));
   }
 
-  private alRecibirEvento(evento: StreamEvent): void {
-    if (evento.type === 'midi') {
-      this.agregarAlFeed(`MIDI: Control ${evento.data.controlId} = ${evento.data.value}`);
+  private onEventReceived(domEvent: StreamEvent): void {
+    if (domEvent.type === 'midi') {
+      this.addToFeed(`MIDI: Control ${domEvent.data.controlId} = ${domEvent.data.value}`);
       return;
     }
-    this.alRecibirDecision(evento.data);
+    this.onDecisionReceived(domEvent.data);
   }
 
-  private alRecibirDecision(decision: DecisionMessage): void {
-    const registro: DjSessionLog = {
+  private onDecisionReceived(decision: DecisionMessage): void {
+    const logEntry: DjSessionLog = {
       id: decision.id,
       controlId: decision.controlId,
       value: decision.value,
@@ -144,14 +144,14 @@ export class DashboardComponent implements OnInit {
       createdIn: decision.createdIn,
     };
     // Si el evento ya estaba en el historial (cargado por HTTP) se reemplaza en lugar de duplicarlo.
-    this.logs.update((actuales) =>
-      [registro, ...actuales.filter((log) => log.id !== registro.id)].slice(0, MAX_HISTORIAL),
+    this.logs.update((currentItems) =>
+      [logEntry, ...currentItems.filter((log) => log.id !== logEntry.id)].slice(0, MAX_HISTORY),
     );
-    this.ultimaDecision.set({ status: decision.status, action: decision.action });
-    this.agregarAlFeed(`IA (${decision.status}): ${decision.action ?? 'Sin decisión de la IA'}`);
+    this.latestDecision.set({ status: decision.status, action: decision.action });
+    this.addToFeed(`IA (${decision.status}): ${decision.action ?? 'Sin decisión de la IA'}`);
   }
 
-  private agregarAlFeed(texto: string): void {
-    this.feed.update((actual) => [{ id: this.siguienteIdFeed++, texto }, ...actual].slice(0, MAX_FEED));
+  private addToFeed(bodyText: string): void {
+    this.feed.update((currentItem) => [{ id: this.nextFeedId++, bodyText }, ...currentItem].slice(0, MAX_FEED));
   }
 }

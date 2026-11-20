@@ -18,34 +18,34 @@ import { DeckComponent } from '../deck/deck';
 export class DjConsoleComponent {
   protected readonly mixer = inject(MixerService);
   /** Nivel de la salida de la mesa para el medidor maestro. */
-  protected readonly nivelMaestro = signal(0);
+  protected readonly masterMeterLevel = signal(0);
 
   constructor() {
     if (isPlatformBrowser(inject(PLATFORM_ID))) {
       // Recargar o cerrar la pestana sin querer en pleno set cortaria la musica: el navegador pide confirmacion.
-      const advertir = (evento: BeforeUnloadEvent) => {
-        const sonando = this.mixer.supported && (['A', 'B'] as DeckId[]).some((id) => this.mixer.deck(id).playing());
-        if (sonando) {
-          evento.preventDefault();
-          evento.returnValue = '';
+      const warnUser = (domEvent: BeforeUnloadEvent) => {
+        const anyPlaying = this.mixer.supported && (['A', 'B'] as DeckId[]).some((id) => this.mixer.deck(id).playing());
+        if (anyPlaying) {
+          domEvent.preventDefault();
+          domEvent.returnValue = '';
         }
       };
-      window.addEventListener('beforeunload', advertir);
-      inject(DestroyRef).onDestroy(() => window.removeEventListener('beforeunload', advertir));
+      window.addEventListener('beforeunload', warnUser);
+      inject(DestroyRef).onDestroy(() => window.removeEventListener('beforeunload', warnUser));
 
-      const medidor = setInterval(
-        () => this.nivelMaestro.update((anterior) => smoothLevel(anterior, this.mixer.masterLevel())),
+      const meterTimer = setInterval(
+        () => this.masterMeterLevel.update((previousItem) => smoothLevel(previousItem, this.mixer.masterLevel())),
         METER_REFRESH_MS,
       );
-      inject(DestroyRef).onDestroy(() => clearInterval(medidor));
+      inject(DestroyRef).onDestroy(() => clearInterval(meterTimer));
     }
   }
 
-  alMoverCrossfader(evento: Event): void {
-    this.mixer.setCrossfader(Number((evento.target as HTMLInputElement).value));
+  onCrossfaderMove(domEvent: Event): void {
+    this.mixer.setCrossfader(Number((domEvent.target as HTMLInputElement).value));
   }
 
-  centrarCrossfader(): void {
+  centerCrossfader(): void {
     this.mixer.setCrossfader(0.5);
   }
 }

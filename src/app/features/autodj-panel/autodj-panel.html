@@ -1,15 +1,15 @@
 <section aria-labelledby="titulo-autodj" class="panel">
     <h3 id="titulo-autodj">Auto-DJ</h3>
 
-    <button type="button" (click)="alternar()" [attr.aria-pressed]="autodj.enabled()">
+    <button type="button" (click)="toggleState()" [attr.aria-pressed]="autodj.enabled()">
         {{ autodj.enabled() ? 'Desactivar Auto-DJ' : 'Activar Auto-DJ' }}
     </button>
 
-    <p role="status" class="estado" [attr.data-estado]="autodj.status()">{{ textoEstado() }}</p>
+    <p role="status" class="estado" [attr.data-estado]="autodj.status()">{{ statusText() }}</p>
 
     @if (autodj.enabled()) {
-        @if (autodj.secondsToMix(); as faltan) {
-            <p class="cuenta-atras">Mezcla en {{ formatTime(faltan) }}</p>
+        @if (autodj.secondsToMix(); as missingText) {
+            <p class="cuenta-atras">Mezcla en {{ formatTime(missingText) }}</p>
         }
         <button type="button" class="mezclar-ahora" (click)="autodj.mixNow()"
             [disabled]="!autodj.next() || autodj.status() === 'mezclando'">
@@ -19,39 +19,39 @@
     }
 
     @if (autodj.status() === 'mezclando') {
-        <progress max="100" [value]="porcentajeMezcla()" aria-label="Avance de la transición">{{ porcentajeMezcla() }} %</progress>
+        <progress max="100" [value]="mixPercentage()" aria-label="Avance de la transición">{{ mixPercentage() }} %</progress>
     }
 
-    @if (autodj.message(); as mensaje) {
-        <p role="alert" class="aviso alerta">{{ mensaje }}</p>
+    @if (autodj.message(); as messageText) {
+        <p role="alert" class="aviso alerta">{{ messageText }}</p>
     }
 
-    @if (resumenSiguiente(); as siguiente) {
+    @if (nextSummary(); as upcoming) {
         <div class="siguiente">
             <h4>Siguiente</h4>
             <p>
-                <strong>{{ siguiente.titulo }}</strong> en el deck {{ siguiente.deck }}
-                ({{ formatBpm(siguiente.bpm) }} BPM, {{ siguiente.camelot }})
+                <strong>{{ upcoming.trackTitle }}</strong> en el deck {{ upcoming.deck }}
+                ({{ formatBpm(upcoming.bpm) }} BPM, {{ upcoming.camelot }})
             </p>
-            <p>{{ siguiente.estilo }}, compatibilidad {{ siguiente.compatibilidad }}%</p>
-            @if (siguiente.tempoVariable) {
+            <p>{{ upcoming.estilo }}, compatibilidad {{ upcoming.compatibilidad }}%</p>
+            @if (upcoming.tempoVariable) {
                 <p class="adelanto">Una de las pistas tiene el tempo variable (en vivo): no se iguala el BPM, se hace un fundido.</p>
             }
-            @if (siguiente.conTuEstilo) {
+            @if (upcoming.conTuEstilo) {
                 <p class="adelanto">
-                    Esta mezcla usa tu estilo@if (siguiente.compasesAprendidos) { ({{ siguiente.compasesAprendidos }}, como sueles mezclar esta combinación) }.
+                    Esta mezcla usa tu estilo@if (upcoming.compasesAprendidos) { ({{ upcoming.compasesAprendidos }}, como sueles mezclar esta combinación) }.
                 </p>
             }
-            @if (siguiente.adelanto > 0) {
-                <p class="adelanto">Por lo que le has enseñado, la IA adelanta sus mezclas {{ siguiente.adelanto }} s.</p>
+            @if (upcoming.adelanto > 0) {
+                <p class="adelanto">Por lo que le has enseñado, la IA adelanta sus mezclas {{ upcoming.adelanto }} s.</p>
             }
         </div>
     }
 
-    @if (autodj.lastTransition(); as ultima) {
+    @if (autodj.lastTransition(); as latest) {
         <div class="valoracion">
             <h4>Última mezcla</h4>
-            <p>De <strong>{{ ultima.from.title }}</strong> a <strong>{{ ultima.to.title }}</strong></p>
+            <p>De <strong>{{ latest.from.title }}</strong> a <strong>{{ latest.to.title }}</strong></p>
             @if (autodj.rating() === null) {
                 <p>Te gusto la mezcla?</p>
                 <button type="button" class="me-gusto" (click)="autodj.rate(true)">Me gusto</button>
@@ -65,13 +65,13 @@
                     }
                 </p>
             }
-            @if (autodj.feedbackError(); as mensaje) {
-                <p role="alert" class="valoracion-error alerta">{{ mensaje }}</p>
+            @if (autodj.feedbackError(); as messageText) {
+                <p role="alert" class="valoracion-error alerta">{{ messageText }}</p>
             }
         </div>
     }
 
-    @if (pesos(); as p) {
+    @if (weightBars(); as p) {
         <div class="aprendido">
             <h4>Lo que la IA ha aprendido</h4>
             @if (p.aprendidos) {
@@ -90,8 +90,8 @@
     }
 
     <h4>Cola de la sesión</h4>
-    @if (queue.error(); as mensaje) {
-        <p role="alert" class="cola-error alerta">{{ mensaje }}</p>
+    @if (queue.error(); as messageText) {
+        <p role="alert" class="cola-error alerta">{{ messageText }}</p>
     }
     @if (queue.items().length === 0) {
         <p class="cola-vacia">
@@ -102,8 +102,8 @@
         <ol class="cola">
             @for (item of queue.items(); track item.id) {
                 <li>
-                    {{ titulo(item) }}
-                    <button type="button" (click)="quitar(item)" [attr.aria-label]="'Quitar ' + titulo(item) + ' de la cola'">
+                    {{ trackTitle(item) }}
+                    <button type="button" (click)="removeItem(item)" [attr.aria-label]="'Quitar ' + trackTitle(item) + ' de la cola'">
                         Quitar
                     </button>
                 </li>

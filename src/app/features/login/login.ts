@@ -16,53 +16,53 @@ export class LoginComponent implements OnInit {
 
   readonly username = signal('');
   readonly password = signal('');
-  readonly enviando = signal(false);
+  readonly isSending = signal(false);
   readonly error = signal<string | null>(null);
 
   ngOnInit(): void {
     // Si no hace falta login (o ya hay sesion) no tiene sentido quedarse aqui.
     this.auth.status().subscribe((enabled) => {
       if (!enabled || this.auth.authenticated()) {
-        void this.router.navigateByUrl(this.destino());
+        void this.router.navigateByUrl(this.redirectTarget());
       }
     });
   }
 
-  alEscribir(campo: 'username' | 'password', evento: Event): void {
-    const valor = (evento.target as HTMLInputElement).value;
-    (campo === 'username' ? this.username : this.password).set(valor);
+  onType(field: 'username' | 'password', domEvent: Event): void {
+    const rawValue = (domEvent.target as HTMLInputElement).value;
+    (field === 'username' ? this.username : this.password).set(rawValue);
   }
 
-  alEnviar(evento: Event): void {
-    evento.preventDefault();
-    if (this.enviando() || !this.username() || !this.password()) {
+  onSubmit(domEvent: Event): void {
+    domEvent.preventDefault();
+    if (this.isSending() || !this.username() || !this.password()) {
       return;
     }
-    this.enviando.set(true);
+    this.isSending.set(true);
     this.error.set(null);
     this.auth.login(this.username(), this.password()).subscribe({
       next: () => {
         this.password.set('');
-        this.enviando.set(false);
-        void this.router.navigateByUrl(this.destino());
+        this.isSending.set(false);
+        void this.router.navigateByUrl(this.redirectTarget());
       },
       error: (err: unknown) => {
         this.password.set('');
-        this.error.set(this.mensajeDe(err));
-        this.enviando.set(false);
+        this.error.set(this.messageFor(err));
+        this.isSending.set(false);
       },
     });
   }
 
-  private mensajeDe(err: unknown): string {
+  private messageFor(err: unknown): string {
     if (err instanceof HttpErrorResponse) {
       if (err.status === 401) {
         return 'Usuario o contraseña incorrectos.';
       }
       if (err.status === 429) {
-        const segundos = Number(err.headers.get('Retry-After'));
-        return Number.isFinite(segundos) && segundos > 0
-          ? `Demasiados intentos fallidos. Espera ${segundos} s e intenta de nuevo.`
+        const secondsValue = Number(err.headers.get('Retry-After'));
+        return Number.isFinite(secondsValue) && secondsValue > 0
+          ? `Demasiados intentos fallidos. Espera ${secondsValue} s e intenta de nuevo.`
           : 'Demasiados intentos fallidos. Espera unos segundos e intenta de nuevo.';
       }
     }
@@ -70,8 +70,8 @@ export class LoginComponent implements OnInit {
   }
 
   /** A donde ir al terminar: la pantalla que se pedia, solo si es una ruta interna (nunca otro sitio). */
-  private destino(): string {
-    const pedido = this.route.snapshot.queryParamMap.get('returnUrl');
-    return pedido && pedido.startsWith('/') && !pedido.startsWith('//') && !pedido.startsWith('/login') ? pedido : '/';
+  private redirectTarget(): string {
+    const requested = this.route.snapshot.queryParamMap.get('returnUrl');
+    return requested && requested.startsWith('/') && !requested.startsWith('//') && !requested.startsWith('/login') ? requested : '/';
   }
 }

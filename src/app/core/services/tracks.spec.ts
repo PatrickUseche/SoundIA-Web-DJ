@@ -7,10 +7,10 @@ import { environment } from '../../../environments/environment';
 
 const BASE = `${environment.apiRootUrl}/tracks`;
 
-const pista = (cambios: Partial<Track> = {}): Track => ({
+const trackItem = (changes: Partial<Track> = {}): Track => ({
   id: 1, title: 'tema.wav', duration: 215.3, bpm: 127.98, key: 'A minor', camelot: '8A',
   energy: 0.62, cuePoints: [0.4, 30.4], hasAudio: true, createdAt: '2026-10-21T18:30:00+00:00',
-  ...cambios,
+  ...changes,
 });
 
 describe('TrackApiService', () => {
@@ -32,7 +32,7 @@ describe('TrackApiService', () => {
 
     const req = http.expectOne(BASE);
     expect(req.request.method).toBe('GET');
-    req.flush({ tracks: [pista({ id: 1 }), pista({ id: 2 })] });
+    req.flush({ tracks: [trackItem({ id: 1 }), trackItem({ id: 2 })] });
     expect(recibidas?.map((t) => t.id)).toEqual([1, 2]);
   });
 
@@ -41,15 +41,15 @@ describe('TrackApiService', () => {
 
     service.get(7).subscribe((t) => (recibida = t));
 
-    http.expectOne(`${BASE}/7`).flush(pista({ id: 7 }));
+    http.expectOne(`${BASE}/7`).flush(trackItem({ id: 7 }));
     expect(recibida?.id).toBe(7);
   });
 
   it('analyze sube el archivo como multipart con su nombre y el titulo', () => {
-    const archivo = new File(['RIFFdatos'], 'tema.wav', { type: 'audio/wav' });
+    const audioFile = new File(['RIFFdatos'], 'tema.wav', { type: 'audio/wav' });
     let recibida: Track | undefined;
 
-    service.analyze(archivo, '  Mi tema  ').subscribe((t) => (recibida = t));
+    service.analyze(audioFile, '  Mi tema  ').subscribe((t) => (recibida = t));
 
     const req = http.expectOne(`${BASE}/analyze`);
     expect(req.request.method).toBe('POST');
@@ -57,17 +57,17 @@ describe('TrackApiService', () => {
     expect(body).toBeInstanceOf(FormData);
     expect((body.get('file') as File).name).toBe('tema.wav');
     expect(body.get('title')).toBe('Mi tema');
-    req.flush(pista());
+    req.flush(trackItem());
     expect(recibida?.camelot).toBe('8A');
   });
 
   it('analyze no envia el titulo si esta vacio o en blanco', () => {
-    const archivo = new File(['x'], 'tema.wav');
+    const audioFile = new File(['x'], 'tema.wav');
 
-    service.analyze(archivo).subscribe();
+    service.analyze(audioFile).subscribe();
     expect((http.expectOne(`${BASE}/analyze`).request.body as FormData).has('title')).toBe(false);
 
-    service.analyze(archivo, '   ').subscribe();
+    service.analyze(audioFile, '   ').subscribe();
     expect((http.expectOne(`${BASE}/analyze`).request.body as FormData).has('title')).toBe(false);
   });
 
@@ -101,7 +101,7 @@ describe('TrackApiService', () => {
     const req = http.expectOne(`${BASE}/7`);
     expect(req.request.method).toBe('PUT');
     expect(req.request.body).toEqual({ genre: 'salsa' });
-    req.flush(pista({ id: 7, genre: 'salsa' }));
+    req.flush(trackItem({ id: 7, genre: 'salsa' }));
     expect(recibida?.genre).toBe('salsa');
   });
 
@@ -124,7 +124,7 @@ describe('TrackApiService', () => {
     const req = http.expectOne(`${BASE}/7/grid`);
     expect(req.request.method).toBe('PUT');
     expect(req.request.body).toEqual({ downbeat: 12.34 });
-    req.flush(pista({ id: 7, grid: { offset: 0.1, downbeat: 0.6, confidence: 1, manual: true } }));
+    req.flush(trackItem({ id: 7, grid: { offset: 0.1, downbeat: 0.6, confidence: 1, manual: true } }));
     expect(recibida?.grid?.manual).toBe(true);
   });
 });

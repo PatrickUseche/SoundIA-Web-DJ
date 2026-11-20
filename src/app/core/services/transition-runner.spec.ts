@@ -7,14 +7,14 @@ import { AutomationPoint, TransitionPlan } from '../models/autodj';
 import { Track } from '../models/track';
 import { FakeAudioBuffer, FakeAudioContext, provideFakeAudio } from '../testing/fake-audio';
 
-const pista = (id: number, bpm = 128): Track => ({
+const trackItem = (id: number, bpm = 128): Track => ({
   id, title: `pista ${id}`, duration: 200, bpm, key: 'C major', camelot: '8B', energy: 0.6,
   cuePoints: [0], hasAudio: true, createdAt: '2026-10-21T18:30:00+00:00',
 });
 
-function automatizacion(pasos: number): AutomationPoint[] {
-  return Array.from({ length: pasos + 1 }, (_, i) => {
-    const p = i / pasos;
+function automatizacion(stepCount: number): AutomationPoint[] {
+  return Array.from({ length: stepCount + 1 }, (_, i) => {
+    const p = i / stepCount;
     const cambiado = p >= 0.5;
     return {
       position: p, gainA: Math.cos((p * Math.PI) / 2), gainB: Math.sin((p * Math.PI) / 2),
@@ -23,13 +23,13 @@ function automatizacion(pasos: number): AutomationPoint[] {
   });
 }
 
-function plan(cambios: Partial<TransitionPlan> = {}): TransitionPlan {
+function plan(changes: Partial<TransitionPlan> = {}): TransitionPlan {
   return {
     fromTrackId: 1, toTrackId: 2, style: 'blend', bars: 4, seconds: 10, mixOutAt: 100, mixInAt: 8,
     tempoMatch: { ratio: 1.03, multiplier: 1, feasible: true },
     compatibility: { score: 0.9, tempo: 0.9, harmonic: 0.9, energy: 0.9, tempoMatch: { ratio: 1.03, multiplier: 1, feasible: true } },
     automation: automatizacion(16),
-    ...cambios,
+    ...changes,
   };
 }
 
@@ -52,8 +52,8 @@ describe('TransitionRunnerService', () => {
     });
     mixer = TestBed.inject(MixerService);
     runner = TestBed.inject(TransitionRunnerService);
-    mixer.loadBuffer('A', buffer(), pista(1));
-    mixer.loadBuffer('B', buffer(), pista(2));
+    mixer.loadBuffer('A', buffer(), trackItem(1));
+    mixer.loadBuffer('B', buffer(), trackItem(2));
     mixer.deck('A').play();
   });
 
@@ -106,7 +106,7 @@ describe('TransitionRunnerService', () => {
   describe('alineacion a compas', () => {
     // A a 120 BPM (compas de 2 s) con el primer tiempo en 0; B a 124 BPM con el primer tiempo en 0.2.
     const conRejilla = (id: number, bpm: number, primerTiempo: number): Track => ({
-      ...pista(id, bpm), grid: { offset: primerTiempo, downbeat: primerTiempo, confidence: 0.9 },
+      ...trackItem(id, bpm), grid: { offset: primerTiempo, downbeat: primerTiempo, confidence: 0.9 },
     });
     const alineable = () => plan({
       style: 'blend', bars: 4, seconds: 8, mixInAt: 0.2, automation: automatizacion(16),
@@ -210,7 +210,7 @@ describe('TransitionRunnerService', () => {
     });
 
     it('si las pistas no tienen rejilla arranca al momento', async () => {
-      mixer.loadBuffer('B', buffer(), pista(2, 124));
+      mixer.loadBuffer('B', buffer(), trackItem(2, 124));
 
       const mezcla = runner.run(alineable(), 'A', 'B');
       await flush();
@@ -224,7 +224,7 @@ describe('TransitionRunnerService', () => {
       expect(runner.canAlign(alineable(), 'A', 'B')).toBe(true);
       expect(runner.canAlign(plan({ style: 'fade' }), 'A', 'B')).toBe(false);
 
-      mixer.loadBuffer('B', buffer(), pista(2, 124));
+      mixer.loadBuffer('B', buffer(), trackItem(2, 124));
       expect(runner.canAlign(alineable(), 'A', 'B')).toBe(false);
     });
   });
@@ -233,9 +233,9 @@ describe('TransitionRunnerService', () => {
     const corte = () => plan({ style: 'cut', bars: 0, seconds: 0, automation: [] });
 
     it('cambia de deck al instante: entra la nueva, sale la anterior y el crossfader pasa al otro lado', async () => {
-      const resultado = await runner.run(corte(), 'A', 'B');
+      const outcome = await runner.run(corte(), 'A', 'B');
 
-      expect(resultado).toBe('completed');
+      expect(outcome).toBe('completed');
       expect(mixer.deck('B').playing()).toBe(true);
       expect(mixer.deck('A').playing()).toBe(false);
       expect(mixer.crossfader()).toBe(1);
@@ -345,12 +345,12 @@ describe('TransitionRunnerService', () => {
     it('el avance es monotono', async () => {
       const ejecucion = runner.run(plan({ seconds: 10 }), 'A', 'B');
       await flush();
-      let anterior = 0;
+      let previousItem = 0;
 
       for (let t = 0; t < 10000; t += 500) {
         await avanzar(500);
-        expect(runner.progress()).toBeGreaterThanOrEqual(anterior);
-        anterior = runner.progress();
+        expect(runner.progress()).toBeGreaterThanOrEqual(previousItem);
+        previousItem = runner.progress();
       }
       await ejecucion;
     });
@@ -370,14 +370,14 @@ describe('TransitionRunnerService', () => {
       const ejecucion = runner.run(plan({ seconds: 10 }), 'A', 'B');
       await flush();
       await avanzar(3000);
-      const posicion = mixer.crossfader();
+      const currentPosition = mixer.crossfader();
 
       runner.cancel();
 
       expect(await ejecucion).toBe('cancelled');
       expect(runner.running()).toBe(false);
       await avanzar(5000); // ya no avanza
-      expect(mixer.crossfader()).toBe(posicion);
+      expect(mixer.crossfader()).toBe(currentPosition);
       expect(mixer.deck('A').playing()).toBe(true);
     });
 

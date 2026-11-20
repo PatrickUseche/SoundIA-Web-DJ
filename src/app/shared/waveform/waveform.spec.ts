@@ -28,7 +28,7 @@ describe('WaveformComponent', () => {
     fixture = TestBed.createComponent(WaveformComponent);
     return fixture;
   };
-  const poner = (nombre: string, valor: unknown) => fixture.componentRef.setInput(nombre, valor);
+  const poner = (displayName: string, rawValue: unknown) => fixture.componentRef.setInput(displayName, rawValue);
   const canvas = () => (fixture.nativeElement as HTMLElement).querySelector('canvas') as HTMLCanvasElement;
 
   it('dibuja con los colores recibidos', () => {
@@ -48,7 +48,7 @@ describe('WaveformComponent', () => {
     crear();
     poner('width', 300);
     poner('height', 50);
-    poner('etiqueta', 'Forma de onda del deck A');
+    poner('labelText', 'Forma de onda del deck A');
     fixture.detectChanges();
 
     expect(canvas().getAttribute('width')).toBe('300');

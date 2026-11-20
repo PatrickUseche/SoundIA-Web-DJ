@@ -251,7 +251,7 @@ export class Deck {
   setEq(band: EqBand, value: number): void {
     const v = Math.min(1, Math.max(0, value));
     this.filters[band].gain.value = eqValueToDb(v);
-    this.eq.update((actual) => ({ ...actual, [band]: v }));
+    this.eq.update((currentItem) => ({ ...currentItem, [band]: v }));
   }
 
   /** Ganancia del crossfader de este deck (la fija el mixer). */

@@ -74,7 +74,7 @@ export function parseMappingKey(key: string): MidiAssignment | null {
   return { channel, controlId };
 }
 
-const NOMBRE_BANDA: Record<EqBand, string> = { low: 'graves', mid: 'medios', high: 'agudos' };
+const BAND_NAME: Record<EqBand, string> = { low: 'graves', mid: 'medios', high: 'agudos' };
 
 /** Nombre legible de un control para la interfaz, por ejemplo "Deck A: graves". */
 export function controlLabel(control: MixerControl): string {
@@ -85,20 +85,20 @@ export function controlLabel(control: MixerControl): string {
     return 'Volumen maestro';
   }
   const [deck, kind, band] = control.split('.');
-  const nombreDeck = `Deck ${deck}`;
+  const deckName = `Deck ${deck}`;
   switch (kind) {
     case 'volume':
-      return `${nombreDeck}: volumen`;
+      return `${deckName}: volumen`;
     case 'pitch':
-      return `${nombreDeck}: pitch`;
+      return `${deckName}: pitch`;
     case 'eq':
-      return `${nombreDeck}: EQ ${NOMBRE_BANDA[band as EqBand]}`;
+      return `${deckName}: EQ ${BAND_NAME[band as EqBand]}`;
     case 'play':
-      return `${nombreDeck}: play/pausa`;
+      return `${deckName}: play/pausa`;
     case 'cue':
-      return `${nombreDeck}: cue`;
+      return `${deckName}: cue`;
     default:
-      return `${nombreDeck}: sync`;
+      return `${deckName}: sync`;
   }
 }
 
@@ -107,8 +107,8 @@ export function controlLabel(control: MixerControl): string {
  * Con canal se antepone, contado desde 1 como lo muestran los aparatos: "Canal 2 · CC 7".
  */
 export function midiControlLabel(controlId: number, channel: number | null = null): string {
-  const nombre = controlId >= 128 ? `Nota ${controlId - 128}` : `CC ${controlId}`;
-  return channel === null ? nombre : `Canal ${channel + 1} · ${nombre}`;
+  const displayName = controlId >= 128 ? `Nota ${controlId - 128}` : `CC ${controlId}`;
+  return channel === null ? displayName : `Canal ${channel + 1} · ${displayName}`;
 }
 
 /** Valor MIDI (0-127) como fraccion de 0 a 1. */

@@ -4,100 +4,100 @@
     <div class="subida">
         <label>
             Analizar pistas nuevas (WAV, MP3, FLAC u OGG; puedes elegir varias):
-            <input type="file" multiple accept="audio/*,.wav,.mp3,.flac,.ogg" (change)="alElegirArchivo($event)"
-                [disabled]="subiendo()" aria-label="Archivo de audio" />
+            <input type="file" multiple accept="audio/*,.wav,.mp3,.flac,.ogg" (change)="onFileChosen($event)"
+                [disabled]="uploading()" aria-label="Archivo de audio" />
         </label>
-        @if (subiendo()) {
-            @if (progresoSubida(); as progreso) {
-                @if (progreso.total > 1) {
+        @if (uploading()) {
+            @if (uploadProgress(); as playbackProgress) {
+                @if (playbackProgress.total > 1) {
                     <p role="status" class="progreso-subida">
-                        Analizando la pista {{ progreso.actual }} de {{ progreso.total }} ({{ progreso.nombre }})...
+                        Analizando la pista {{ playbackProgress.currentItem }} de {{ playbackProgress.total }} ({{ playbackProgress.displayName }})...
                         puede tardar unos segundos cada una.
                     </p>
-                    <progress [value]="progreso.actual - 1" [max]="progreso.total"
-                        [attr.aria-label]="'Pistas analizadas: ' + (progreso.actual - 1) + ' de ' + progreso.total"></progress>
+                    <progress [value]="playbackProgress.currentItem - 1" [max]="playbackProgress.total"
+                        [attr.aria-label]="'Pistas analizadas: ' + (playbackProgress.currentItem - 1) + ' de ' + playbackProgress.total"></progress>
                 } @else {
                     <p role="status">Analizando la pista... puede tardar unos segundos.</p>
                 }
             }
         }
-        @if (esperandoServidor(); as espera) {
+        @if (waitingForServer(); as espera) {
             <p role="status" class="subida-espera">
-                El servidor no responde: reintentando «{{ espera.nombre }}» (intento {{ espera.intento }} de {{ espera.de }}).
+                El servidor no responde: reintentando «{{ espera.displayName }}» (intento {{ espera.attempt }} de {{ espera.de }}).
                 Puede estar despertando o reiniciándose; no cierres la página.
             </p>
         }
-        @if (avisosSubida().length > 0) {
+        @if (uploadNotices().length > 0) {
             <ul class="subida-avisos" role="status">
-                @for (aviso of avisosSubida(); track $index) {
-                    <li>{{ aviso }}</li>
+                @for (noticeText of uploadNotices(); track $index) {
+                    <li>{{ noticeText }}</li>
                 }
             </ul>
         }
-        @if (mensajeSubida(); as mensaje) {
-            <p role="status" class="subida-ok">{{ mensaje }}</p>
+        @if (uploadMessage(); as messageText) {
+            <p role="status" class="subida-ok">{{ messageText }}</p>
         }
-        @if (errorSubida(); as mensaje) {
-            <p role="alert" class="subida-error alerta">{{ mensaje }}</p>
-            @if (pendientesSubida().length > 0) {
+        @if (uploadError(); as messageText) {
+            <p role="alert" class="subida-error alerta">{{ messageText }}</p>
+            @if (pendingUploads().length > 0) {
                 <ul class="subida-pendientes alerta">
-                    @for (pendiente of pendientesSubida(); track $index) {
-                        <li>{{ pendiente.name }}</li>
+                    @for (isPending of pendingUploads(); track $index) {
+                        <li>{{ isPending.name }}</li>
                     }
                 </ul>
-                <button type="button" class="reintentar-pendientes" (click)="reintentarPendientes()">
+                <button type="button" class="reintentar-pendientes" (click)="retryPending()">
                     Reintentar los pendientes
                 </button>
             }
-            @if (erroresSubida().length > 0) {
+            @if (uploadErrors().length > 0) {
                 <ul class="subida-errores alerta">
-                    @for (motivo of erroresSubida(); track $index) {
-                        <li>{{ motivo }}</li>
+                    @for (reason of uploadErrors(); track $index) {
+                        <li>{{ reason }}</li>
                     }
                 </ul>
             }
         }
     </div>
 
-    <button type="button" (click)="recargar()" [disabled]="cargando()">Actualizar</button>
+    <button type="button" (click)="reload()" [disabled]="isLoading()">Actualizar</button>
 
-    @if (sinAudio() > 0) {
+    @if (withoutAudio() > 0) {
         <p role="status" class="aviso-sin-audio">
-            {{ sinAudio() === 1 ? '1 pista no tiene el audio guardado' : sinAudio() + ' pistas no tienen el audio guardado' }}:
+            {{ withoutAudio() === 1 ? '1 pista no tiene el audio guardado' : withoutAudio() + ' pistas no tienen el audio guardado' }}:
             no se pueden cargar ni poner en cola hasta que vuelvas a subirlas.
         </p>
     }
 
-    @if (mensajeCola(); as mensaje) {
-        <p role="status" class="cola-ok">{{ mensaje }}</p>
+    @if (queueMessage(); as messageText) {
+        <p role="status" class="cola-ok">{{ messageText }}</p>
     }
-    @if (errorCola(); as mensaje) {
-        <p role="alert" class="cola-error alerta">{{ mensaje }}</p>
+    @if (queueError(); as messageText) {
+        <p role="alert" class="cola-error alerta">{{ messageText }}</p>
     }
 
-    @if (errorGenero(); as mensaje) {
-        <p role="alert" class="genero-error alerta">{{ mensaje }}</p>
+    @if (genreError(); as messageText) {
+        <p role="alert" class="genero-error alerta">{{ messageText }}</p>
     }
     <datalist id="generos-sugeridos">
-        @for (genero of generos; track genero) {
-            <option [value]="genero"></option>
+        @for (trackGenre of genres; track trackGenre) {
+            <option [value]="trackGenre"></option>
         }
     </datalist>
 
-    @if (mensajeBorrado(); as mensaje) {
-        <p role="status" class="borrado-ok">{{ mensaje }}</p>
+    @if (deleteMessage(); as messageText) {
+        <p role="status" class="borrado-ok">{{ messageText }}</p>
     }
-    @if (errorBorrado(); as mensaje) {
-        <p role="alert" class="borrado-error alerta">{{ mensaje }}</p>
-    }
-
-    @if (errorDeck(); as mensaje) {
-        <p role="alert" class="deck-error alerta">{{ mensaje }}</p>
+    @if (deleteError(); as messageText) {
+        <p role="alert" class="borrado-error alerta">{{ messageText }}</p>
     }
 
-    @if (error(); as mensaje) {
-        <p role="alert" class="lista-error alerta">{{ mensaje }}</p>
-    } @else if (cargando() && tracks().length === 0) {
+    @if (deckError(); as messageText) {
+        <p role="alert" class="deck-error alerta">{{ messageText }}</p>
+    }
+
+    @if (error(); as messageText) {
+        <p role="alert" class="lista-error alerta">{{ messageText }}</p>
+    } @else if (isLoading() && tracks().length === 0) {
         <p>Cargando biblioteca...</p>
     } @else if (tracks().length === 0) {
         <p>Todavía no hay pistas. Sube una para analizarla.</p>
@@ -105,24 +105,24 @@
         <div class="filtros" role="search">
             <label>
                 Buscar
-                <input type="search" [value]="busqueda()" (input)="alBuscarTexto($event)" placeholder="Título de la pista"
+                <input type="search" [value]="searchText()" (input)="onSearchText($event)" placeholder="Título de la pista"
                     aria-label="Buscar pista" />
             </label>
             <label>
                 Ordenar por
-                <select (change)="alOrdenar($event)" aria-label="Ordenar pistas">
-                    @for (opcion of ordenes; track opcion.valor) {
-                        <option [value]="opcion.valor" [selected]="orden() === opcion.valor">{{ opcion.texto }}</option>
+                <select (change)="onSort($event)" aria-label="Ordenar pistas">
+                    @for (optionItem of sortOrders; track optionItem.rawValue) {
+                        <option [value]="optionItem.rawValue" [selected]="sortOrder() === optionItem.rawValue">{{ optionItem.bodyText }}</option>
                     }
                 </select>
             </label>
             <label class="solo-compatibles">
-                <input type="checkbox" [checked]="soloCompatibles()" (change)="alFiltrarCompatibles($event)"
-                    [disabled]="!hayDecksCargados()" aria-label="Solo compatibles" />
+                <input type="checkbox" [checked]="onlyCompatible()" (change)="onFilterCompatible($event)"
+                    [disabled]="!hasLoadedDecks()" aria-label="Solo compatibles" />
                 Solo las que mezclan bien con los decks
             </label>
         </div>
-        @if (visibles().length === 0) {
+        @if (visibleTracks().length === 0) {
             <p class="sin-resultados" role="status">Ninguna pista coincide con el filtro.</p>
         }
         <div class="tabla-scroll"><table>
@@ -140,66 +140,66 @@
                 </tr>
             </thead>
             <tbody>
-                @for (pista of visibles(); track pista.id) {
-                    <tr [class.compatible]="compatible(pista)" [class.en-deck]="enDeck(pista)">
+                @for (trackItem of visibleTracks(); track trackItem.id) {
+                    <tr [class.compatible]="compatible(trackItem)" [class.en-deck]="inDeck(trackItem)">
                         <td>
-                            {{ pista.title }}
-                            @if (analizandoVoz(pista)) {
+                            {{ trackItem.title }}
+                            @if (analyzingVocals(trackItem)) {
                                 <span class="analizando-voz" title="Se está analizando dónde acaba la voz para no cortar la letra al mezclar">analizando voz</span>
                             }
-                            @if (deckDe(pista); as deck) {
+                            @if (deckOf(trackItem); as deck) {
                                 <span class="etiqueta-deck" [attr.data-deck]="deck" [title]="'Cargada en el deck ' + deck">Deck {{ deck }}</span>
                             }
-                            @if (compatible(pista) && !enDeck(pista)) {
+                            @if (compatible(trackItem) && !inDeck(trackItem)) {
                                 <span class="etiqueta-compatible" title="Mezcla bien con una pista cargada">compatible</span>
                             }
                         </td>
                         <td>
-                            {{ formatBpm(pista.bpm) }}
-                            @if (pista.variableTempo) {
+                            {{ formatBpm(trackItem.bpm) }}
+                            @if (trackItem.variableTempo) {
                                 <span class="etiqueta-compatible" title="El tempo de esta pista no es fijo (en vivo): se mezcla con fundido, sin igualar el BPM">tempo variable</span>
                             }
                         </td>
-                        <td>{{ pista.key }}</td>
-                        <td>{{ pista.camelot }}</td>
+                        <td>{{ trackItem.key }}</td>
+                        <td>{{ trackItem.camelot }}</td>
                         <td>
                             <input type="text" class="genero" list="generos-sugeridos" maxlength="40"
-                                [value]="pista.genre ?? ''" (change)="cambiarGenero(pista, $event)"
-                                [attr.aria-label]="'Género de ' + pista.title" placeholder="sin género" />
+                                [value]="trackItem.genre ?? ''" (change)="changeGenre(trackItem, $event)"
+                                [attr.aria-label]="'Género de ' + trackItem.title" placeholder="sin género" />
                         </td>
                         <td>
-                            <meter min="0" max="1" [value]="pista.energy" [attr.aria-label]="'Energia de ' + pista.title">
-                                {{ pista.energy }}
+                            <meter min="0" max="1" [value]="trackItem.energy" [attr.aria-label]="'Energia de ' + trackItem.title">
+                                {{ trackItem.energy }}
                             </meter>
                         </td>
-                        <td>{{ formatTime(pista.duration) }}</td>
+                        <td>{{ formatTime(trackItem.duration) }}</td>
                         <td>
-                            @if (pista.hasAudio && mixer.supported) {
-                                <button type="button" (click)="cargarEnDeck('A', pista)" [disabled]="cargandoDeck() !== null">
-                                    {{ cargandoDeck() === 'A' ? 'Cargando...' : 'Deck A' }}
+                            @if (trackItem.hasAudio && mixer.supported) {
+                                <button type="button" (click)="loadIntoDeck('A', trackItem)" [disabled]="loadingDeck() !== null">
+                                    {{ loadingDeck() === 'A' ? 'Cargando...' : 'Deck A' }}
                                 </button>
-                                <button type="button" (click)="cargarEnDeck('B', pista)" [disabled]="cargandoDeck() !== null">
-                                    {{ cargandoDeck() === 'B' ? 'Cargando...' : 'Deck B' }}
+                                <button type="button" (click)="loadIntoDeck('B', trackItem)" [disabled]="loadingDeck() !== null">
+                                    {{ loadingDeck() === 'B' ? 'Cargando...' : 'Deck B' }}
                                 </button>
-                            } @else if (!pista.hasAudio) {
+                            } @else if (!trackItem.hasAudio) {
                                 <span class="sin-audio" title="Se analizó antes de guardar el audio: vuelve a subirla">sin audio</span>
                             }
-                            <button type="button" (click)="encolar(pista)" [disabled]="!pista.hasAudio"
-                                [attr.aria-label]="'Agregar ' + pista.title + ' a la cola'">
+                            <button type="button" (click)="enqueueTrack(trackItem)" [disabled]="!trackItem.hasAudio"
+                                [attr.aria-label]="'Agregar ' + trackItem.title + ' a la cola'">
                                 A la cola
                             </button>
-                            @if (confirmandoBorrado() === pista.id) {
-                                <span class="confirmar-borrado" role="group" [attr.aria-label]="'Confirmar el borrado de ' + pista.title">
+                            @if (confirmingDelete() === trackItem.id) {
+                                <span class="confirmar-borrado" role="group" [attr.aria-label]="'Confirmar el borrado de ' + trackItem.title">
                                     ¿Borrar también su audio?
-                                    <button type="button" (click)="borrar(pista)">Si, borrar</button>
-                                    <button type="button" (click)="cancelarBorrado()">No</button>
+                                    <button type="button" (click)="deleteItem(trackItem)">Si, borrar</button>
+                                    <button type="button" (click)="cancelDelete()">No</button>
                                 </span>
                             } @else {
-                                <button type="button" (click)="pedirBorrado(pista)"
-                                    [disabled]="enDeck(pista) || borrando() !== null"
-                                    [attr.title]="enDeck(pista) ? 'Descarga la pista del deck antes de borrarla' : null"
-                                    [attr.aria-label]="'Borrar ' + pista.title">
-                                    {{ borrando() === pista.id ? 'Borrando...' : 'Borrar' }}
+                                <button type="button" (click)="requestDelete(trackItem)"
+                                    [disabled]="inDeck(trackItem) || deleting() !== null"
+                                    [attr.title]="inDeck(trackItem) ? 'Descarga la pista del deck antes de borrarla' : null"
+                                    [attr.aria-label]="'Borrar ' + trackItem.title">
+                                    {{ deleting() === trackItem.id ? 'Borrando...' : 'Borrar' }}
                                 </button>
                             }
                         </td>

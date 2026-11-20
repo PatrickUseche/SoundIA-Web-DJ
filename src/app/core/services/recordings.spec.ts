@@ -38,15 +38,15 @@ describe('RecordingApiService', () => {
   });
 
   it('list pide las grabaciones sin filtro', () => {
-    let lista: unknown;
+    let itemList: unknown;
 
-    service.list().subscribe((l) => (lista = l));
+    service.list().subscribe((l) => (itemList = l));
 
     const req = http.expectOne(`${environment.apiRootUrl}/recordings`);
     expect(req.request.method).toBe('GET');
     expect(req.request.params.keys()).toEqual([]);
     req.flush({ recordings: [], counts: { unreviewed: 0, good: 0, discard: 0, total: 0 } });
-    expect(lista).toEqual({ recordings: [], counts: { unreviewed: 0, good: 0, discard: 0, total: 0 } });
+    expect(itemList).toEqual({ recordings: [], counts: { unreviewed: 0, good: 0, discard: 0, total: 0 } });
   });
 
   it('list con una calidad la envia como parametro quality', () => {
@@ -75,27 +75,27 @@ describe('RecordingApiService', () => {
   });
 
   it('exportAll pide la copia como un archivo', () => {
-    let archivo: Blob | undefined;
+    let audioFile: Blob | undefined;
 
-    service.exportAll().subscribe((b) => (archivo = b));
+    service.exportAll().subscribe((b) => (audioFile = b));
 
     const req = http.expectOne(`${environment.apiRootUrl}/recordings/export`);
     expect(req.request.method).toBe('GET');
     expect(req.request.responseType).toBe('blob');
     req.flush(new Blob(['{}'], { type: 'application/json' }));
-    expect(archivo?.size).toBe(2);
+    expect(audioFile?.size).toBe(2);
   });
 
   it('importAll envia la copia con un POST y devuelve cuantas se restauraron', () => {
-    let resultado: unknown;
-    const copia = { format: 'soundia-recordings', version: 1, recordings: [] };
+    let outcome: unknown;
+    const backup = { format: 'soundia-recordings', version: 1, recordings: [] };
 
-    service.importAll(copia).subscribe((r) => (resultado = r));
+    service.importAll(backup).subscribe((r) => (outcome = r));
 
     const req = http.expectOne(`${environment.apiRootUrl}/recordings/import`);
     expect(req.request.method).toBe('POST');
-    expect(req.request.body).toEqual(copia);
+    expect(req.request.body).toEqual(backup);
     req.flush({ created: 2, skipped: 1 });
-    expect(resultado).toEqual({ created: 2, skipped: 1 });
+    expect(outcome).toEqual({ created: 2, skipped: 1 });
   });
 });

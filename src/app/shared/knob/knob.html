@@ -1,14 +1,14 @@
-<div class="knob" [attr.data-activa]="activa()">
-    <div class="dial" aria-hidden="true" [style.--angulo]="angulo() + 'deg'"
-        (pointerdown)="alPulsar($event)" (pointermove)="alMover($event)" (pointerup)="alSoltar()"
-        (pointercancel)="alSoltar()" (dblclick)="alDobleClic()">
+<div class="knob" [attr.data-activa]="isActive()">
+    <div class="dial" aria-hidden="true" [style.--angulo]="angle() + 'deg'"
+        (pointerdown)="onPress($event)" (pointermove)="onMove($event)" (pointerup)="onRelease()"
+        (pointercancel)="onRelease()" (dblclick)="onDoubleClick()">
         <svg class="anillo" viewBox="0 0 48 48" focusable="false">
-            <circle class="pista" cx="24" cy="24" r="20" [attr.stroke-dasharray]="arcoTotal" transform="rotate(135 24 24)" />
-            <circle class="valor" cx="24" cy="24" r="20" [attr.stroke-dasharray]="arco()" transform="rotate(135 24 24)" />
+            <circle class="pista" cx="24" cy="24" r="20" [attr.stroke-dasharray]="totalArc" transform="rotate(135 24 24)" />
+            <circle class="valor" cx="24" cy="24" r="20" [attr.stroke-dasharray]="arc()" transform="rotate(135 24 24)" />
         </svg>
         <span class="tapa"><span class="marca"></span></span>
     </div>
-    <input type="range" class="control" [min]="min()" [max]="max()" [step]="paso()" [value]="valor()"
-        [attr.aria-label]="etiqueta()" (input)="alEntrada($event)" />
-    <span class="etiqueta">{{ etiquetaVisible() ?? etiqueta() }}</span>
+    <input type="range" class="control" [min]="min()" [max]="max()" [step]="stepSize()" [value]="rawValue()"
+        [attr.aria-label]="labelText()" (input)="onInput($event)" />
+    <span class="etiqueta">{{ visibleLabel() ?? labelText() }}</span>
 </div>

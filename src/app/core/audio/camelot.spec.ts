@@ -13,8 +13,8 @@ describe('compatibleCodes', () => {
   });
 
   it('cada codigo tiene exactamente cuatro compatibles distintos', () => {
-    for (const codigo of TODOS) {
-      expect(new Set(compatibleCodes(codigo)).size).toBe(4);
+    for (const camelotCode of TODOS) {
+      expect(new Set(compatibleCodes(camelotCode)).size).toBe(4);
     }
   });
 

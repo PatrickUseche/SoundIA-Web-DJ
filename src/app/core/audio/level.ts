@@ -7,7 +7,7 @@ const AMBER_UP_TO = 0.9;
 
 export type SegmentZone = 'verde' | 'ambar' | 'rojo';
 
-const clamp01 = (valor: number): number => Math.min(1, Math.max(0, valor));
+const clamp01 = (rawValue: number): number => Math.min(1, Math.max(0, rawValue));
 
 /** Pasa una amplitud pico (0-1, escala lineal) a la posicion de un medidor en dB (0-1). */
 export function peakToLevel(peak: number): number {
@@ -21,9 +21,9 @@ export function peakToLevel(peak: number): number {
 export function peakOf(samples: ArrayLike<number>): number {
   let max = 0;
   for (let i = 0; i < samples.length; i++) {
-    const absoluto = Math.abs(samples[i]);
-    if (absoluto > max) {
-      max = absoluto;
+    const absoluteValue = Math.abs(samples[i]);
+    if (absoluteValue > max) {
+      max = absoluteValue;
     }
   }
   return max;
@@ -36,8 +36,8 @@ const METER_CUTOFF = 0.01;
 
 /** Nivel que muestra el medidor: sube al instante y baja con una caida suave. */
 export function smoothLevel(previous: number, current: number): number {
-  const nivel = Math.max(current, previous * METER_DECAY);
-  return nivel < METER_CUTOFF ? 0 : nivel;
+  const meterLevel = Math.max(current, previous * METER_DECAY);
+  return meterLevel < METER_CUTOFF ? 0 : meterLevel;
 }
 
 /** Cuantos segmentos de un medidor de `count` se encienden para un nivel 0-1. */
@@ -47,9 +47,9 @@ export function litSegments(level: number, count: number): number {
 
 /** Color de un segmento (el 0 es el de abajo): verde, ambar y el tramo final en rojo. */
 export function segmentZone(index: number, count: number): SegmentZone {
-  const posicion = (index + 1) / count;
-  if (posicion <= GREEN_UP_TO) {
+  const currentPosition = (index + 1) / count;
+  if (currentPosition <= GREEN_UP_TO) {
     return 'verde';
   }
-  return posicion <= AMBER_UP_TO ? 'ambar' : 'rojo';
+  return currentPosition <= AMBER_UP_TO ? 'ambar' : 'rojo';
 }

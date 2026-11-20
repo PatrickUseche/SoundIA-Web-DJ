@@ -7,8 +7,8 @@ import { DjSession, QueueItem } from '../models/autodj';
 
 const sesion = (id: number): DjSession => ({ id, name: 'x', startedAt: 'x', endedAt: null, active: true });
 const elemento = (id: number, trackId: number, sessionId = 5): QueueItem => ({ id, sessionId, trackId, addedAt: 'x' });
-const falla = (status: number, mensaje: string) =>
-  throwError(() => new HttpErrorResponse({ status, statusText: 'x', error: { error: mensaje } }));
+const falla = (status: number, messageText: string) =>
+  throwError(() => new HttpErrorResponse({ status, statusText: 'x', error: { error: messageText } }));
 
 describe('QueueService', () => {
   let service: QueueService;
@@ -157,9 +157,9 @@ describe('QueueService', () => {
     it('sin sesion conocida no hace nada', async () => {
       TestBed.resetTestingModule();
       TestBed.configureTestingModule({ providers: [{ provide: SessionsApiService, useValue: api }] });
-      const nuevo = TestBed.inject(QueueService);
+      const newValue = TestBed.inject(QueueService);
 
-      expect(await nuevo.remove(1)).toBe(false);
+      expect(await newValue.remove(1)).toBe(false);
       expect(api.removeFromQueue).not.toHaveBeenCalled();
     });
   });

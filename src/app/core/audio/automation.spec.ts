@@ -2,9 +2,9 @@ import { automationToKnob, interpolateAutomation } from './automation';
 import { AutomationPoint } from '../models/autodj';
 
 /** Puntos como los que genera el motor de IA: crossfader de potencia constante y bass swap a mitad. */
-function curva(pasos: number): AutomationPoint[] {
-  return Array.from({ length: pasos + 1 }, (_, i) => {
-    const p = i / pasos;
+function curva(stepCount: number): AutomationPoint[] {
+  return Array.from({ length: stepCount + 1 }, (_, i) => {
+    const p = i / stepCount;
     const cambiado = p >= 0.5;
     return {
       position: p,
@@ -42,10 +42,10 @@ describe('interpolateAutomation', () => {
   it('en la posicion exacta de un punto devuelve ese punto', () => {
     const puntos = curva(4);
 
-    const punto = interpolateAutomation(puntos, 0.25)!;
+    const dataPoint = interpolateAutomation(puntos, 0.25)!;
 
-    expect(punto.midB).toBeCloseTo(0.25);
-    expect(punto.gainA).toBeCloseTo(puntos[1].gainA);
+    expect(dataPoint.midB).toBeCloseTo(0.25);
+    expect(dataPoint.gainA).toBeCloseTo(puntos[1].gainA);
   });
 
   it('entre dos puntos interpola linealmente', () => {
@@ -67,30 +67,30 @@ describe('interpolateAutomation', () => {
     const puntos = curva(16);
 
     for (let p = 0; p <= 1.0001; p += 0.013) {
-      const punto = interpolateAutomation(puntos, p)!;
-      expect(punto.lowA + punto.lowB).toBeCloseTo(1, 10);
+      const dataPoint = interpolateAutomation(puntos, p)!;
+      expect(dataPoint.lowA + dataPoint.lowB).toBeCloseTo(1, 10);
     }
   });
 
   it('la ganancia entrante sube y la saliente baja a lo largo de toda la transicion', () => {
     const puntos = curva(16);
-    let anterior = interpolateAutomation(puntos, 0)!;
+    let previousItem = interpolateAutomation(puntos, 0)!;
 
     for (let p = 0.02; p <= 1.0001; p += 0.02) {
-      const actual = interpolateAutomation(puntos, p)!;
-      expect(actual.gainB).toBeGreaterThanOrEqual(anterior.gainB - 1e-9);
-      expect(actual.gainA).toBeLessThanOrEqual(anterior.gainA + 1e-9);
-      anterior = actual;
+      const currentItem = interpolateAutomation(puntos, p)!;
+      expect(currentItem.gainB).toBeGreaterThanOrEqual(previousItem.gainB - 1e-9);
+      expect(currentItem.gainA).toBeLessThanOrEqual(previousItem.gainA + 1e-9);
+      previousItem = currentItem;
     }
   });
 
   it('no modifica los puntos originales', () => {
     const puntos = curva(4);
-    const copia = JSON.stringify(puntos);
+    const backup = JSON.stringify(puntos);
 
     interpolateAutomation(puntos, 0.3);
 
-    expect(JSON.stringify(puntos)).toBe(copia);
+    expect(JSON.stringify(puntos)).toBe(backup);
   });
 
   it('con puntos en la misma posicion no divide por cero', () => {
@@ -102,9 +102,9 @@ describe('interpolateAutomation', () => {
       { ...base, position: 1 },
     ];
 
-    const punto = interpolateAutomation(puntos, 0.5)!;
+    const dataPoint = interpolateAutomation(puntos, 0.5)!;
 
-    expect(Number.isNaN(punto.gainA)).toBe(false);
+    expect(Number.isNaN(dataPoint.gainA)).toBe(false);
   });
 });
 

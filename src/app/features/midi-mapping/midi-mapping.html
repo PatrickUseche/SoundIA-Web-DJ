@@ -13,7 +13,7 @@
     }
 
     @if (mapper.learning(); as control) {
-        <p role="status" class="aprendiendo">Mueve ahora un control del aparato para asignarlo a «{{ etiqueta(control) }}»...</p>
+        <p role="status" class="aprendiendo">Mueve ahora un control del aparato para asignarlo a «{{ labelText(control) }}»...</p>
     }
 
     <div class="tabla-scroll"><table>
@@ -26,19 +26,19 @@
             </tr>
         </thead>
         <tbody>
-            @for (control of controles; track control) {
+            @for (control of controls; track control) {
                 <tr [class.aprendiendo]="mapper.learning() === control">
-                    <td>{{ etiqueta(control) }}</td>
-                    <td class="asignacion">{{ asignacion(control) }}</td>
+                    <td>{{ labelText(control) }}</td>
+                    <td class="asignacion">{{ assignmentLabel(control) }}</td>
                     <td>
-                        <button type="button" class="asignar" (click)="asignar(control)"
+                        <button type="button" class="asignar" (click)="assignControl(control)"
                             [attr.aria-pressed]="mapper.learning() === control"
-                            [attr.aria-label]="(mapper.learning() === control ? 'Cancelar la asignación de ' : 'Asignar ') + etiqueta(control)">
+                            [attr.aria-label]="(mapper.learning() === control ? 'Cancelar la asignación de ' : 'Asignar ') + labelText(control)">
                             {{ mapper.learning() === control ? 'Cancelar' : 'Asignar' }}
                         </button>
                         @if (mapper.assignedTo(control) !== null) {
-                            <button type="button" class="quitar" (click)="quitar(control)"
-                                [attr.aria-label]="'Quitar la asignación de ' + etiqueta(control)">
+                            <button type="button" class="quitar" (click)="removeItem(control)"
+                                [attr.aria-label]="'Quitar la asignación de ' + labelText(control)">
                                 Quitar
                             </button>
                         }
@@ -48,7 +48,7 @@
         </tbody>
     </table></div>
 
-    <button type="button" class="restablecer" (click)="restablecer()" [disabled]="!hayAsignaciones">
+    <button type="button" class="restablecer" (click)="resetValue()" [disabled]="!hasAssignments">
         Restablecer todo
     </button>
 </section>

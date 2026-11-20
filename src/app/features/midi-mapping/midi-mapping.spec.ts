@@ -16,9 +16,9 @@ describe('MidiMappingComponent', () => {
   let mixer: MixerService;
 
   const el = () => fixture.nativeElement as HTMLElement;
-  const fila = (texto: string) =>
-    Array.from(el().querySelectorAll('tbody tr')).find((tr) => tr.querySelector('td')?.textContent?.trim() === texto)!;
-  const boton = (texto: string, clase: string) => fila(texto).querySelector(`button.${clase}`) as HTMLButtonElement | null;
+  const fila = (bodyText: string) =>
+    Array.from(el().querySelectorAll('tbody tr')).find((tr) => tr.querySelector('td')?.textContent?.trim() === bodyText)!;
+  const boton = (bodyText: string, clase: string) => fila(bodyText).querySelector(`button.${clase}`) as HTMLButtonElement | null;
 
   async function crear(opciones: { conectado?: boolean; guardado?: Record<string, string> } = {}) {
     controlador = new FakeMidiInput('ddj');
@@ -54,8 +54,8 @@ describe('MidiMappingComponent', () => {
     });
 
     it('nombra los controles en espanol', () => {
-      for (const nombre of ['Crossfader', 'Volumen maestro', 'Deck A: volumen', 'Deck B: EQ graves', 'Deck A: play/pausa']) {
-        expect(fila(nombre)).toBeDefined();
+      for (const displayName of ['Crossfader', 'Volumen maestro', 'Deck A: volumen', 'Deck B: EQ graves', 'Deck A: play/pausa']) {
+        expect(fila(displayName)).toBeDefined();
       }
     });
 

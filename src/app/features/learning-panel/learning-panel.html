@@ -3,11 +3,11 @@
 
     <label>
         <input type="checkbox" [checked]="recorder.enabled()" [disabled]="!recorder.supported"
-            (change)="alCambiar($event)" />
+            (change)="onChange($event)" />
         Grabar mis mezclas
     </label>
 
-    <p role="status" class="estado-aprendizaje" [attr.data-grabando]="recorder.recording()">{{ textoEstado() }}</p>
+    <p role="status" class="estado-aprendizaje" [attr.data-grabando]="recorder.recording()">{{ statusText() }}</p>
 
     <p class="ayuda">
         Con esto encendido, cada mezcla que hagas a mano entre dos pistas de la biblioteca se guarda (cuándo entra la
@@ -24,9 +24,9 @@
             no cierres la página.
         </p>
     }
-    @if (recorder.message(); as mensaje) {
-        <p [attr.role]="mensaje.error ? 'alert' : 'status'" class="mensaje-aprendizaje" [class.alerta]="mensaje.error">
-            {{ mensaje.text }}
+    @if (recorder.message(); as messageText) {
+        <p [attr.role]="messageText.error ? 'alert' : 'status'" class="mensaje-aprendizaje" [class.alerta]="messageText.error">
+            {{ messageText.text }}
         </p>
     }
 </section>

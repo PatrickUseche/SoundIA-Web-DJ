@@ -1,7 +1,7 @@
 import { Track } from '../models/track';
 import { alignmentLevel, nearestOnGrid, nextOnGrid, phaseShift, planAlignment } from './beatgrid';
 
-const pista = (bpm: number, grid: Track['grid'], id = 1): Track => ({
+const trackItem = (bpm: number, grid: Track['grid'], id = 1): Track => ({
   id, title: `pista ${id}`, duration: 200, bpm, key: 'C major', camelot: '8B', energy: 0.6,
   cuePoints: [0], hasAudio: true, createdAt: 'x', grid,
 });
@@ -35,23 +35,23 @@ describe('nearestOnGrid', () => {
 
 describe('alignmentLevel', () => {
   it('con las dos rejillas seguras se alinea por compases', () => {
-    expect(alignmentLevel(pista(120, rejilla(0, 0)), pista(122, rejilla(0.1, 0.1), 2))).toBe('bar');
+    expect(alignmentLevel(trackItem(120, rejilla(0, 0)), trackItem(122, rejilla(0.1, 0.1), 2))).toBe('bar');
   });
 
   it('si en alguna no se sabe cual es el primer tiempo, se alinea solo por pulsos', () => {
-    expect(alignmentLevel(pista(120, rejilla(0, 0, 0.9)), pista(122, rejilla(0.1, 0.1, 0.03), 2))).toBe('beat');
+    expect(alignmentLevel(trackItem(120, rejilla(0, 0, 0.9)), trackItem(122, rejilla(0.1, 0.1, 0.03), 2))).toBe('beat');
   });
 
   it('sin rejilla en alguna de las dos no se puede alinear', () => {
-    expect(alignmentLevel(pista(120, null), pista(122, rejilla(0, 0), 2))).toBeNull();
-    expect(alignmentLevel(pista(120, rejilla(0, 0)), pista(122, undefined, 2))).toBeNull();
+    expect(alignmentLevel(trackItem(120, null), trackItem(122, rejilla(0, 0), 2))).toBeNull();
+    expect(alignmentLevel(trackItem(120, rejilla(0, 0)), trackItem(122, undefined, 2))).toBeNull();
   });
 });
 
 describe('phaseShift', () => {
   // Las dos a 120 BPM (pulso de 0.5 s) con el primer pulso en 0.
-  const guia = pista(120, rejilla(0, 0));
-  const seguidora = pista(120, rejilla(0, 0), 2);
+  const guia = trackItem(120, rejilla(0, 0));
+  const seguidora = trackItem(120, rejilla(0, 0), 2);
   const base = { leader: guia, leaderPosition: 10.3, leaderRate: 1, follower: seguidora, followerPosition: 10.2, followerRate: 1 };
 
   it('adelanta la seguidora si va retrasada respecto a los pulsos de la guia', () => {
@@ -69,22 +69,22 @@ describe('phaseShift', () => {
   });
 
   it('elige el camino mas corto: como mucho medio pulso en cualquier sentido', () => {
-    for (let posicion = 10.0; posicion < 11.0; posicion += 0.013) {
-      const desplazamiento = phaseShift({ ...base, followerPosition: posicion })!;
-      expect(Math.abs(desplazamiento)).toBeLessThanOrEqual(0.25 + 1e-9);
+    for (let currentPosition = 10.0; currentPosition < 11.0; currentPosition += 0.013) {
+      const displacement = phaseShift({ ...base, followerPosition: currentPosition })!;
+      expect(Math.abs(displacement)).toBeLessThanOrEqual(0.25 + 1e-9);
     }
   });
 
   it('tras mover la seguidora sus pulsos caen sobre los de la guia', () => {
-    const desplazamiento = phaseShift({ ...base, followerPosition: 10.17 })!;
+    const displacement = phaseShift({ ...base, followerPosition: 10.17 })!;
 
-    const pulsos = (((10.17 + desplazamiento) - 0) / 0.5) % 1;
+    const pulsos = (((10.17 + displacement) - 0) / 0.5) % 1;
     const pulsoGuia = ((10.3 - 0) / 0.5) % 1;
     expect(pulsos).toBeCloseTo(pulsoGuia, 6);
   });
 
   it('con una rejilla desplazada tiene en cuenta el primer pulso de cada pista', () => {
-    const conOffset = pista(120, rejilla(0.2, 0.2), 2);
+    const conOffset = trackItem(120, rejilla(0.2, 0.2), 2);
 
     // Los pulsos de la guia caen en 10.5; los de la seguidora (primer pulso en 0.2) en 10.7: va 0.2 s retrasada.
     expect(phaseShift({ ...base, follower: conOffset, followerPosition: 10.3 })).toBeCloseTo(0.2);
@@ -97,15 +97,15 @@ describe('phaseShift', () => {
   });
 
   it('sin rejilla en alguna de las dos no hay desplazamiento', () => {
-    expect(phaseShift({ ...base, leader: pista(120, null) })).toBeNull();
-    expect(phaseShift({ ...base, follower: pista(120, undefined, 2) })).toBeNull();
+    expect(phaseShift({ ...base, leader: trackItem(120, null) })).toBeNull();
+    expect(phaseShift({ ...base, follower: trackItem(120, undefined, 2) })).toBeNull();
   });
 });
 
 describe('planAlignment', () => {
   // A a 120 BPM (pulso 0.5 s, compas 2 s) con el primer tiempo en 0; B a 124 BPM con el primer tiempo en 0.2.
-  const A = pista(120, rejilla(0, 0));
-  const B = pista(124, rejilla(0.2, 0.2), 2);
+  const A = trackItem(120, rejilla(0, 0));
+  const B = trackItem(124, rejilla(0.2, 0.2), 2);
   const base = { outgoing: A, incoming: B, outgoingPosition: 10.3, outgoingRate: 1, multiplier: 1, mixInAt: 0.2, minLeadSeconds: 0.15 };
 
   it('espera al proximo compas de la pista que suena', () => {
@@ -147,7 +147,7 @@ describe('planAlignment', () => {
   });
 
   it('con compas incierto alinea por pulsos', () => {
-    const incierta = pista(124, rejilla(0.2, 0.2, 0.01), 2);
+    const incierta = trackItem(124, rejilla(0.2, 0.2, 0.01), 2);
 
     const plan = planAlignment({ ...base, incoming: incierta, outgoingPosition: 10.3 })!;
 
@@ -157,11 +157,11 @@ describe('planAlignment', () => {
   });
 
   it('sin rejilla en alguna pista no hay alineacion', () => {
-    expect(planAlignment({ ...base, incoming: pista(124, null, 2) })).toBeNull();
+    expect(planAlignment({ ...base, incoming: trackItem(124, null, 2) })).toBeNull();
   });
 
   it('si el tempo no cabe en el pitch fader no hay alineacion', () => {
-    expect(planAlignment({ ...base, incoming: pista(140, rejilla(0, 0), 2) })).toBeNull();
+    expect(planAlignment({ ...base, incoming: trackItem(140, rejilla(0, 0), 2) })).toBeNull();
   });
 
   describe('con el motor mezclando a la mitad o al doble de tempo', () => {
@@ -178,16 +178,16 @@ describe('planAlignment', () => {
       });
 
     it('la entrante a la mitad de tempo (multiplicador 2) se alinea y sus golpes caen sobre los de la saliente', () => {
-      const lenta = pista(70, rejilla(0.2, 0.2), 3);
-      const rapida = pista(140, rejilla(0, 0));
+      const lenta = trackItem(70, rejilla(0.2, 0.2), 3);
+      const rapida = trackItem(140, rejilla(0, 0));
 
       const plan = planAlignment({ ...base, outgoing: rapida, incoming: lenta, multiplier: 2 })!;
 
       expect(plan.level).toBe('bar');
       expect(plan.ratio).toBeCloseTo(1); // 140 / (70 * 2): suena a su ritmo natural
       for (const unidad of [1, 4]) {
-        for (const posicion of posiciones(plan, rapida, lenta, unidad)) {
-          expect(posicion).toBeCloseTo(Math.round(posicion), 6);
+        for (const currentPosition of posiciones(plan, rapida, lenta, unidad)) {
+          expect(currentPosition).toBeCloseTo(Math.round(currentPosition), 6);
         }
       }
       // Cada pulso de la entrante cae sobre uno de cada dos pulsos de la saliente.
@@ -196,31 +196,31 @@ describe('planAlignment', () => {
     });
 
     it('la entrante al doble de tempo (multiplicador 0.5) se alinea y sus golpes caen sobre los de la saliente', () => {
-      const rapidisima = pista(280, rejilla(0.05, 0.05), 3);
-      const lenta = pista(140, rejilla(0, 0));
+      const rapidisima = trackItem(280, rejilla(0.05, 0.05), 3);
+      const lenta = trackItem(140, rejilla(0, 0));
 
       const plan = planAlignment({ ...base, outgoing: lenta, incoming: rapidisima, multiplier: 0.5 })!;
 
       expect(plan.ratio).toBeCloseTo(1); // 140 / (280 * 0.5)
       const pulsos = posiciones(plan, lenta, rapidisima, 1);
       // Dos pulsos de la entrante por cada uno de la saliente: coincide uno de cada dos y el otro cae justo en medio.
-      pulsos.forEach((posicion, k) => {
-        const esperado = k % 2 === 0 ? Math.round(posicion) : Math.round(posicion - 0.5) + 0.5;
-        expect(posicion).toBeCloseTo(esperado, 6);
+      pulsos.forEach((currentPosition, k) => {
+        const esperado = k % 2 === 0 ? Math.round(currentPosition) : Math.round(currentPosition - 0.5) + 0.5;
+        expect(currentPosition).toBeCloseTo(esperado, 6);
       });
       expect(pulsos[1] - pulsos[0]).toBeCloseTo(0.5);
     });
 
     it('el factor de pitch incluye el multiplicador', () => {
-      const lenta = pista(68, rejilla(0, 0), 3);
-      const rapida = pista(140, rejilla(0, 0));
+      const lenta = trackItem(68, rejilla(0, 0), 3);
+      const rapida = trackItem(140, rejilla(0, 0));
 
       expect(planAlignment({ ...base, outgoing: rapida, incoming: lenta, multiplier: 2 })!.ratio).toBeCloseTo(140 / 136);
     });
 
     it('si con el multiplicador el tempo sigue sin caber en el pitch fader no hay alineacion', () => {
-      const lenta = pista(100, rejilla(0, 0), 3);
-      const rapida = pista(140, rejilla(0, 0));
+      const lenta = trackItem(100, rejilla(0, 0), 3);
+      const rapida = trackItem(140, rejilla(0, 0));
 
       expect(planAlignment({ ...base, outgoing: rapida, incoming: lenta, multiplier: 2 })).toBeNull();
     });
@@ -231,7 +231,7 @@ describe('planAlignment', () => {
   });
 
   it('el punto de entrada nunca es negativo', () => {
-    const plan = planAlignment({ ...base, incoming: pista(124, rejilla(-0.003, -0.003), 2), mixInAt: 0 })!;
+    const plan = planAlignment({ ...base, incoming: trackItem(124, rejilla(-0.003, -0.003), 2), mixInAt: 0 })!;
 
     expect(plan.incomingStart).toBeGreaterThanOrEqual(0);
     expect(plan.incomingStart).toBeCloseTo(-0.003 + (60 / 124) * 4);

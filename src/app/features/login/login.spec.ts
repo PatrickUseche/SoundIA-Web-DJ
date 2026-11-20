@@ -14,7 +14,7 @@ describe('LoginComponent', () => {
   let router: Router;
 
   const el = () => fixture.nativeElement as HTMLElement;
-  const campo = (id: string) => el().querySelector(`#${id}`) as HTMLInputElement;
+  const field = (id: string) => el().querySelector(`#${id}`) as HTMLInputElement;
   const boton = () => el().querySelector('button[type="submit"]') as HTMLButtonElement;
 
   function crear(opciones: { returnUrl?: string; sesion?: boolean; enabled?: boolean } = {}) {
@@ -56,10 +56,10 @@ describe('LoginComponent', () => {
   }
 
   function escribir(usuario: string, contrasena: string) {
-    campo('login-usuario').value = usuario;
-    campo('login-usuario').dispatchEvent(new Event('input'));
-    campo('login-contrasena').value = contrasena;
-    campo('login-contrasena').dispatchEvent(new Event('input'));
+    field('login-usuario').value = usuario;
+    field('login-usuario').dispatchEvent(new Event('input'));
+    field('login-contrasena').value = contrasena;
+    field('login-contrasena').dispatchEvent(new Event('input'));
     fixture.detectChanges();
   }
 
@@ -76,9 +76,9 @@ describe('LoginComponent', () => {
     it('pide usuario y contrasena con etiquetas y el autocompletado correcto', () => {
       expect(el().querySelector('label[for="login-usuario"]')?.textContent).toContain('Usuario');
       expect(el().querySelector('label[for="login-contrasena"]')?.textContent).toContain('Contraseña');
-      expect(campo('login-usuario').autocomplete).toBe('username');
-      expect(campo('login-contrasena').type).toBe('password');
-      expect(campo('login-contrasena').autocomplete).toBe('current-password');
+      expect(field('login-usuario').autocomplete).toBe('username');
+      expect(field('login-contrasena').type).toBe('password');
+      expect(field('login-contrasena').autocomplete).toBe('current-password');
     });
 
     it('el boton no se activa hasta rellenar los dos campos', () => {
@@ -155,8 +155,8 @@ describe('LoginComponent', () => {
       fixture.detectChanges();
 
       expect(el().querySelector('[role="alert"]')?.textContent).toContain('Usuario o contraseña incorrectos');
-      expect(campo('login-contrasena').value).toBe('');
-      expect(campo('login-usuario').value).toBe('dj');
+      expect(field('login-contrasena').value).toBe('');
+      expect(field('login-usuario').value).toBe('dj');
       expect(router.navigateByUrl).not.toHaveBeenCalled();
     });
 

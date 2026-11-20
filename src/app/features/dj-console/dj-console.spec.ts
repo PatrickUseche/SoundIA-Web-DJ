@@ -11,7 +11,7 @@ describe('DjConsoleComponent', () => {
   let mixer: MixerService;
 
   const el = () => fixture.nativeElement as HTMLElement;
-  const slider = (etiqueta: string) => el().querySelector(`input[aria-label="${etiqueta}"]`) as HTMLInputElement;
+  const slider = (labelText: string) => el().querySelector(`input[aria-label="${labelText}"]`) as HTMLInputElement;
 
   // jsdom no implementa canvas: se evita el aviso en consola.
   beforeEach(() => vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null));
@@ -28,8 +28,8 @@ describe('DjConsoleComponent', () => {
     fixture.detectChanges();
   }
 
-  const mover = (input: HTMLInputElement, valor: number) => {
-    input.value = String(valor);
+  const mover = (input: HTMLInputElement, rawValue: number) => {
+    input.value = String(rawValue);
     input.dispatchEvent(new Event('input'));
   };
 
@@ -100,9 +100,9 @@ describe('DjConsoleComponent', () => {
       });
 
       it('tiene un medidor de nivel de salida', () => {
-        const medidor = mezclador().querySelector('.maestro [role="meter"]');
+        const meterTimer = mezclador().querySelector('.maestro [role="meter"]');
 
-        expect(medidor?.getAttribute('aria-label')).toBe('Nivel de salida');
+        expect(meterTimer?.getAttribute('aria-label')).toBe('Nivel de salida');
       });
     });
 
@@ -116,18 +116,18 @@ describe('DjConsoleComponent', () => {
       afterEach(() => vi.useRealTimers());
 
       it('sigue al nivel de salida del mezclador y baja suave al callarse', () => {
-        const medidor = () => el().querySelector('.maestro [role="meter"]') as HTMLElement;
+        const meterTimer = () => el().querySelector('.maestro [role="meter"]') as HTMLElement;
         // El analizador 0 es el del maestro.
         (ctx as FakeAudioContext).analysers[0].peak = 1;
 
         vi.advanceTimersByTime(100);
         fixture.detectChanges();
-        expect(medidor().getAttribute('aria-valuenow')).toBe('100');
+        expect(meterTimer().getAttribute('aria-valuenow')).toBe('100');
 
         (ctx as FakeAudioContext).analysers[0].peak = 0;
         vi.advanceTimersByTime(3000);
         fixture.detectChanges();
-        expect(medidor().getAttribute('aria-valuenow')).toBe('0');
+        expect(meterTimer().getAttribute('aria-valuenow')).toBe('0');
       });
 
       it('deja de medir al destruirse la consola', () => {
@@ -139,9 +139,9 @@ describe('DjConsoleComponent', () => {
 
     describe('al cerrar o recargar la pagina', () => {
       const intentarCerrar = () => {
-        const evento = new Event('beforeunload', { cancelable: true });
-        window.dispatchEvent(evento);
-        return evento.defaultPrevented;
+        const domEvent = new Event('beforeunload', { cancelable: true });
+        window.dispatchEvent(domEvent);
+        return domEvent.defaultPrevented;
       };
 
       it('no avisa si no suena nada', () => {

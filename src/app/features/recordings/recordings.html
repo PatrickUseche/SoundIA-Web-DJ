@@ -13,39 +13,39 @@
     </div>
 
     <div class="filtros-grabaciones" role="group" aria-label="Filtrar por revisión">
-        @for (opcion of filtros; track opcion.valor) {
-            <button type="button" (click)="elegirFiltro(opcion.valor)" [attr.aria-pressed]="filtro() === opcion.valor">
-                {{ opcion.texto }}
+        @for (optionItem of filterOptions; track optionItem.rawValue) {
+            <button type="button" (click)="chooseFilter(optionItem.rawValue)" [attr.aria-pressed]="activeFilter() === optionItem.rawValue">
+                {{ optionItem.bodyText }}
             </button>
         }
-        <button type="button" (click)="cargar()" [disabled]="cargando()">Actualizar</button>
+        <button type="button" (click)="loadItems()" [disabled]="isLoading()">Actualizar</button>
     </div>
 
     <div class="copia">
-        <button type="button" (click)="descargarCopia()" [disabled]="trabajando() || !hayGrabaciones()">
+        <button type="button" (click)="downloadBackup()" [disabled]="working() || !hasRecordings()">
             Descargar copia
         </button>
         <label class="restaurar">
             Restaurar una copia:
-            <input type="file" accept="application/json,.json" (change)="restaurarCopia($event)"
-                [disabled]="trabajando()" aria-label="Archivo de copia de grabaciones" />
+            <input type="file" accept="application/json,.json" (change)="restoreBackup($event)"
+                [disabled]="working()" aria-label="Archivo de copia de grabaciones" />
         </label>
     </div>
 
-    @if (mensaje(); as texto) {
-        <p role="status" class="grabaciones-ok">{{ texto }}</p>
+    @if (messageText(); as bodyText) {
+        <p role="status" class="grabaciones-ok">{{ bodyText }}</p>
     }
-    @if (errorAccion(); as texto) {
-        <p role="alert" class="grabaciones-error alerta">{{ texto }}</p>
+    @if (actionError(); as bodyText) {
+        <p role="alert" class="grabaciones-error alerta">{{ bodyText }}</p>
     }
 
-    @if (error(); as texto) {
-        <p role="alert" class="lista-error alerta">{{ texto }}</p>
-    } @else if (cargando() && recordings().length === 0) {
+    @if (error(); as bodyText) {
+        <p role="alert" class="lista-error alerta">{{ bodyText }}</p>
+    } @else if (isLoading() && recordings().length === 0) {
         <p>Cargando grabaciones...</p>
     } @else if (recordings().length === 0) {
         <p class="sin-grabaciones">
-            @if (hayGrabaciones()) {
+            @if (hasRecordings()) {
                 Ninguna grabación coincide con el filtro.
             } @else {
                 Todavía no hay grabaciones. Enciende el modo aprendizaje en la pantalla de DJ y mezcla a mano.
@@ -77,36 +77,36 @@
                                 <span class="etiqueta-autodj" title="La hizo el Auto-DJ, no tú">Auto-DJ</span>
                             }
                         </td>
-                        <td>{{ pistas(r) }}</td>
-                        <td>{{ genero(r) }}</td>
+                        <td>{{ trackList(r) }}</td>
+                        <td>{{ trackGenre(r) }}</td>
                         <td>{{ r.features.overlapBars }} compases</td>
-                        <td>{{ forma(r) }}</td>
-                        <td>{{ cambioDeGraves(r) }}</td>
-                        <td>{{ desfase(r) }}</td>
+                        <td>{{ shapeLabel(r) }}</td>
+                        <td>{{ bassChange(r) }}</td>
+                        <td>{{ offsetLabel(r) }}</td>
                         <td>
                             <div class="revision" role="group" [attr.aria-label]="'Revision de la mezcla ' + r.id">
-                                <button type="button" class="buena" (click)="marcar(r, 'good')"
+                                <button type="button" class="buena" (click)="markItem(r, 'good')"
                                     [attr.aria-pressed]="r.quality === 'good'">Buena</button>
-                                <button type="button" class="descartada" (click)="marcar(r, 'discard')"
+                                <button type="button" class="descartada" (click)="markItem(r, 'discard')"
                                     [attr.aria-pressed]="r.quality === 'discard'">Descartar</button>
-                                <button type="button" (click)="marcar(r, 'unreviewed')"
+                                <button type="button" (click)="markItem(r, 'unreviewed')"
                                     [attr.aria-pressed]="r.quality === 'unreviewed'">Sin revisar</button>
                             </div>
                         </td>
                         <td>
                             <input type="text" class="notas" maxlength="500" [value]="r.notes"
-                                (change)="guardarNotas(r, $event)" placeholder="Por qué sí o por qué no"
+                                (change)="saveNotes(r, $event)" placeholder="Por qué sí o por qué no"
                                 [attr.aria-label]="'Notas de la mezcla ' + r.id" />
                         </td>
                         <td>
-                            @if (confirmandoBorrado() === r.id) {
+                            @if (confirmingDelete() === r.id) {
                                 <span class="confirmar-borrado" role="group" [attr.aria-label]="'Confirmar el borrado de la mezcla ' + r.id">
                                     ¿Seguro?
-                                    <button type="button" (click)="borrar(r)">Si, borrar</button>
-                                    <button type="button" (click)="cancelarBorrado()">No</button>
+                                    <button type="button" (click)="deleteItem(r)">Si, borrar</button>
+                                    <button type="button" (click)="cancelDelete()">No</button>
                                 </span>
                             } @else {
-                                <button type="button" (click)="pedirBorrado(r)"
+                                <button type="button" (click)="requestDelete(r)"
                                     [attr.aria-label]="'Borrar la mezcla ' + r.id">Borrar</button>
                             }
                         </td>

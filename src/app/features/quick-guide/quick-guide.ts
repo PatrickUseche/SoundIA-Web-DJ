@@ -21,7 +21,7 @@ export const QUICK_GUIDE_STORAGE = new InjectionToken<Pick<Storage, 'getItem' | 
 @Component({
   selector: 'app-quick-guide',
   template: `
-    <details class="plegable guia-rapida" [open]="abierta()" (toggle)="alAlternar($event)">
+    <details class="plegable guia-rapida" [open]="isOpen()" (toggle)="onToggle($event)">
       <summary>Guia rapida: como empezar</summary>
       <ol>
         <li>
@@ -48,9 +48,9 @@ export class QuickGuideComponent {
   private readonly storage = inject(QUICK_GUIDE_STORAGE);
 
   /** Abierta hasta que el usuario la cierre por primera vez. */
-  readonly abierta = signal(this.pendiente());
+  readonly isOpen = signal(this.isPending());
 
-  private pendiente(): boolean {
+  private isPending(): boolean {
     try {
       return this.storage?.getItem(QUICK_GUIDE_KEY) !== '1';
     } catch {
@@ -58,10 +58,10 @@ export class QuickGuideComponent {
     }
   }
 
-  alAlternar(evento: Event): void {
-    const abierta = (evento.target as HTMLDetailsElement).open;
-    this.abierta.set(abierta);
-    if (!abierta) {
+  onToggle(domEvent: Event): void {
+    const isOpen = (domEvent.target as HTMLDetailsElement).open;
+    this.isOpen.set(isOpen);
+    if (!isOpen) {
       try {
         this.storage?.setItem(QUICK_GUIDE_KEY, '1');
       } catch {

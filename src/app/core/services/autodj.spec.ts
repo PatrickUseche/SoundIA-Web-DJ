@@ -11,9 +11,9 @@ import { DjSession, NextTracksResponse, QueueItem, TransitionPlan, WeightsInfo }
 import { Track } from '../models/track';
 import { FakeAudioBuffer, FakeAudioContext, provideFakeAudio } from '../testing/fake-audio';
 
-const pista = (id: number, cambios: Partial<Track> = {}): Track => ({
+const trackItem = (id: number, changes: Partial<Track> = {}): Track => ({
   id, title: `pista ${id}`, duration: 200, bpm: 128, key: 'C major', camelot: '8B', energy: 0.6,
-  cuePoints: [0], hasAudio: true, createdAt: '2026-10-21T18:30:00+00:00', ...cambios,
+  cuePoints: [0], hasAudio: true, createdAt: '2026-10-21T18:30:00+00:00', ...changes,
 });
 
 const sesion = (id = 5): DjSession => ({ id, name: 'Auto-DJ', startedAt: 'x', endedAt: null, active: true });
@@ -44,7 +44,7 @@ const sugerencias = (...ids: number[]): NextTracksResponse => ({
   })),
 });
 
-const pesos = (samples: number, learned: boolean, harmonic = 0.4): WeightsInfo => ({
+const weightBars = (samples: number, learned: boolean, harmonic = 0.4): WeightsInfo => ({
   weights: { tempo: 0.45, harmonic, energy: 0.15 }, learned, samples,
 });
 
@@ -78,8 +78,8 @@ describe('AutoDjService', () => {
     autodjApi = {
       transition: vi.fn((desde: number, hasta: number): Observable<TransitionPlan> => of(corte(desde, hasta))),
       nextTracks: vi.fn(() => of(sugerencias())),
-      sendFeedback: vi.fn((): Observable<WeightsInfo> => of(pesos(1, false))),
-      weights: vi.fn((): Observable<WeightsInfo> => of(pesos(0, false))),
+      sendFeedback: vi.fn((): Observable<WeightsInfo> => of(weightBars(1, false))),
+      weights: vi.fn((): Observable<WeightsInfo> => of(weightBars(0, false))),
       sendMixTiming: vi.fn(() => of({ samples: 1, advanceSeconds: 0, learned: false })),
     };
     sessionsApi = {
@@ -88,7 +88,7 @@ describe('AutoDjService', () => {
       pollNext: vi.fn(() => throwError(error404)),
     };
     tracksApi = {
-      get: vi.fn((id: number) => of(pista(id))),
+      get: vi.fn((id: number) => of(trackItem(id))),
       getAudio: vi.fn(() => of(new Uint8Array([1, 2, 3]).buffer)),
     };
     recorder = { record: vi.fn(async () => undefined) };
@@ -107,7 +107,7 @@ describe('AutoDjService', () => {
 
   /** Deck A cargado con la pista 1 y sonando. */
   const sonandoEnA = () => {
-    mixer.loadBuffer('A', buffer(), pista(1));
+    mixer.loadBuffer('A', buffer(), trackItem(1));
     mixer.deck('A').play();
   };
 
@@ -219,8 +219,8 @@ describe('AutoDjService', () => {
       await service.tick();
 
       expect(recorder.record).toHaveBeenCalledTimes(1);
-      const [actual, elegida, origen] = recorder.record.mock.calls[0];
-      expect([actual.id, elegida.id, origen]).toEqual([1, 7, 'queue']);
+      const [currentItem, elegida, origen] = recorder.record.mock.calls[0];
+      expect([currentItem.id, elegida.id, origen]).toEqual([1, 7, 'queue']);
     });
 
     it('pide el plan de transicion entre la pista actual y la elegida', async () => {
@@ -272,7 +272,7 @@ describe('AutoDjService', () => {
 
     it('descarta las recomendaciones sin audio guardado', async () => {
       autodjApi.nextTracks.mockReturnValue(of(sugerencias(4, 5)));
-      tracksApi.get.mockImplementation((id: number) => of(pista(id, { hasAudio: id !== 4 })));
+      tracksApi.get.mockImplementation((id: number) => of(trackItem(id, { hasAudio: id !== 4 })));
 
       await service.tick();
 
@@ -526,7 +526,7 @@ describe('AutoDjService', () => {
 
   describe('alinear la mezcla a compas', () => {
     // A a 120 BPM (compas de 2 s) con el primer tiempo en 0; B a 124 BPM con el primer tiempo en 0.2.
-    const conRejilla = (id: number): Track => pista(id, {
+    const conRejilla = (id: number): Track => trackItem(id, {
       bpm: id === 1 ? 120 : 124, grid: { offset: id === 1 ? 0 : 0.2, downbeat: id === 1 ? 0 : 0.2, confidence: 0.9 },
     });
 
@@ -577,9 +577,9 @@ describe('AutoDjService', () => {
     });
 
     it('sin rejilla en las pistas no se adelanta: espera exactamente al punto de salida', async () => {
-      tracksApi.get.mockImplementation((id: number) => of(pista(id)));
+      tracksApi.get.mockImplementation((id: number) => of(trackItem(id)));
       service.stop();
-      mixer.loadBuffer('A', buffer(), pista(1));
+      mixer.loadBuffer('A', buffer(), trackItem(1));
       mixer.deck('A').play();
       await service.start();
       sessionsApi.pollNext.mockReturnValueOnce(of(elemento(2)));
@@ -697,7 +697,7 @@ describe('AutoDjService', () => {
 
     it('valorar que gusto envia la valoracion al motor y guarda los pesos devueltos', async () => {
       await conTransicionHecha();
-      autodjApi.sendFeedback.mockReturnValue(of(pesos(12, true, 0.6)));
+      autodjApi.sendFeedback.mockReturnValue(of(weightBars(12, true, 0.6)));
 
       await service.rate(true);
 
@@ -783,7 +783,7 @@ describe('AutoDjService', () => {
 
     it('loadWeights consulta los pesos vigentes del motor', async () => {
       configurar();
-      autodjApi.weights.mockReturnValue(of(pesos(30, true, 0.55)));
+      autodjApi.weights.mockReturnValue(of(weightBars(30, true, 0.55)));
 
       await service.loadWeights();
 

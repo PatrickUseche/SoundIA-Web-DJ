@@ -16,7 +16,7 @@ describe('LearningPanelComponent', () => {
     setEnabled: vi.fn((v: boolean) => recorder.enabled.set(v)),
   };
 
-  const texto = () => (fixture.nativeElement as HTMLElement).textContent ?? '';
+  const bodyText = () => (fixture.nativeElement as HTMLElement).textContent ?? '';
   const casilla = () => (fixture.nativeElement as HTMLElement).querySelector('input[type=checkbox]') as HTMLInputElement;
 
   beforeEach(async () => {
@@ -36,7 +36,7 @@ describe('LearningPanelComponent', () => {
 
   it('viene apagado y lo dice', () => {
     expect(casilla().checked).toBe(false);
-    expect(texto()).toContain('Apagado: no se graba nada.');
+    expect(bodyText()).toContain('Apagado: no se graba nada.');
   });
 
   it('marcar la casilla enciende el grabador', () => {
@@ -45,7 +45,7 @@ describe('LearningPanelComponent', () => {
 
     expect(recorder.setEnabled).toHaveBeenCalledWith(true);
     expect(casilla().checked).toBe(true);
-    expect(texto()).toContain('Esperando una mezcla');
+    expect(bodyText()).toContain('Esperando una mezcla');
   });
 
   it('avisa cuando hay una mezcla en curso', () => {
@@ -53,7 +53,7 @@ describe('LearningPanelComponent', () => {
     recorder.recording.set(true);
     fixture.detectChanges();
 
-    expect(texto()).toContain('Mezcla en curso');
+    expect(bodyText()).toContain('Mezcla en curso');
   });
 
   it('muestra el contador y el ultimo mensaje, y un error como alerta', () => {
@@ -62,7 +62,7 @@ describe('LearningPanelComponent', () => {
     recorder.message.set({ text: 'No se pudo guardar la mezcla.', error: true });
     fixture.detectChanges();
 
-    expect(texto()).toContain('Mezclas grabadas en esta sesión: 3');
+    expect(bodyText()).toContain('Mezclas grabadas en esta sesión: 3');
     const alerta = (fixture.nativeElement as HTMLElement).querySelector('[role=alert]');
     expect(alerta?.textContent).toContain('No se pudo guardar la mezcla.');
   });
@@ -73,6 +73,6 @@ describe('LearningPanelComponent', () => {
     fixture.detectChanges();
 
     expect(casilla().disabled).toBe(true);
-    expect(texto()).toContain('no puede reproducir audio');
+    expect(bodyText()).toContain('no puede reproducir audio');
   });
 });

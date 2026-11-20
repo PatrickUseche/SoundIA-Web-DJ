@@ -12,10 +12,10 @@ describe('ChannelStripComponent', () => {
   let mixer: MixerService;
 
   const el = () => fixture.nativeElement as HTMLElement;
-  const slider = (etiqueta: string) => el().querySelector(`input[aria-label="${etiqueta}"]`) as HTMLInputElement;
-  const medidor = () => el().querySelector('[role="meter"]') as HTMLElement;
-  const mover = (input: HTMLInputElement, valor: number) => {
-    input.value = String(valor);
+  const slider = (labelText: string) => el().querySelector(`input[aria-label="${labelText}"]`) as HTMLInputElement;
+  const meterTimer = () => el().querySelector('[role="meter"]') as HTMLElement;
+  const mover = (input: HTMLInputElement, rawValue: number) => {
+    input.value = String(rawValue);
     input.dispatchEvent(new Event('input'));
   };
 
@@ -61,7 +61,7 @@ describe('ChannelStripComponent', () => {
     it('lleva el medidor del canal y el fader de volumen', () => {
       crear('A');
 
-      expect(medidor().getAttribute('aria-label')).toBe('Nivel del canal A');
+      expect(meterTimer().getAttribute('aria-label')).toBe('Nivel del canal A');
       expect(slider('Volumen del deck')).not.toBeNull();
     });
   });
@@ -112,7 +112,7 @@ describe('ChannelStripComponent', () => {
     it('arranca apagado', () => {
       crear();
 
-      expect(medidor().getAttribute('aria-valuenow')).toBe('0');
+      expect(meterTimer().getAttribute('aria-valuenow')).toBe('0');
     });
 
     it('sigue al nivel del canal mientras suena', () => {
@@ -122,7 +122,7 @@ describe('ChannelStripComponent', () => {
       vi.advanceTimersByTime(100);
       fixture.detectChanges();
 
-      expect(medidor().getAttribute('aria-valuenow')).toBe('100');
+      expect(meterTimer().getAttribute('aria-valuenow')).toBe('100');
     });
 
     it('al callarse baja poco a poco hasta apagarse', () => {
@@ -133,13 +133,13 @@ describe('ChannelStripComponent', () => {
 
       vi.advanceTimersByTime(50);
       fixture.detectChanges();
-      const alPrincipio = Number(medidor().getAttribute('aria-valuenow'));
+      const alPrincipio = Number(meterTimer().getAttribute('aria-valuenow'));
       vi.advanceTimersByTime(3000);
       fixture.detectChanges();
 
       expect(alPrincipio).toBeGreaterThan(0);
       expect(alPrincipio).toBeLessThan(100);
-      expect(medidor().getAttribute('aria-valuenow')).toBe('0');
+      expect(meterTimer().getAttribute('aria-valuenow')).toBe('0');
     });
 
     it('el canal B mide el deck B', () => {
@@ -148,12 +148,12 @@ describe('ChannelStripComponent', () => {
       analizador('A').peak = 1;
       vi.advanceTimersByTime(100);
       fixture.detectChanges();
-      expect(medidor().getAttribute('aria-valuenow')).toBe('0');
+      expect(meterTimer().getAttribute('aria-valuenow')).toBe('0');
 
       analizador('B').peak = 1;
       vi.advanceTimersByTime(100);
       fixture.detectChanges();
-      expect(medidor().getAttribute('aria-valuenow')).toBe('100');
+      expect(meterTimer().getAttribute('aria-valuenow')).toBe('100');
     });
 
     it('deja de medir al destruirse el canal (no deja temporizadores)', () => {

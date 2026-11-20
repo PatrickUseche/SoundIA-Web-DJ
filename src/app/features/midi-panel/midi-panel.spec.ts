@@ -22,11 +22,11 @@ describe('MidiPanelComponent', () => {
   }
 
   const el = () => fixture.nativeElement as HTMLElement;
-  const texto = () => el().textContent ?? '';
+  const bodyText = () => el().textContent ?? '';
   const boton = (contiene: string) =>
     Array.from(el().querySelectorAll('button')).find((b) => b.textContent?.includes(contiene));
 
-  async function conectar() {
+  async function openConnection() {
     boton('Conectar')!.click();
     await fixture.whenStable();
     fixture.detectChanges();
@@ -37,7 +37,7 @@ describe('MidiPanelComponent', () => {
   it('avisa si el navegador no soporta Web MIDI', () => {
     configurar(null);
 
-    expect(texto()).toContain('no soporta Web MIDI');
+    expect(bodyText()).toContain('no soporta Web MIDI');
     expect(boton('Conectar')).toBeUndefined();
   });
 
@@ -50,15 +50,15 @@ describe('MidiPanelComponent', () => {
   it('indica cuando no hay controladores conectados', async () => {
     configurar(new FakeMidiAccess());
 
-    await conectar();
+    await openConnection();
 
-    expect(texto()).toContain('No hay controladores conectados');
+    expect(bodyText()).toContain('No hay controladores conectados');
   });
 
   it('muestra un error con opcion de reintentar si el permiso se niega', async () => {
     configurar(null, new DOMException('no', 'SecurityError'));
 
-    await conectar();
+    await openConnection();
 
     expect(el().querySelector('[role="alert"]')?.textContent).toContain('Se denegó el acceso');
     expect(boton('Reintentar')).toBeDefined();
@@ -67,7 +67,7 @@ describe('MidiPanelComponent', () => {
   it('muestra un error generico ante un fallo inesperado', async () => {
     configurar(null, new Error('raro'));
 
-    await conectar();
+    await openConnection();
 
     expect(el().querySelector('[role="alert"]')?.textContent).toContain('No se pudo acceder a MIDI');
   });
@@ -75,7 +75,7 @@ describe('MidiPanelComponent', () => {
   it('lista los controladores y selecciona el unico disponible', async () => {
     configurar(new FakeMidiAccess([new FakeMidiInput('a', 'DDJ-400')]));
 
-    await conectar();
+    await openConnection();
 
     const select = el().querySelector('select') as HTMLSelectElement;
     expect(select.options.length).toBe(2); // "Ninguno" + el controlador
@@ -85,7 +85,7 @@ describe('MidiPanelComponent', () => {
 
   it('elegir otro controlador en la lista lo selecciona en el servicio', async () => {
     configurar(new FakeMidiAccess([new FakeMidiInput('a', 'DDJ-400'), new FakeMidiInput('b', 'Launchpad')]));
-    await conectar();
+    await openConnection();
     const select = el().querySelector('select') as HTMLSelectElement;
 
     select.value = 'b';
@@ -96,7 +96,7 @@ describe('MidiPanelComponent', () => {
 
   it('elegir Ninguno deja de escuchar', async () => {
     configurar(new FakeMidiAccess([new FakeMidiInput('a')]));
-    await conectar();
+    await openConnection();
     const select = el().querySelector('select') as HTMLSelectElement;
 
     select.value = '';
@@ -108,14 +108,14 @@ describe('MidiPanelComponent', () => {
   it('el boton de envio esta deshabilitado sin controlador elegido', async () => {
     configurar(new FakeMidiAccess([new FakeMidiInput('a'), new FakeMidiInput('b')]));
 
-    await conectar();
+    await openConnection();
 
     expect(boton('Iniciar envio')!.disabled).toBe(true);
   });
 
   it('el envio empieza apagado y se alterna con el boton', async () => {
     configurar(new FakeMidiAccess([new FakeMidiInput('a')]));
-    await conectar();
+    await openConnection();
     const bridge = TestBed.inject(MidiBridgeService);
     expect(bridge.active()).toBe(false);
 
@@ -132,7 +132,7 @@ describe('MidiPanelComponent', () => {
   it('muestra los contadores de enviados y fallidos y permite reiniciarlos', async () => {
     const controlador = new FakeMidiInput('a');
     configurar(new FakeMidiAccess([controlador]));
-    await conectar();
+    await openConnection();
     // Los timers falsos se activan despues de conectar: whenStable() espera timers reales.
     vi.useFakeTimers();
     boton('Iniciar envio')!.click();
@@ -141,11 +141,11 @@ describe('MidiPanelComponent', () => {
     vi.advanceTimersByTime(50);
     http.expectOne(`${environment.apiBaseUrl}/event`).flush('ok');
     fixture.detectChanges();
-    expect(texto()).toMatch(/Enviados:\s*1/);
+    expect(bodyText()).toMatch(/Enviados:\s*1/);
 
     boton('Reiniciar')!.click();
     fixture.detectChanges();
-    expect(texto()).toMatch(/Enviados:\s*0/);
+    expect(bodyText()).toMatch(/Enviados:\s*0/);
     vi.useRealTimers();
   });
 });

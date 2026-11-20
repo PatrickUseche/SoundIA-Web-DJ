@@ -1,6 +1,6 @@
 import { AutomationPoint } from '../models/autodj';
 
-const CAMPOS: (keyof AutomationPoint)[] = [
+const FIELDS: (keyof AutomationPoint)[] = [
   'gainA', 'gainB', 'lowA', 'lowB', 'midA', 'midB', 'highA', 'highB',
 ];
 
@@ -32,8 +32,8 @@ export function interpolateAutomation(points: AutomationPoint[], position: numbe
   const t = span === 0 ? 0 : (p - before.position) / span;
 
   const result = { ...before, position: p };
-  for (const campo of CAMPOS) {
-    result[campo] = before[campo] + (after[campo] - before[campo]) * t;
+  for (const field of FIELDS) {
+    result[field] = before[field] + (after[field] - before[field]) * t;
   }
   return result;
 }

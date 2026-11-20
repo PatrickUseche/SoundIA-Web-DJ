@@ -14,18 +14,18 @@ import { WakeNoticeService } from './core/services/wake-notice';
 export class App {
   protected readonly title = signal('soundia-web-dj');
   protected readonly auth = inject(AuthService);
-  protected readonly aviso = inject(WakeNoticeService);
-  protected readonly motor = inject(EngineStatusService);
+  protected readonly noticeText = inject(WakeNoticeService);
+  protected readonly engineStatus = inject(EngineStatusService);
   private readonly keepAlive = inject(KeepAliveService);
   private readonly router = inject(Router);
 
   constructor() {
     // Mientras la pagina este abierta y alguien la use, los servidores gratuitos no se duermen.
     this.keepAlive.start();
-    this.motor.start();
+    this.engineStatus.start();
   }
 
-  protected cerrarSesion(): void {
+  protected signOut(): void {
     this.auth.logout();
     void this.router.navigate(['/login']);
   }

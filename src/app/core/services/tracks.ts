@@ -12,7 +12,7 @@ export class TrackApiService {
 
   /** Pistas ya analizadas (las 50 mas recientes). */
   list(): Observable<Track[]> {
-    return this.http.get<TrackList>(this.baseUrl).pipe(map((respuesta) => respuesta.tracks));
+    return this.http.get<TrackList>(this.baseUrl).pipe(map((reply) => reply.tracks));
   }
 
   get(id: number): Observable<Track> {

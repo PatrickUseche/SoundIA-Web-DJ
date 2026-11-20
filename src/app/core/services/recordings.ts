@@ -23,8 +23,8 @@ export class RecordingApiService {
   }
 
   /** La revision del DJ: calidad y notas. Devuelve la grabacion actualizada. */
-  review(id: number, cambios: RecordingReview): Observable<RecordingSummary> {
-    return this.http.put<RecordingSummary>(`${this.baseUrl}/${id}`, cambios);
+  review(id: number, changes: RecordingReview): Observable<RecordingSummary> {
+    return this.http.put<RecordingSummary>(`${this.baseUrl}/${id}`, changes);
   }
 
   remove(id: number): Observable<void> {
@@ -37,7 +37,7 @@ export class RecordingApiService {
   }
 
   /** Restaura una copia exportada; devuelve cuantas se restauraron y cuantas ya estaban. */
-  importAll(copia: unknown): Observable<{ created: number; skipped: number }> {
-    return this.http.post<{ created: number; skipped: number }>(`${this.baseUrl}/import`, copia);
+  importAll(backup: unknown): Observable<{ created: number; skipped: number }> {
+    return this.http.post<{ created: number; skipped: number }>(`${this.baseUrl}/import`, backup);
   }
 }
